@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">Evidencia 3: desglose de tareas y trazabilidad</title>
+  <desc id="desc">Fragmento visual de la propuesta de tareas de la IA y la decisión humana.</desc>
+  <rect width="1200" height="720" fill="#f7f5f1"/>
+  <rect x="54" y="42" width="1092" height="636" rx="28" fill="#ffffff" stroke="#d09b62" stroke-width="4"/>
+  <text x="94" y="102" font-family="Arial, sans-serif" font-size="30" font-weight="700" fill="#4d321b">Evidencia 3 · Desglose y trazabilidad</text>
+  <text x="94" y="145" font-family="Arial, sans-serif" font-size="18" fill="#7c654f">Fragmento documental de la sesión Codex · 8 de octubre de 2026</text>
+  <rect x="94" y="185" width="1012" height="240" rx="18" fill="#fbefe3"/>
+  <text x="124" y="228" font-family="Arial, sans-serif" font-size="21" font-weight="700" fill="#4d321b">PROPUESTA DE LA IA</text>
+  <text x="124" y="271" font-family="Arial, sans-serif" font-size="22" fill="#4d321b">
+    <tspan x="124" dy="0">30 tareas ordenadas en preparación, cuenta, contactos, chat, audio,</tspan>
+    <tspan x="124" dy="36">accesibilidad, seguridad y validación.</tspan>
+    <tspan x="124" dy="48">Cada tarea incluye: ID · requisito · dependencias · responsable</tspan>
+    <tspan x="124" dy="36">propuesto · criterio “hecho cuando...”.</tspan>
+  </text>
+  <rect x="94" y="456" width="1012" height="178" rx="18" fill="#e5f2e8"/>
+  <text x="124" y="498" font-family="Arial, sans-serif" font-size="21" font-weight="700" fill="#254b2d">REVISIÓN HUMANA</text>
+  <text x="124" y="539" font-family="Arial, sans-serif" font-size="21" fill="#254b2d">
+    <tspan x="124" dy="0">Orden y trazabilidad aceptados como base.</tspan>
+    <tspan x="124" dy="34">El equipo debe confirmar responsables y reemplazar los comandos pendientes</tspan>
+    <tspan x="124" dy="34">cuando exista el proyecto Gradle; no se aceptan comandos inventados.</tspan>
+  </text>
+</svg>
+

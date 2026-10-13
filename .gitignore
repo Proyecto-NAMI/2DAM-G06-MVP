@@ -1,0 +1,27 @@
+# Android Studio and Gradle
+.gradle/
+.idea/
+build/
+**/build/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Local Android SDK and environment
+local.properties
+.env
+.env.*
+!.env.example
+
+# Signing and service credentials
+*.jks
+*.keystore
+key.properties
+google-services.json
+service-account*.json
+firebase-debug.log
+
+# Operating systems
+.DS_Store
+Thumbs.db
+
