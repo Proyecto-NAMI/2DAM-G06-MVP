@@ -20,6 +20,8 @@
 
 Las versiones se fijan en el catálogo de versiones de Gradle. T-02 establece `minSdk 26`, `targetSdk 36` y `compileSdk 37`; la compatibilidad mínima deberá validarse en los dispositivos del piloto antes de cerrar RNF-07.
 
+T-02 usa el soporte Kotlin integrado en AGP 9.4.1, sin aplicar `org.jetbrains.kotlin.android`, que entra en conflicto con este soporte. Se mantiene el plugin del compilador de Compose y el objetivo JVM 17.
+
 ## 2. Arquitectura
 
 ```text
