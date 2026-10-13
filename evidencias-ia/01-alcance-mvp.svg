@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">Evidencia 1: definición del alcance del MVP</title>
+  <desc id="desc">Fragmento visual de la sesión de IA y de la decisión humana sobre el alcance de NAMI.</desc>
+  <rect width="1200" height="720" fill="#f5f3f7"/>
+  <rect x="54" y="42" width="1092" height="636" rx="28" fill="#ffffff" stroke="#c99bd0" stroke-width="4"/>
+  <text x="94" y="102" font-family="Arial, sans-serif" font-size="30" font-weight="700" fill="#37213d">Evidencia 1 · Aclaración del alcance del MVP</text>
+  <text x="94" y="145" font-family="Arial, sans-serif" font-size="18" fill="#6f5b73">Fragmento documental de la sesión Codex · 8 de octubre de 2026</text>
+  <rect x="94" y="185" width="1012" height="112" rx="18" fill="#eee6f0"/>
+  <text x="124" y="226" font-family="Arial, sans-serif" font-size="21" font-weight="700" fill="#37213d">PROMPT DEL EQUIPO</text>
+  <text x="124" y="266" font-family="Arial, sans-serif" font-size="24" fill="#37213d">“Con estos pdfs y links, haz el enunciado de la entrega del SDD (5 markdowns).”</text>
+  <rect x="94" y="327" width="1012" height="185" rx="18" fill="#f7eef7" stroke="#d8bddc" stroke-width="2"/>
+  <text x="124" y="369" font-family="Arial, sans-serif" font-size="21" font-weight="700" fill="#37213d">PROPUESTA DE LA IA</text>
+  <text x="124" y="409" font-family="Arial, sans-serif" font-size="22" fill="#37213d">
+    <tspan x="124" dy="0">MVP: cuenta, contactos, chat uno a uno, texto, notas de voz, confirmación</tspan>
+    <tspan x="124" dy="34">y accesibilidad básica. Fuera: llamadas, vídeo, fotos, biometría y</tspan>
+    <tspan x="124" dy="34">dinámicas automáticas.</tspan>
+  </text>
+  <rect x="94" y="542" width="1012" height="92" rx="18" fill="#dff3e5"/>
+  <text x="124" y="580" font-family="Arial, sans-serif" font-size="21" font-weight="700" fill="#214b2d">REVISIÓN HUMANA</text>
+  <text x="124" y="614" font-family="Arial, sans-serif" font-size="21" fill="#214b2d">Aceptado como base; quedan por confirmar Android mínimo, límite de audio y borrado.</text>
+</svg>
+

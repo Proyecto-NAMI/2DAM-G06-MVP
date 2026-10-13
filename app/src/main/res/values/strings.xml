@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">NAMI</string>
+    <string name="welcome_title">Bienvenida a NAMI</string>
+    <string name="welcome_description">Un espacio sencillo para comunicarte con las personas de confianza.</string>
+    <string name="project_status">La base de la aplicación está preparada.</string>
+</resources>
+

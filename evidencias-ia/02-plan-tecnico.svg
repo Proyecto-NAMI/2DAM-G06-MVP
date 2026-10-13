@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">Evidencia 2: propuesta del plan técnico</title>
+  <desc id="desc">Fragmento visual de la propuesta técnica de la IA y la revisión humana.</desc>
+  <rect width="1200" height="720" fill="#f4f6f8"/>
+  <rect x="54" y="42" width="1092" height="636" rx="28" fill="#ffffff" stroke="#7895b2" stroke-width="4"/>
+  <text x="94" y="102" font-family="Arial, sans-serif" font-size="30" font-weight="700" fill="#1e344a">Evidencia 2 · Propuesta del plan técnico</text>
+  <text x="94" y="145" font-family="Arial, sans-serif" font-size="18" fill="#5d7082">Fragmento documental de la sesión Codex · 8 de octubre de 2026</text>
+  <rect x="94" y="185" width="1012" height="252" rx="18" fill="#eaf1f7"/>
+  <text x="124" y="228" font-family="Arial, sans-serif" font-size="21" font-weight="700" fill="#1e344a">PROPUESTA DE LA IA</text>
+  <text x="124" y="272" font-family="Arial, sans-serif" font-size="22" fill="#1e344a">
+    <tspan x="124" dy="0">• Android nativo, Kotlin, Jetpack Compose y Material 3.</tspan>
+    <tspan x="124" dy="38">• Firebase Auth por teléfono, Firestore, Storage y DataStore.</tspan>
+    <tspan x="124" dy="38">• ViewModel, casos de uso y repositorios.</tspan>
+    <tspan x="124" dy="38">• UUID de cliente para reintentos sin mensajes duplicados.</tspan>
+  </text>
+  <rect x="94" y="468" width="1012" height="166" rx="18" fill="#fff1d7"/>
+  <text x="124" y="510" font-family="Arial, sans-serif" font-size="21" font-weight="700" fill="#644713">REVISIÓN HUMANA</text>
+  <text x="124" y="551" font-family="Arial, sans-serif" font-size="21" fill="#644713">
+    <tspan x="124" dy="0">Dirección aceptada. Pendiente validar SMS y búsqueda privada por teléfono.</tspan>
+    <tspan x="124" dy="34">Se descarta afirmar cifrado de extremo a extremo: el MVP no lo implementa.</tspan>
+  </text>
+</svg>
+
