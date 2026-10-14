@@ -20,9 +20,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import com.proyectonami.app.R
-import com.proyectonami.app.ui.theme.NamiTheme
+import com.proyectonami.app.core.designsystem.theme.NamiSpacing
+import com.proyectonami.app.core.designsystem.theme.NamiTheme
 
 @Composable
 fun NamiApp() {
@@ -43,8 +43,8 @@ private fun NamiWelcomeScreen(modifier: Modifier = Modifier) {
             .fillMaxSize()
             .windowInsetsPadding(WindowInsets.safeDrawing)
             .verticalScroll(rememberScrollState())
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp),
+            .padding(NamiSpacing.Large),
+        verticalArrangement = Arrangement.spacedBy(NamiSpacing.Large),
     ) {
         Text(
             text = stringResource(R.string.welcome_title),
@@ -62,7 +62,7 @@ private fun NamiWelcomeScreen(modifier: Modifier = Modifier) {
         ) {
             Text(
                 text = stringResource(R.string.project_status),
-                modifier = Modifier.padding(24.dp),
+                modifier = Modifier.padding(NamiSpacing.Large),
                 style = MaterialTheme.typography.titleLarge,
             )
         }
