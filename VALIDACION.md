@@ -113,6 +113,7 @@ Qué incluye:
 - Tras verificar, guarda `displayName`, `surname` y `phoneNumber` en `users/{uid}` antes de marcar la cuenta como lista. Un fallo de Firestore ofrece reintentar sin volver a verificar.
 - Las pruebas UI usan fakes y cubren registro correcto, código incorrecto con conservación del formulario, caducidad y reenvío, fallo/reintento de guardado, validación anunciable, uso con texto al 200 % y escritura del teléfono después del prefijo inicial.
 - Revisión manual en el emulador Android 16/API 36 con TalkBack habilitado: se comprobó el orden y foco de los campos, la apertura del teclado numérico y los errores visibles. La persona usuaria confirmó que los anuncios se oyen correctamente.
+- Se verificó el teléfono reservado `+15555550100` en Firebase Emulator Suite con el perfil ficticio `NamiTest Familia`; después de `am force-stop` y abrir NAMI de nuevo, la sesión se restauró y volvió a mostrarse «Cuenta creada».
 - Se revisó el marco «Creación de cuenta» en Figma: aparecen los mismos tres campos y la acción de crear cuenta. La implementación aún difiere visualmente en cabecera rosa, logo, avatar y estilo de campos; mantiene componentes Material 3 accesibles y añade el paso de verificación exigido por RF-01/T-07.
 
 | Comprobación | Resultado |
@@ -122,9 +123,9 @@ Qué incluye:
 | `gradlew.bat spotlessCheck` | Correcto |
 | `gradlew.bat lintDebug` | Correcto, sin errores |
 | `gradlew.bat assembleDebug` | Correcto |
-| `gradlew.bat connectedDebugAndroidTest` | 18 pruebas detectadas: 14 aprobadas y 4 de `FirebaseEmulatorSmokeTest` omitidas porque Firebase Emulator Suite no quedó en ejecución. Las 7 pruebas de `AccountCreationScreenTest` pasaron. |
+| `gradlew.bat connectedDebugAndroidTest` | Con Firebase Emulator Suite activo: 18 pruebas, 14 aprobadas y 4 fallidas. Pasaron las 4 pruebas de `FirebaseEmulatorSmokeTest`, `MainActivityTest` y las 6 de `NamiComponentsTest`; 3 de 7 de `AccountCreationScreenTest` pasaron. Fallaron las comprobaciones de éxito, código incorrecto, caducidad y reintento de guardado. La ejecución aislada de `AccountCreationScreenTest` reprodujo esos mismos 4 fallos. La verificación manual de sesión tras cierre forzado sí pasó. |
 
-Limitaciones: la suite Firebase debe repetirse con Emulator Suite estable para recuperar evidencia instrumentada de Auth/Firestore; el proceso Firestore terminó durante el arranque en la última ejecución. Falta probar cierre forzado y reapertura en un dispositivo. La pantalla de conversaciones real pertenece a T-15; tras guardar el perfil, T-08 muestra el estado «Cuenta creada» hasta que se implemente esa pantalla. Revisión por otra persona pendiente.
+Limitaciones: investigar los 4 fallos reproducibles en `AccountCreationScreenTest` antes de considerar completa la validación automatizada del flujo de alta. La sesión tras cierre forzado y reapertura se verificó manualmente con Firebase Emulator Suite en Android 16/API 36 usando datos ficticios. La pantalla de conversaciones real pertenece a T-15; tras guardar el perfil, T-08 muestra el estado «Cuenta creada» hasta que se implemente esa pantalla. Revisión por otra persona pendiente.
 
 # Validación de T-05 (RF-01, RF-03, RF-05, RF-06; RNF-05, RNF-06)
 
