@@ -56,7 +56,7 @@ Qué se completó sobre la configuración inicial de T-05:
 - `network_security_config` solo para `debug`: permite HTTP sin cifrar únicamente hacia `10.0.2.2`, `localhost` y `127.0.0.1`, necesario para los emuladores de Auth y Storage. `release` mantiene el bloqueo por defecto.
 - `FirebaseEmulatorSmokeTest` se omite si el Emulator Suite no responde, en vez de fallar y bloquear el resto de pruebas instrumentadas.
 - `FirebaseEmulatorSmokeTest` incluye casos representativos de denegación: una sesión cerrada no puede escribir perfiles y una tercera persona no puede leer conversaciones ni audios ajenos.
-- Comando `EMULADORES_FIREBASE` documentado en `AGENTS.md`.
+- Comando `EMULADORES_FIREBASE` documentado en `SSD/AGENTS.md`.
 - Workflow `.github/workflows/android-ci.yml` para repetir formato, compilación, lint, pruebas unitarias, cobertura y pruebas instrumentadas con Android 16/API 36 y Firebase Emulator Suite.
 
 | Comprobación | Resultado |
@@ -71,4 +71,4 @@ Qué se completó sobre la configuración inicial de T-05:
 | `FirebaseEmulatorSmokeTest` | 3 pruebas: flujo autorizado, sesión no autenticada y tercera persona; 0 fallos y 0 omitidas |
 | Revisión de Auth, Firestore y Storage en Emulator Suite UI | Correcto: cuentas anónimas efímeras, conversaciones ficticias y audios `audio/mp4` visibles; sin datos reales |
 
-Fuera de alcance y pendiente: pruebas exhaustivas de todas las operaciones y combinaciones de participantes (T-26), flujo telefónico (T-07) y tamaño o duración máximos del audio en `storage.rules` (pregunta abierta de `spec.md`). La revisión de otra persona del equipo sigue siendo necesaria antes de fusionar.
+Fuera de alcance y pendiente: pruebas exhaustivas de todas las operaciones y combinaciones de participantes (T-26), flujo telefónico (T-07) y tamaño o duración máximos del audio en `storage.rules` (pregunta abierta de `SSD/spec.md`). La revisión de otra persona del equipo sigue siendo necesaria antes de fusionar.
