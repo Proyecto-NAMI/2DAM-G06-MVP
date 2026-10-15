@@ -56,18 +56,19 @@ Ante una duda que afecte al alcance, privacidad, datos o experiencia principal, 
 
 ## 6. Comprobaciones
 
-Los comandos exactos quedan pendientes hasta crear el proyecto Gradle. Al inicializarlo, sustituir estos marcadores por comandos confirmados:
+Comandos de calidad para la configuración Gradle actual:
 
 ```text
-PENDIENTE_FORMATO=<comando Gradle de comprobación de formato>
-PENDIENTE_ANALISIS=<comando Gradle de lint/análisis estático>
-PENDIENTE_TEST_UNITARIO=<comando Gradle de pruebas unitarias>
-PENDIENTE_TEST_UI=<comando Gradle de pruebas instrumentadas>
-PENDIENTE_BUILD=<comando Gradle de compilación debug>
-PENDIENTE_EMULADORES_FIREBASE=<comando para reglas e integración>
+FORMATO_CHECK=./gradlew spotlessCheck (Windows: .\gradlew.bat spotlessCheck)
+FORMATO_APPLY=./gradlew spotlessApply (Windows: .\gradlew.bat spotlessApply)
+ANALISIS=./gradlew lintDebug (Windows: .\gradlew.bat lintDebug)
+TEST_UNITARIO=./gradlew testDebugUnitTest (Windows: .\gradlew.bat testDebugUnitTest)
+TEST_UI=./gradlew connectedDebugAndroidTest (Windows: .\gradlew.bat connectedDebugAndroidTest; requiere emulador o dispositivo conectado)
+BUILD=./gradlew assembleDebug (Windows: .\gradlew.bat assembleDebug)
+EMULADORES_FIREBASE=Pendiente de T-05: aún no hay firebase.json ni reglas de emulador.
 ```
 
-Hasta concretarlos, inspeccionar `gradlew tasks` y los archivos Gradle; no inventar comandos ni afirmar que se ejecutaron.
+CI ejecuta formato, lint, pruebas unitarias, pruebas instrumentadas en emulador y compilación debug. En Windows se usa `gradlew.bat` en lugar de `./gradlew`.
 
 ## 7. Revisión de cambios generados con IA
 

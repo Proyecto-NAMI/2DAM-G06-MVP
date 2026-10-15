@@ -22,6 +22,8 @@ Las versiones se fijan en el catálogo de versiones de Gradle. T-02 establece `m
 
 T-02 usa el soporte Kotlin integrado en AGP 9.4.1, sin aplicar `org.jetbrains.kotlin.android`, que entra en conflicto con este soporte. Se mantiene el plugin del compilador de Compose y el objetivo JVM 17.
 
+T-03 añade Spotless con ktlint para comprobar Kotlin y scripts Gradle Kotlin DSL en CI; se elige porque ofrece tareas Gradle reproducibles de comprobación y aplicación sin añadir herramientas externas al equipo. Android Lint cubre análisis estático, JUnit las pruebas locales y Compose UI Test las pruebas instrumentadas. La cobertura mínima RNF-08 se medirá cuando existan paquetes de dominio; la base T-02 todavía no contiene lógica de dominio. Firebase Emulator Suite queda fuera de estos comandos hasta T-05, que debe aportar `firebase.json` y reglas.
+
 ## 2. Arquitectura
 
 ```text
