@@ -21,6 +21,14 @@
     <string name="validation_phone_number_too_long">El teléfono tiene demasiadas cifras: máximo 15</string>
     <string name="validation_phone_number_invalid_country_code">El número internacional no puede empezar por 0</string>
 
+    <!-- Errores de autenticación telefónica (T-07, RF-01, RNF-05). -->
+    <string name="auth_phone_invalid_phone_number">El teléfono no parece correcto. Revísalo e inténtalo de nuevo.</string>
+    <string name="auth_phone_invalid_code">Ese código no es correcto. Compruébalo o solicita otro.</string>
+    <string name="auth_phone_code_expired">El código ha caducado. Solicita uno nuevo para continuar.</string>
+    <string name="auth_phone_too_many_requests">Se han solicitado demasiados códigos. Espera un momento y vuelve a intentarlo.</string>
+    <string name="auth_phone_network">No se pudo conectar. Comprueba la conexión y vuelve a intentarlo.</string>
+    <string name="auth_phone_unknown">No se pudo verificar el teléfono. Solicita otro código o inténtalo de nuevo.</string>
+
     <!-- Vistas previas del sistema de diseño (T-04). Solo datos ficticios. -->
     <string name="designsystem_preview_primary">Enviar mensaje a Carlos</string>
     <string name="designsystem_preview_secondary">Añadir contacto</string>

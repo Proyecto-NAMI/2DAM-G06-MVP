@@ -1,5 +1,6 @@
 package com.proyectonami.app.core.domain.validation
 
+import com.proyectonami.app.core.domain.auth.PhoneAuthFailure
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -25,6 +26,11 @@ class ValidationMessagesTest {
     @Test
     fun everyPhoneNumberErrorHasAMessage() {
         assertEveryErrorHasAMessage("validation_phone_number", PhoneNumberError.entries.map { it.name })
+    }
+
+    @Test
+    fun everyPhoneAuthFailureHasAMessage() {
+        assertEveryErrorHasAMessage("auth_phone", PhoneAuthFailure.entries.map { it.name })
     }
 
     @Test

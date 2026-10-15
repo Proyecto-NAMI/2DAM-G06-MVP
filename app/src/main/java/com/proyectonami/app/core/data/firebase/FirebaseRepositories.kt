@@ -1,14 +1,32 @@
 package com.proyectonami.app.core.data.firebase
 
+import android.app.Activity
 import android.content.Context
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageReference
+import com.proyectonami.app.core.domain.auth.AuthSession
+import com.proyectonami.app.core.domain.auth.PhoneCodeVerificationResult
+import com.proyectonami.app.core.domain.auth.PhoneVerificationChallenge
+import com.proyectonami.app.core.domain.auth.PhoneVerificationRequestResult
+import kotlinx.coroutines.flow.Flow
 
 interface AuthRepository {
     val currentUserId: String?
+
+    fun observeSession(): Flow<AuthSession>
+
+    suspend fun requestPhoneCode(
+        activity: Activity,
+        phoneNumber: String,
+        previousChallenge: PhoneVerificationChallenge? = null,
+    ): PhoneVerificationRequestResult
+
+    suspend fun verifyPhoneCode(
+        challenge: PhoneVerificationChallenge,
+        code: String,
+    ): PhoneCodeVerificationResult
 
     fun signOut()
 }
@@ -34,15 +52,6 @@ interface AudioStorageRepository {
         conversationId: String,
         messageId: String,
     ): StorageReference
-}
-
-class FirebaseAuthRepository(
-    private val auth: FirebaseAuth,
-) : AuthRepository {
-    override val currentUserId: String?
-        get() = auth.currentUser?.uid
-
-    override fun signOut() = auth.signOut()
 }
 
 class FirebaseFirestoreRepository(
@@ -85,7 +94,7 @@ class FirebaseRepositoryContainer(
         ): FirebaseRepositoryContainer {
             val services = FirebaseServicesFactory.create(context, environment)
             return FirebaseRepositoryContainer(
-                authRepository = FirebaseAuthRepository(services.auth),
+                authRepository = FirebasePhoneAuthRepository(services.auth),
                 firestoreRepository = FirebaseFirestoreRepository(services.firestore),
                 audioStorageRepository = FirebaseAudioStorageRepository(services.storage),
             )
