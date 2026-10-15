@@ -28,11 +28,11 @@ No se debe usar un identificador de proyecto real con los emuladores. La clase `
    .\gradlew.bat connectedDebugAndroidTest
    ```
 
-La prueba `FirebaseEmulatorSmokeTest` crea exclusivamente cuentas anónimas efímeras, un perfil y una conversación ficticios y un pequeño contenido de audio ficticio. Valida conjuntamente Authentication, Firestore, Storage y casos representativos de las reglas: una sesión anónima puede operar sobre sus recursos, una sesión cerrada no puede escribir un perfil y una tercera persona no puede leer la conversación ni su audio. Si el Emulator Suite no responde en el host y los puertos configurados, la prueba se omite (no falla) para no bloquear el resto de pruebas instrumentadas. La verificación telefónica emulada se añadirá con el flujo de T-07; el emulador no envía SMS reales.
+La prueba `FirebaseEmulatorSmokeTest` crea exclusivamente cuentas anónimas efímeras, un perfil y una conversación ficticios y un pequeño contenido de audio ficticio. Valida conjuntamente Authentication, Firestore, Storage y casos representativos de las reglas: una sesión anónima puede operar sobre sus recursos, una sesión cerrada no puede escribir un perfil y una tercera persona no puede leer la conversación ni su audio. También verifica el teléfono ficticio reservado `+15555550100`: solicita el código al Authentication Emulator, comprueba que un código incorrecto se puede recuperar solicitando otro y completa la verificación. El código se obtiene en memoria desde `http://<host>:9099/emulator/v1/projects/demo-nami/verificationCodes`; no se escribe en logs ni en archivos. La prueba comprueba además que una nueva instancia del repositorio observa la sesión autenticada. Si el Emulator Suite no responde en el host y los puertos configurados, la prueba se omite (no falla) para no bloquear el resto de pruebas instrumentadas. El emulador no envía SMS reales.
 
 ## Inyección
 
-`FirebaseRepositoryContainer` construye `AuthRepository`, `FirestoreRepository` y `AudioStorageRepository` a partir de `FirebaseServices`. Las pantallas y casos de uso futuros recibirán estas interfaces; no accederán directamente a Firebase.
+`FirebaseRepositoryContainer` construye `AuthRepository`, `FirestoreRepository` y `AudioStorageRepository` a partir de `FirebaseServices`. `AuthRepository` expone la sesión como un flujo, solicita y reenvía códigos, y traduce fallos de Firebase a motivos estables para que la presentación muestre mensajes comprensibles. `PhoneAuthViewModel` conserva nombre, apellidos y teléfono entre errores y reenvíos, y limpia el campo de código cuando se envía uno nuevo. Firebase Auth conserva la sesión local entre aperturas de la aplicación; la prueba instrumentada confirma que el repositorio puede volver a observarla tras verificarse. La comprobación manual tras forzar el cierre y abrir de nuevo la aplicación queda pendiente para T-08, cuando exista navegación basada en la sesión. Las pantallas y casos de uso reciben estas interfaces; no acceden directamente a Firebase.
 
 ## Seguridad y privacidad
 
@@ -43,4 +43,3 @@ La prueba `FirebaseEmulatorSmokeTest` crea exclusivamente cuentas anónimas efí
 - Los valores del ejemplo son ficticios y no conceden acceso a recursos reales.
 
 Las pruebas exhaustivas de todas las operaciones y combinaciones de participantes corresponden a T-26 y siguen pendientes.
-

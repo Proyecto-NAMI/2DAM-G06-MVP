@@ -80,6 +80,28 @@ Nota de entorno: las comprobaciones se ejecutaron localmente en Windows con `gra
 
 Informes locales: `app/build/reports/tests/testDebugUnitTest/index.html` y `app/build/reports/lint-results-debug.html`.
 
+# Validación de T-07 (RF-01, RNF-05)
+
+Fecha: 15 de octubre de 2026. Verificación telefónica y sesión con Firebase Authentication.
+
+Qué incluye:
+
+- `FirebasePhoneAuthRepository` solicita y reenvía códigos usando el SDK de Firebase, verifica el código y expone los cambios de sesión como un flujo.
+- Los fallos de número, código incorrecto, código caducado, límite de solicitudes y red se traducen a motivos estables con recursos de mensaje; un código incorrecto no descarta el reto ni el token de reenvío.
+- `PhoneAuthViewModel` expone un `StateFlow` con los campos del formulario, el reto y los estados de carga/error. Mantiene nombre, apellidos y teléfono ante un código incorrecto y un reenvío; limpia el código anterior cuando llega uno nuevo. La sesión empieza en `Restoring` y se actualiza con el estado persistido de Firebase.
+- El Authentication Emulator verifica el número ficticio reservado `+15555550100`. La prueba instrumentada introduce un código incorrecto, solicita otro, verifica el nuevo y confirma que una nueva instancia del repositorio recupera la sesión.
+- T-08 conectará el estado con la pantalla de creación de cuenta. La comprobación manual tras forzar el cierre y volver a abrir la aplicación queda pendiente para ese flujo.
+
+| Comprobación | Resultado |
+|---|---|
+| `gradlew.bat testDebugUnitTest` | 43 pruebas, 0 fallos |
+| `gradlew.bat koverVerifyDebug` | Correcto; cumple el 70 % por paquete de dominio |
+| `gradlew.bat spotlessCheck` | Correcto |
+| `gradlew.bat lintDebug` | Correcto, sin errores |
+| `gradlew.bat assembleDebug` | Correcto |
+| `gradlew.bat :app:compileDebugAndroidTestKotlin` | Correcto |
+| `gradlew.bat connectedDebugAndroidTest` | 11 pruebas en Android 16/API 36 con Firebase Emulator Suite, 0 fallos y 0 omitidas |
+
 # Validación de T-05 (RF-01, RF-03, RF-05, RF-06; RNF-05, RNF-06)
 
 Rama: `yang_dev`, con `main` integrada (incluye T-03). Cambios de cierre generados con ayuda de IA (Claude) y pendientes de revisión humana.
