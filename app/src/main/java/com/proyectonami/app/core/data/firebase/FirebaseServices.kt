@@ -23,18 +23,20 @@ object FirebaseServicesFactory {
         context: Context,
         environment: FirebaseEnvironment,
     ): FirebaseServices {
-        val app = FirebaseApp.getApps(context).firstOrNull { it.name == APP_NAME }
-            ?: FirebaseApp.initializeApp(context, environment.toFirebaseOptions(), APP_NAME)
+        val app =
+            FirebaseApp.getApps(context).firstOrNull { it.name == APP_NAME }
+                ?: FirebaseApp.initializeApp(context, environment.toFirebaseOptions(), APP_NAME)
 
         require(app.options.projectId == environment.projectId) {
             "La aplicación Firebase existente usa otro projectId"
         }
 
-        val services = FirebaseServices(
-            auth = FirebaseAuth.getInstance(app),
-            firestore = FirebaseFirestore.getInstance(app),
-            storage = FirebaseStorage.getInstance(app),
-        )
+        val services =
+            FirebaseServices(
+                auth = FirebaseAuth.getInstance(app),
+                firestore = FirebaseFirestore.getInstance(app),
+                storage = FirebaseStorage.getInstance(app),
+            )
 
         if (environment.useEmulators && configuredEmulatorApps.add(app.name)) {
             services.auth.useEmulator(
@@ -46,7 +48,8 @@ object FirebaseServicesFactory {
                 environment.firestoreEmulatorPort,
             )
             services.firestore.firestoreSettings =
-                FirebaseFirestoreSettings.Builder()
+                FirebaseFirestoreSettings
+                    .Builder()
                     .setLocalCacheSettings(MemoryCacheSettings.newBuilder().build())
                     .build()
             services.storage.useEmulator(
@@ -58,4 +61,3 @@ object FirebaseServicesFactory {
         return services
     }
 }
-

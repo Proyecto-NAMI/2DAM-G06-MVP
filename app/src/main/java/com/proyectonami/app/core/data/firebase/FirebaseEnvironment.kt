@@ -31,7 +31,8 @@ data class FirebaseEnvironment(
     }
 
     fun toFirebaseOptions(): FirebaseOptions =
-        FirebaseOptions.Builder()
+        FirebaseOptions
+            .Builder()
             .setProjectId(projectId)
             .setApplicationId(applicationId)
             .setApiKey(apiKey)
@@ -53,4 +54,3 @@ data class FirebaseEnvironment(
             )
     }
 }
-

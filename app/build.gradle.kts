@@ -1,23 +1,28 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Properties
 
-val firebaseLocalProperties = Properties().apply {
-    val configFile = rootProject.file("firebase.local.properties")
-    if (configFile.exists()) {
-        configFile.inputStream().use(::load)
+val firebaseLocalProperties =
+    Properties().apply {
+        val configFile = rootProject.file("firebase.local.properties")
+        if (configFile.exists()) {
+            configFile.inputStream().use(::load)
+        }
     }
-}
 
-fun firebaseProperty(name: String, defaultValue: String = ""): String =
+fun firebaseProperty(
+    name: String,
+    defaultValue: String = "",
+): String =
     providers.gradleProperty(name).orNull
         ?: firebaseLocalProperties.getProperty(name)
         ?: defaultValue
 
-fun buildConfigString(value: String): String =
-    "\"${value.replace("\\", "\\\\").replace("\"", "\\\"")}\""
+fun buildConfigString(value: String): String = "\"${value.replace("\\", "\\\\").replace("\"", "\\\"")}\""
 
-fun firebasePort(name: String, defaultValue: Int): Int =
-    firebaseProperty(name, defaultValue.toString()).toIntOrNull() ?: defaultValue
+fun firebasePort(
+    name: String,
+    defaultValue: Int,
+): Int = firebaseProperty(name, defaultValue.toString()).toIntOrNull() ?: defaultValue
 
 plugins {
     alias(libs.plugins.android.application)
@@ -190,5 +195,3 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext.junit)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
-
-

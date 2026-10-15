@@ -16,15 +16,24 @@ interface AuthRepository {
 interface FirestoreRepository {
     fun userDocument(userId: String): DocumentReference
 
-    fun contactDocument(userId: String, contactId: String): DocumentReference
+    fun contactDocument(
+        userId: String,
+        contactId: String,
+    ): DocumentReference
 
     fun conversationDocument(conversationId: String): DocumentReference
 
-    fun messageDocument(conversationId: String, messageId: String): DocumentReference
+    fun messageDocument(
+        conversationId: String,
+        messageId: String,
+    ): DocumentReference
 }
 
 interface AudioStorageRepository {
-    fun audioReference(conversationId: String, messageId: String): StorageReference
+    fun audioReference(
+        conversationId: String,
+        messageId: String,
+    ): StorageReference
 }
 
 class FirebaseAuthRepository(
@@ -39,24 +48,29 @@ class FirebaseAuthRepository(
 class FirebaseFirestoreRepository(
     private val firestore: FirebaseFirestore,
 ) : FirestoreRepository {
-    override fun userDocument(userId: String): DocumentReference =
-        firestore.document(FirebasePaths.user(userId))
+    override fun userDocument(userId: String): DocumentReference = firestore.document(FirebasePaths.user(userId))
 
-    override fun contactDocument(userId: String, contactId: String): DocumentReference =
-        firestore.document(FirebasePaths.contact(userId, contactId))
+    override fun contactDocument(
+        userId: String,
+        contactId: String,
+    ): DocumentReference = firestore.document(FirebasePaths.contact(userId, contactId))
 
     override fun conversationDocument(conversationId: String): DocumentReference =
         firestore.document(FirebasePaths.conversation(conversationId))
 
-    override fun messageDocument(conversationId: String, messageId: String): DocumentReference =
-        firestore.document(FirebasePaths.message(conversationId, messageId))
+    override fun messageDocument(
+        conversationId: String,
+        messageId: String,
+    ): DocumentReference = firestore.document(FirebasePaths.message(conversationId, messageId))
 }
 
 class FirebaseAudioStorageRepository(
     private val storage: FirebaseStorage,
 ) : AudioStorageRepository {
-    override fun audioReference(conversationId: String, messageId: String): StorageReference =
-        storage.reference.child(FirebasePaths.audio(conversationId, messageId))
+    override fun audioReference(
+        conversationId: String,
+        messageId: String,
+    ): StorageReference = storage.reference.child(FirebasePaths.audio(conversationId, messageId))
 }
 
 class FirebaseRepositoryContainer(
@@ -78,4 +92,3 @@ class FirebaseRepositoryContainer(
         }
     }
 }
-

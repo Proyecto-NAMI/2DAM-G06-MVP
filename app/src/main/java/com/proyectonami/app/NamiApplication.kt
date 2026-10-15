@@ -19,4 +19,3 @@ class NamiApplication : Application() {
         }
     }
 }
-

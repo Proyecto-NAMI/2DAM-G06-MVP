@@ -42,4 +42,3 @@ class FirebaseEnvironmentTest {
             storageEmulatorPort = 9199,
         )
 }
-

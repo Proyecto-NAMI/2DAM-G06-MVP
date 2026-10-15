@@ -7,12 +7,12 @@ import com.google.firebase.storage.StorageMetadata
 import com.proyectonami.app.core.data.firebase.FirebaseEnvironment
 import com.proyectonami.app.core.data.firebase.FirebaseRepositoryContainer
 import com.proyectonami.app.core.data.firebase.FirebaseServicesFactory
-import java.util.concurrent.TimeUnit
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.concurrent.TimeUnit
 
 @RunWith(AndroidJUnit4::class)
 class FirebaseEmulatorSmokeTest {
@@ -30,11 +30,12 @@ class FirebaseEmulatorSmokeTest {
     fun authFirestoreAndStorageWorkWithFictitiousData() {
         assumeTrue(environment.useEmulators)
 
-        val authResult = Tasks.await(
-            services.auth.signInAnonymously(),
-            TIMEOUT_SECONDS,
-            TimeUnit.SECONDS,
-        )
+        val authResult =
+            Tasks.await(
+                services.auth.signInAnonymously(),
+                TIMEOUT_SECONDS,
+                TimeUnit.SECONDS,
+            )
         val userId = requireNotNull(authResult.user?.uid)
         val conversationId = "conversation-$userId"
         val messageId = "message-1"
@@ -57,13 +58,16 @@ class FirebaseEmulatorSmokeTest {
             TimeUnit.SECONDS,
         )
 
-        val metadata = StorageMetadata.Builder()
-            .setContentType("audio/mp4")
-            .build()
-        val audioReference = repositories.audioStorageRepository.audioReference(
-            conversationId = conversationId,
-            messageId = messageId,
-        )
+        val metadata =
+            StorageMetadata
+                .Builder()
+                .setContentType("audio/mp4")
+                .build()
+        val audioReference =
+            repositories.audioStorageRepository.audioReference(
+                conversationId = conversationId,
+                messageId = messageId,
+            )
         Tasks.await(
             audioReference.putBytes("audio-ficticio".encodeToByteArray(), metadata),
             TIMEOUT_SECONDS,
@@ -81,4 +85,3 @@ class FirebaseEmulatorSmokeTest {
         private const val TIMEOUT_SECONDS = 20L
     }
 }
-
