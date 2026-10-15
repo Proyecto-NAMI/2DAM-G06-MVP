@@ -22,6 +22,8 @@ Las versiones se fijan en el catálogo de versiones de Gradle. T-02 establece `m
 
 T-02 usa el soporte Kotlin integrado en AGP 9.4.1, sin aplicar `org.jetbrains.kotlin.android`, que entra en conflicto con este soporte. Se mantiene el plugin del compilador de Compose y el objetivo JVM 17.
 
+T-03 añade Spotless con ktlint para comprobar Kotlin y scripts Gradle Kotlin DSL en CI, y Kover para generar y verificar cobertura de pruebas en código Kotlin/Android. Se justifican porque proporcionan tareas Gradle reproducibles y permiten imponer el 70 % de líneas en cada paquete de dominio (RNF-08); al inicio, el filtro no encuentra paquetes de dominio en T-02 y empezará a verificar cuando se incorporen. Kover recopila cobertura de pruebas unitarias JVM, no de pruebas instrumentadas ejecutadas en el dispositivo. Android Lint cubre análisis estático, JUnit las pruebas locales y Compose UI Test las pruebas instrumentadas. Firebase Emulator Suite queda fuera de estos comandos hasta T-05, que debe aportar `firebase.json` y reglas.
+
 ## 2. Arquitectura
 
 ```text
