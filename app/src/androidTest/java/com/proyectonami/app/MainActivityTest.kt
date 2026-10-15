@@ -14,9 +14,9 @@ class MainActivityTest {
     val composeRule = createAndroidComposeRule<MainActivity>()
 
     @Test
-    fun welcomeScreenIsVisible() {
+    fun accountCreationScreenIsVisible() {
         composeRule
-            .onNodeWithText("Bienvenida a NAMI")
+            .onNodeWithText("Crear cuenta")
             .assertIsDisplayed()
     }
 }

@@ -109,7 +109,11 @@ class FirebaseEmulatorSmokeTest {
             repositories.authRepository.signOut()
             val phoneNumber = "+15555550100"
             val activityReference = AtomicReference<Activity>()
-            val viewModel = PhoneAuthViewModel(repositories.authRepository)
+            val viewModel =
+                PhoneAuthViewModel(
+                    authRepository = repositories.authRepository,
+                    accountProfileRepository = repositories.accountProfileRepository,
+                )
 
             ActivityScenario.launch(MainActivity::class.java).use { scenario ->
                 scenario.onActivity(activityReference::set)
@@ -154,7 +158,7 @@ class FirebaseEmulatorSmokeTest {
                 viewModel.verifyCode()
                 val verifiedState =
                     withTimeout(TIMEOUT_SECONDS * 1_000) {
-                        viewModel.uiState.first { it.session is AuthSession.SignedIn }
+                        viewModel.uiState.first { it.isAccountReady }
                     }
                 val userId = (verifiedState.session as AuthSession.SignedIn).userId
 
@@ -165,6 +169,15 @@ class FirebaseEmulatorSmokeTest {
                     withTimeout(5_000) { recreatedRepository.observeSession().first() },
                 )
                 assertEquals(phoneNumber, services.auth.currentUser?.phoneNumber)
+                val profile =
+                    Tasks.await(
+                        repositories.firestoreRepository.userDocument(userId).get(),
+                        TIMEOUT_SECONDS,
+                        TimeUnit.SECONDS,
+                    )
+                assertEquals("Persona", profile.getString("displayName"))
+                assertEquals("Ficticia", profile.getString("surname"))
+                assertEquals(phoneNumber, profile.getString("phoneNumber"))
             }
         }
 

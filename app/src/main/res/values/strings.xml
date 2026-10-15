@@ -1,9 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">NAMI</string>
-    <string name="welcome_title">Bienvenida a NAMI</string>
-    <string name="welcome_description">Un espacio sencillo para comunicarte con las personas de confianza.</string>
-    <string name="project_status">La base de la aplicación está preparada.</string>
+    <string name="account_restoring_session">Comprobando tu sesión…</string>
+    <string name="account_create_title">Crear cuenta</string>
+    <string name="account_create_description">Escribe tus datos para recibir un código de verificación en tu teléfono.</string>
+    <string name="account_name_label">Nombre</string>
+    <string name="account_surname_label">Apellidos</string>
+    <string name="account_phone_label">Teléfono</string>
+    <string name="account_phone_supporting">Se muestra +34 por defecto. Puedes cambiar el prefijo internacional.</string>
+    <string name="account_request_code">Enviar código de verificación</string>
+    <string name="account_requesting_code">Enviando el código…</string>
+    <string name="account_code_sent">Te hemos enviado un código. Escríbelo aquí para verificar tu teléfono.</string>
+    <string name="account_code_label">Código de verificación</string>
+    <string name="account_verify_code">Verificar teléfono</string>
+    <string name="account_verifying_code">Verificando el teléfono…</string>
+    <string name="account_resend_code">Solicitar otro código</string>
+    <string name="account_requesting_another_code">Solicitando otro código…</string>
+    <string name="account_saving_profile">Guardando tu cuenta…</string>
+    <string name="account_profile_save_failed">El teléfono está verificado, pero no se pudo guardar tu cuenta. Comprueba la conexión e inténtalo de nuevo.</string>
+    <string name="account_retry_profile_save">Reintentar guardado</string>
+    <string name="account_created_title">Cuenta creada</string>
+    <string name="account_created_description">Tu cuenta de NAMI está lista.</string>
 
     <!--
       Mensajes de validación de cuenta y contactos (T-06, RF-01).

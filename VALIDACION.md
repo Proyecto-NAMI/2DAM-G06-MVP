@@ -54,9 +54,9 @@ Qué incluye:
 - `core.domain.validation`: `PersonNameValidator` y `PhoneNumberValidator`, con Kotlin puro (sin Android ni Firebase) para poder probarlos en la JVM y reutilizarlos en cuenta y contactos.
 - Nombres y apellidos: recorte, espacios repetidos reducidos a uno, entre 1 y 50 caracteres Unicode completos, letras de cualquier alfabeto con marcas de acento, espacios, guion, apóstrofo y punto. Se rechazan cifras, emojis y símbolos, y los separadores no pueden abrir, cerrar ni repetirse.
 - Teléfono: normalización a E.164 con `+` opcional, prefijo de país opcional (`defaultCallingCode`), entre 7 y 15 cifras y primera cifra distinta de 0. Admite espacios y `+ - ( ) .` y convierte cifras de otros alfabetos.
-- Los validadores devuelven un motivo (`PersonNameError`, `PhoneNumberError`) en lugar de texto, y `strings.xml` incluye un mensaje comprensible por motivo con la convención `validation_person_name_<motivo>` y `validation_phone_number_<motivo>`. La pantalla que resuelve esos textos llega en T-08.
+- Los validadores devuelven un motivo (`PersonNameError`, `PhoneNumberError`) en lugar de texto, y `strings.xml` incluye un mensaje comprensible por motivo con la convención `validation_person_name_<motivo>` y `validation_phone_number_<motivo>`. T-08 los muestra bajo el campo correspondiente y los expone como errores de accesibilidad.
 - `app/build.gradle.kts`: el filtro de Kover de T-03 (RNF-08) se amplía a `core.domain.*`, porque solo cubría `feature.*.domain` y el primer paquete de dominio del proyecto es este.
-- `SSD/plan.md` documenta el paquete `core.domain` y la decisión de no añadir una librería de numeración telefónica; `SSD/spec.md` añade la duda pendiente sobre prefijo internacional.
+- `SSD/plan.md` documenta el paquete `core.domain` y la decisión de no añadir una librería de numeración telefónica; `SSD/spec.md` registra `+34` editable como prefijo inicial de la creación de cuenta.
 - `defaultCallingCode` solo acepta de una a tres cifras (o un `+` inicial), rechaza otros caracteres y normaliza las cifras Unicode a ASCII antes de generar E.164.
 - Los mensajes cubren también separadores repetidos y explican correctamente que se rechaza el cero inicial.
 
@@ -73,7 +73,7 @@ Qué incluye:
 ## Limitaciones
 
 - No se validan prefijos ni longitudes por país: haría falta una tabla internacional o `libphonenumber`, que es una dependencia nueva y exige justificación en `plan.md`.
-- Queda en `SSD/spec.md` (punto 7) la decisión de si el prefijo internacional es obligatorio u opcional; T-08 debe elegir.
+- La pantalla de cuenta incluye el prefijo inicial `+34`, que se puede sustituir por otro prefijo internacional.
 - Los mensajes todavía no se han visto en pantalla: T-06 solo garantiza que cada motivo tiene texto, con `ValidationMessagesTest`.
 
 Nota de entorno: las comprobaciones se ejecutaron localmente en Windows con `gradlew.bat`; se indicó el SDK Android instalado mediante `ANDROID_HOME` y `ANDROID_SDK_ROOT`.
@@ -90,7 +90,7 @@ Qué incluye:
 - Los fallos de número, código incorrecto, código caducado, límite de solicitudes y red se traducen a motivos estables con recursos de mensaje; un código incorrecto no descarta el reto ni el token de reenvío.
 - `PhoneAuthViewModel` expone un `StateFlow` con los campos del formulario, el reto y los estados de carga/error. Mantiene nombre, apellidos y teléfono ante un código incorrecto y un reenvío; limpia el código anterior cuando llega uno nuevo. La sesión empieza en `Restoring` y se actualiza con el estado persistido de Firebase.
 - El Authentication Emulator verifica el número ficticio reservado `+15555550100`. La prueba instrumentada introduce un código incorrecto, solicita otro, verifica el nuevo y confirma que una nueva instancia del repositorio recupera la sesión.
-- T-08 conectará el estado con la pantalla de creación de cuenta. La comprobación manual tras forzar el cierre y volver a abrir la aplicación queda pendiente para ese flujo.
+- T-08 conecta el estado con la pantalla de creación de cuenta. La comprobación manual tras forzar el cierre y volver a abrir la aplicación sigue pendiente.
 
 | Comprobación | Resultado |
 |---|---|
@@ -101,6 +101,31 @@ Qué incluye:
 | `gradlew.bat assembleDebug` | Correcto |
 | `gradlew.bat :app:compileDebugAndroidTestKotlin` | Correcto |
 | `gradlew.bat connectedDebugAndroidTest` | 11 pruebas en Android 16/API 36 con Firebase Emulator Suite, 0 fallos y 0 omitidas |
+
+# Validación de T-08 (RF-01, RNF-01)
+
+Fecha: 15 de octubre de 2026. Pantalla Compose de creación de cuenta, verificación telefónica y guardado del perfil.
+
+Qué incluye:
+
+- La app restaura primero la sesión Firebase y presenta el formulario accesible cuando no hay sesión. Incluye nombre, apellidos y teléfono con `+34` editable; valida con los validadores T-06 y utiliza acciones de teclado y desplazamiento vertical.
+- Los errores de formulario y autenticación se muestran en pantalla y se exponen a TalkBack; el código incorrecto y el caducado conservan los datos y permiten reenvío.
+- Tras verificar, guarda `displayName`, `surname` y `phoneNumber` en `users/{uid}` antes de marcar la cuenta como lista. Un fallo de Firestore ofrece reintentar sin volver a verificar.
+- Las pruebas UI usan fakes y cubren registro correcto, código incorrecto con conservación del formulario, caducidad y reenvío, fallo/reintento de guardado, validación anunciable, uso con texto al 200 % y escritura del teléfono después del prefijo inicial.
+- Revisión manual en el emulador Android 16/API 36 con TalkBack habilitado: se comprobó el orden y foco de los campos, la apertura del teclado numérico y los errores visibles. La persona usuaria confirmó que los anuncios se oyen correctamente.
+- Se verificó el teléfono reservado `+15555550100` en Firebase Emulator Suite con el perfil ficticio `NamiTest Familia`; después de `am force-stop` y abrir NAMI de nuevo, la sesión se restauró y volvió a mostrarse «Cuenta creada».
+- Se revisó el marco «Creación de cuenta» en Figma: aparecen los mismos tres campos y la acción de crear cuenta. La implementación aún difiere visualmente en cabecera rosa, logo, avatar y estilo de campos; mantiene componentes Material 3 accesibles y añade el paso de verificación exigido por RF-01/T-07.
+
+| Comprobación | Resultado |
+|---|---|
+| `gradlew.bat testDebugUnitTest` | 43 pruebas, 0 fallos |
+| `gradlew.bat koverVerifyDebug` | Correcto; cumple el 70 % por paquete de dominio |
+| `gradlew.bat spotlessCheck` | Correcto |
+| `gradlew.bat lintDebug` | Correcto, sin errores |
+| `gradlew.bat assembleDebug` | Correcto |
+| `gradlew.bat connectedDebugAndroidTest` | Correcto en Android 16/API 36 con Firebase Emulator Suite activo: 18 pruebas, 0 fallos y 0 omitidas. Pasaron las 7 de `AccountCreationScreenTest`, las 4 de `FirebaseEmulatorSmokeTest`, `MainActivityTest` y las 6 de `NamiComponentsTest`. |
+
+Limitaciones: la sesión tras cierre forzado y reapertura se verificó manualmente con Firebase Emulator Suite en Android 16/API 36 usando datos ficticios. La pantalla de conversaciones real pertenece a T-15; tras guardar el perfil, T-08 muestra el estado «Cuenta creada» hasta que se implemente esa pantalla. Revisión por otra persona pendiente.
 
 # Validación de T-05 (RF-01, RF-03, RF-05, RF-06; RNF-05, RNF-06)
 

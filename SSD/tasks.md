@@ -24,7 +24,7 @@ Además del criterio específico, toda tarea debe cumplir `constitution.md`, inc
 |---|---|---|---|---|---|
 | T-06 | RF-01 | Implementar validación de nombre, apellidos y teléfono | T-02 | G06-xx (por confirmar) | Entradas válidas e inválidas tienen pruebas y mensajes comprensibles. |
 | T-07 | RF-01, RNF-05 | Implementar autenticación telefónica y sesión | T-05, T-06 | G06-xx (por confirmar) | Un número ficticio puede verificar, reiniciar y conservar sesión; fallo y caducidad permiten reintento. |
-| T-08 | RF-01 | Construir creación de cuenta accesible | T-04, T-06, T-07 | G06-xx (por confirmar) | Reproduce el flujo de Figma, anuncia errores y pasa pruebas UI de éxito y fallo. |
+| T-08 | RF-01, RNF-01 | Construir creación de cuenta accesible | T-04, T-06, T-07 | G06-xx (por confirmar) | Reproduce el flujo de cuenta, persiste el perfil tras verificar, anuncia errores y pasa pruebas UI de éxito, fallo y caducidad, incluido texto al 200 %. |
 | T-09 | RF-02 | Implementar consulta y edición de perfil | T-07, T-04 | G06-xx (por confirmar) | Nombre y avatar opcional se muestran y actualizan; cambiar teléfono exige nueva verificación. |
 | T-10 | RF-10 | Implementar cierre de sesión | T-07 | G06-xx (por confirmar) | Tras confirmar se limpia el estado sensible, se detiene multimedia y se bloquean pantallas privadas. |
 
