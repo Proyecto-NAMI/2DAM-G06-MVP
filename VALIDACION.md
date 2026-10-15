@@ -123,9 +123,9 @@ Qué incluye:
 | `gradlew.bat spotlessCheck` | Correcto |
 | `gradlew.bat lintDebug` | Correcto, sin errores |
 | `gradlew.bat assembleDebug` | Correcto |
-| `gradlew.bat connectedDebugAndroidTest` | Con Firebase Emulator Suite activo: 18 pruebas, 14 aprobadas y 4 fallidas. Pasaron las 4 pruebas de `FirebaseEmulatorSmokeTest`, `MainActivityTest` y las 6 de `NamiComponentsTest`; 3 de 7 de `AccountCreationScreenTest` pasaron. Fallaron las comprobaciones de éxito, código incorrecto, caducidad y reintento de guardado. La ejecución aislada de `AccountCreationScreenTest` reprodujo esos mismos 4 fallos. La verificación manual de sesión tras cierre forzado sí pasó. |
+| `gradlew.bat connectedDebugAndroidTest` | Correcto en Android 16/API 36 con Firebase Emulator Suite activo: 18 pruebas, 0 fallos y 0 omitidas. Pasaron las 7 de `AccountCreationScreenTest`, las 4 de `FirebaseEmulatorSmokeTest`, `MainActivityTest` y las 6 de `NamiComponentsTest`. |
 
-Limitaciones: investigar los 4 fallos reproducibles en `AccountCreationScreenTest` antes de considerar completa la validación automatizada del flujo de alta. La sesión tras cierre forzado y reapertura se verificó manualmente con Firebase Emulator Suite en Android 16/API 36 usando datos ficticios. La pantalla de conversaciones real pertenece a T-15; tras guardar el perfil, T-08 muestra el estado «Cuenta creada» hasta que se implemente esa pantalla. Revisión por otra persona pendiente.
+Limitaciones: la sesión tras cierre forzado y reapertura se verificó manualmente con Firebase Emulator Suite en Android 16/API 36 usando datos ficticios. La pantalla de conversaciones real pertenece a T-15; tras guardar el perfil, T-08 muestra el estado «Cuenta creada» hasta que se implemente esa pantalla. Revisión por otra persona pendiente.
 
 # Validación de T-05 (RF-01, RF-03, RF-05, RF-06; RNF-05, RNF-06)
 

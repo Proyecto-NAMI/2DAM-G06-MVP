@@ -86,7 +86,10 @@ class AccountCreationScreenTest {
             .onNodeWithText("Te hemos enviado un código. Escríbelo aquí para verificar tu teléfono.")
             .assertIsDisplayed()
         enterCode()
-        composeRule.onNodeWithText("Verificar teléfono").performClick()
+        composeRule
+            .onNodeWithText("Verificar teléfono")
+            .performScrollTo()
+            .performClick()
         composeRule.onNodeWithText("Cuenta creada").assertIsDisplayed()
 
         assertEquals("+15555550100", authRepository.requestedPhoneNumber)
@@ -108,7 +111,10 @@ class AccountCreationScreenTest {
         fillAccountForm()
         composeRule.onNodeWithText("Enviar código de verificación").performClick()
         enterCode()
-        composeRule.onNodeWithText("Verificar teléfono").performClick()
+        composeRule
+            .onNodeWithText("Verificar teléfono")
+            .performScrollTo()
+            .performClick()
 
         assertEquals(PhoneAuthFailure.INVALID_CODE, viewModel.uiState.value.failure)
         composeRule
@@ -129,7 +135,10 @@ class AccountCreationScreenTest {
         fillAccountForm()
         composeRule.onNodeWithText("Enviar código de verificación").performClick()
         enterCode()
-        composeRule.onNodeWithText("Verificar teléfono").performClick()
+        composeRule
+            .onNodeWithText("Verificar teléfono")
+            .performScrollTo()
+            .performClick()
         composeRule
             .onNodeWithText("El código ha caducado. Solicita uno nuevo para continuar.")
             .performScrollTo()
@@ -157,7 +166,10 @@ class AccountCreationScreenTest {
         fillAccountForm()
         composeRule.onNodeWithText("Enviar código de verificación").performClick()
         enterCode()
-        composeRule.onNodeWithText("Verificar teléfono").performClick()
+        composeRule
+            .onNodeWithText("Verificar teléfono")
+            .performScrollTo()
+            .performClick()
         composeRule
             .onNodeWithText(
                 "El teléfono está verificado, pero no se pudo guardar tu cuenta. Comprueba la conexión e inténtalo de nuevo.",
