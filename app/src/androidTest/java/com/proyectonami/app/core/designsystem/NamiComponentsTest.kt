@@ -36,7 +36,6 @@ import org.junit.runner.RunWith
 /** T-04 / RNF-01: tamaño táctil, texto al 200 % y semántica de los componentes base. */
 @RunWith(AndroidJUnit4::class)
 class NamiComponentsTest {
-
     @get:Rule
     val composeRule = createComposeRule()
 
@@ -67,7 +66,8 @@ class NamiComponentsTest {
             )
         }
 
-        composeRule.onNodeWithText("Enviar")
+        composeRule
+            .onNodeWithText("Enviar")
             .assertIsDisplayed()
             .assertHeightIsAtLeast(48.dp)
             .assertWidthIsAtLeast(48.dp)
@@ -86,7 +86,8 @@ class NamiComponentsTest {
             )
         }
 
-        composeRule.onNodeWithText("Añadir")
+        composeRule
+            .onNodeWithText("Añadir")
             .assertIsDisplayed()
             .assertHeightIsAtLeast(48.dp)
             .assertWidthIsAtLeast(48.dp)
@@ -113,7 +114,8 @@ class NamiComponentsTest {
         }
 
         val layouts = mutableListOf<TextLayoutResult>()
-        composeRule.onNodeWithText(longLabel, useUnmergedTree = true)
+        composeRule
+            .onNodeWithText(longLabel, useUnmergedTree = true)
             .assertIsDisplayed()
             .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
 
@@ -134,11 +136,14 @@ class NamiComponentsTest {
         }
 
         // El campo queda marcado como erróneo para el lector y el mensaje es visible.
-        composeRule.onNode(hasSetTextAction() and SemanticsMatcher.keyIsDefined(SemanticsProperties.Error))
+        composeRule
+            .onNode(hasSetTextAction() and SemanticsMatcher.keyIsDefined(SemanticsProperties.Error))
             .assertExists()
-        composeRule.onNode(hasSetTextAction())
+        composeRule
+            .onNode(hasSetTextAction())
             .assertHeightIsAtLeast(48.dp)
-        composeRule.onNodeWithText(errorMessage, useUnmergedTree = true)
+        composeRule
+            .onNodeWithText(errorMessage, useUnmergedTree = true)
             .assertIsDisplayed()
     }
 
@@ -153,10 +158,12 @@ class NamiComponentsTest {
             )
         }
 
-        composeRule.onNode(hasSetTextAction())
+        composeRule
+            .onNode(hasSetTextAction())
             .assertIsDisplayed()
             .assertHeightIsAtLeast(48.dp)
-        composeRule.onNodeWithText("Como te llaman tus familiares", useUnmergedTree = true)
+        composeRule
+            .onNodeWithText("Como te llaman tus familiares", useUnmergedTree = true)
             .assertIsDisplayed()
     }
 }

@@ -28,9 +28,10 @@ private fun NamiComponentsShowcase(darkTheme: Boolean = false) {
     NamiTheme(darkTheme = darkTheme) {
         Surface(color = MaterialTheme.colorScheme.background) {
             Column(
-                modifier = Modifier
-                    .verticalScroll(rememberScrollState())
-                    .padding(NamiSpacing.Large),
+                modifier =
+                    Modifier
+                        .verticalScroll(rememberScrollState())
+                        .padding(NamiSpacing.Large),
                 verticalArrangement = Arrangement.spacedBy(NamiSpacing.Medium),
             ) {
                 NamiPrimaryButton(

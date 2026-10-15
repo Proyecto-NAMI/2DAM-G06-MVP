@@ -1,4 +1,28 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
+
+val firebaseLocalProperties =
+    Properties().apply {
+        val configFile = rootProject.file("firebase.local.properties")
+        if (configFile.exists()) {
+            configFile.inputStream().use(::load)
+        }
+    }
+
+fun firebaseProperty(
+    name: String,
+    defaultValue: String = "",
+): String =
+    providers.gradleProperty(name).orNull
+        ?: firebaseLocalProperties.getProperty(name)
+        ?: defaultValue
+
+fun buildConfigString(value: String): String = "\"${value.replace("\\", "\\\\").replace("\"", "\\\"")}\""
+
+fun firebasePort(
+    name: String,
+    defaultValue: Int,
+): Int = firebaseProperty(name, defaultValue.toString()).toIntOrNull() ?: defaultValue
 
 plugins {
     alias(libs.plugins.android.application)
@@ -40,8 +64,85 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField("boolean", "USE_FIREBASE_EMULATORS", "true")
+            buildConfigField(
+                "String",
+                "FIREBASE_PROJECT_ID",
+                buildConfigString(firebaseProperty("NAMI_FIREBASE_PROJECT_ID", "demo-nami")),
+            )
+            buildConfigField(
+                "String",
+                "FIREBASE_APP_ID",
+                buildConfigString(
+                    firebaseProperty(
+                        "NAMI_FIREBASE_APP_ID",
+                        "1:1234567890:android:0000000000000000000000",
+                    ),
+                ),
+            )
+            buildConfigField(
+                "String",
+                "FIREBASE_API_KEY",
+                buildConfigString(firebaseProperty("NAMI_FIREBASE_API_KEY", "fake-api-key")),
+            )
+            buildConfigField(
+                "String",
+                "FIREBASE_STORAGE_BUCKET",
+                buildConfigString(
+                    firebaseProperty("NAMI_FIREBASE_STORAGE_BUCKET", "demo-nami.appspot.com"),
+                ),
+            )
+            buildConfigField(
+                "String",
+                "FIREBASE_EMULATOR_HOST",
+                buildConfigString(
+                    firebaseProperty("NAMI_FIREBASE_EMULATOR_HOST", "10.0.2.2"),
+                ),
+            )
+            buildConfigField(
+                "int",
+                "FIREBASE_AUTH_EMULATOR_PORT",
+                firebasePort("NAMI_FIREBASE_AUTH_EMULATOR_PORT", 9099).toString(),
+            )
+            buildConfigField(
+                "int",
+                "FIREBASE_FIRESTORE_EMULATOR_PORT",
+                firebasePort("NAMI_FIREBASE_FIRESTORE_EMULATOR_PORT", 8080).toString(),
+            )
+            buildConfigField(
+                "int",
+                "FIREBASE_STORAGE_EMULATOR_PORT",
+                firebasePort("NAMI_FIREBASE_STORAGE_EMULATOR_PORT", 9199).toString(),
+            )
+        }
         release {
             isMinifyEnabled = false
+            buildConfigField("boolean", "USE_FIREBASE_EMULATORS", "false")
+            buildConfigField(
+                "String",
+                "FIREBASE_PROJECT_ID",
+                buildConfigString(firebaseProperty("NAMI_FIREBASE_PROJECT_ID")),
+            )
+            buildConfigField(
+                "String",
+                "FIREBASE_APP_ID",
+                buildConfigString(firebaseProperty("NAMI_FIREBASE_APP_ID")),
+            )
+            buildConfigField(
+                "String",
+                "FIREBASE_API_KEY",
+                buildConfigString(firebaseProperty("NAMI_FIREBASE_API_KEY")),
+            )
+            buildConfigField(
+                "String",
+                "FIREBASE_STORAGE_BUCKET",
+                buildConfigString(firebaseProperty("NAMI_FIREBASE_STORAGE_BUCKET")),
+            )
+            buildConfigField("String", "FIREBASE_EMULATOR_HOST", buildConfigString(""))
+            buildConfigField("int", "FIREBASE_AUTH_EMULATOR_PORT", "0")
+            buildConfigField("int", "FIREBASE_FIRESTORE_EMULATOR_PORT", "0")
+            buildConfigField("int", "FIREBASE_STORAGE_EMULATOR_PORT", "0")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
@@ -75,6 +176,11 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
 
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore)
+    implementation(libs.firebase.storage)
+
     val composeBom = platform(libs.androidx.compose.bom)
     implementation(composeBom)
     androidTestImplementation(composeBom)
@@ -89,4 +195,3 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext.junit)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
-

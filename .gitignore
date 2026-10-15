@@ -9,6 +9,8 @@ captures/
 
 # Local Android SDK and environment
 local.properties
+firebase.local.properties
+.firebaserc
 .env
 .env.*
 !.env.example
@@ -20,8 +22,12 @@ key.properties
 google-services.json
 service-account*.json
 firebase-debug.log
+*-debug.log
+ui-debug.log
+firebase-data/
 
 # Operating systems
 .DS_Store
 Thumbs.db
+
 

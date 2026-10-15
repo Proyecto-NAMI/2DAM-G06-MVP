@@ -39,11 +39,12 @@ fun NamiApp() {
 @Composable
 private fun NamiWelcomeScreen(modifier: Modifier = Modifier) {
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .windowInsetsPadding(WindowInsets.safeDrawing)
-            .verticalScroll(rememberScrollState())
-            .padding(NamiSpacing.Large),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+                .verticalScroll(rememberScrollState())
+                .padding(NamiSpacing.Large),
         verticalArrangement = Arrangement.spacedBy(NamiSpacing.Large),
     ) {
         Text(
@@ -56,9 +57,10 @@ private fun NamiWelcomeScreen(modifier: Modifier = Modifier) {
             style = MaterialTheme.typography.bodyLarge,
         )
         Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-            ),
+            colors =
+                CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                ),
         ) {
             Text(
                 text = stringResource(R.string.project_status),
@@ -74,4 +76,3 @@ private fun NamiWelcomeScreen(modifier: Modifier = Modifier) {
 private fun NamiWelcomeScreenPreview() {
     NamiApp()
 }
-

@@ -9,4 +9,3 @@ class AppConfigurationTest {
         assertEquals("com.proyectonami.app", BuildConfig.APPLICATION_ID)
     }
 }
-

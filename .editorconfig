@@ -1,0 +1,12 @@
+root = true
+
+[*]
+end_of_line = lf
+insert_final_newline = true
+
+[*.{kt,kts}]
+# Las funciones @Composable usan PascalCase por convención de Compose.
+ktlint_function_naming_ignore_when_annotated_with = Composable
+
+[*.bat]
+end_of_line = crlf

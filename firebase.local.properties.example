@@ -1,0 +1,11 @@
+# Configuración ficticia para desarrollo y pruebas locales.
+# Copiar como firebase.local.properties; el archivo resultante está ignorado por Git.
+NAMI_FIREBASE_PROJECT_ID=demo-nami
+NAMI_FIREBASE_APP_ID=1:1234567890:android:0000000000000000000000
+NAMI_FIREBASE_API_KEY=fake-api-key
+NAMI_FIREBASE_STORAGE_BUCKET=demo-nami.appspot.com
+NAMI_FIREBASE_EMULATOR_HOST=10.0.2.2
+NAMI_FIREBASE_AUTH_EMULATOR_PORT=9099
+NAMI_FIREBASE_FIRESTORE_EMULATOR_PORT=8080
+NAMI_FIREBASE_STORAGE_EMULATOR_PORT=9199
+

@@ -20,7 +20,10 @@ fun relativeLuminance(argb: Long): Double {
 }
 
 /** Relación de contraste WCAG entre dos colores ARGB opacos (de 1 a 21). */
-fun contrastRatio(first: Long, second: Long): Double {
+fun contrastRatio(
+    first: Long,
+    second: Long,
+): Double {
     val a = relativeLuminance(first)
     val b = relativeLuminance(second)
     return (max(a, b) + 0.05) / (min(a, b) + 0.05)

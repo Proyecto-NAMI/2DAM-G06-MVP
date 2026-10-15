@@ -20,10 +20,11 @@ import androidx.compose.ui.text.style.TextAlign
 import com.proyectonami.app.core.designsystem.theme.NamiSize
 import com.proyectonami.app.core.designsystem.theme.NamiSpacing
 
-private val ButtonContentPadding = PaddingValues(
-    horizontal = NamiSpacing.Large,
-    vertical = NamiSpacing.Small,
-)
+private val ButtonContentPadding =
+    PaddingValues(
+        horizontal = NamiSpacing.Large,
+        vertical = NamiSpacing.Small,
+    )
 
 /**
  * Botón de la acción principal de una pantalla (T-04, RNF-01).
@@ -42,10 +43,11 @@ fun NamiPrimaryButton(
 ) {
     Button(
         onClick = onClick,
-        modifier = modifier.defaultMinSize(
-            minWidth = NamiSize.MinTouchTarget,
-            minHeight = NamiSize.PrimaryControlHeight,
-        ),
+        modifier =
+            modifier.defaultMinSize(
+                minWidth = NamiSize.MinTouchTarget,
+                minHeight = NamiSize.PrimaryControlHeight,
+            ),
         enabled = enabled,
         shape = MaterialTheme.shapes.large,
         contentPadding = ButtonContentPadding,
@@ -70,20 +72,23 @@ fun NamiSecondaryButton(
 ) {
     OutlinedButton(
         onClick = onClick,
-        modifier = modifier.defaultMinSize(
-            minWidth = NamiSize.MinTouchTarget,
-            minHeight = NamiSize.PrimaryControlHeight,
-        ),
+        modifier =
+            modifier.defaultMinSize(
+                minWidth = NamiSize.MinTouchTarget,
+                minHeight = NamiSize.PrimaryControlHeight,
+            ),
         enabled = enabled,
         shape = MaterialTheme.shapes.large,
-        border = BorderStroke(
-            width = NamiSize.ControlBorder,
-            color = if (enabled) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.outline
-            },
-        ),
+        border =
+            BorderStroke(
+                width = NamiSize.ControlBorder,
+                color =
+                    if (enabled) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.outline
+                    },
+            ),
         contentPadding = ButtonContentPadding,
     ) {
         NamiButtonContent(text = text, icon = icon)
@@ -91,7 +96,10 @@ fun NamiSecondaryButton(
 }
 
 @Composable
-private fun RowScope.NamiButtonContent(text: String, icon: Painter) {
+private fun RowScope.NamiButtonContent(
+    text: String,
+    icon: Painter,
+) {
     Row(
         modifier = Modifier.weight(weight = 1f, fill = false),
         horizontalArrangement = Arrangement.spacedBy(NamiSpacing.Small),

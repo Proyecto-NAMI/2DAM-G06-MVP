@@ -38,20 +38,22 @@ fun NamiTextField(
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        modifier = modifier
-            .fillMaxWidth()
-            .heightIn(min = NamiSize.PrimaryControlHeight)
-            .semantics {
-                if (errorMessage != null) error(errorMessage)
-            },
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .heightIn(min = NamiSize.PrimaryControlHeight)
+                .semantics {
+                    if (errorMessage != null) error(errorMessage)
+                },
         enabled = enabled,
         textStyle = MaterialTheme.typography.bodyLarge,
         label = { Text(text = label) },
-        supportingText = if (helperText != null) {
-            { Text(text = helperText) }
-        } else {
-            null
-        },
+        supportingText =
+            if (helperText != null) {
+                { Text(text = helperText) }
+            } else {
+                null
+            },
         isError = errorMessage != null,
         singleLine = singleLine,
         keyboardOptions = keyboardOptions,
