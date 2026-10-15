@@ -6,33 +6,35 @@ import org.junit.Test
 
 /** T-04 / RNF-01: el contraste de la paleta cumple WCAG 2.2 AA en modo claro y oscuro. */
 class NamiColorContrastTest {
+    private val schemes =
+        mapOf(
+            "claro" to NamiLightColorTokens,
+            "oscuro" to NamiDarkColorTokens,
+        )
 
-    private val schemes = mapOf(
-        "claro" to NamiLightColorTokens,
-        "oscuro" to NamiDarkColorTokens,
-    )
+    private fun NamiColorTokens.textPairs() =
+        mapOf(
+            "onPrimary/primary" to (onPrimary to primary),
+            "onPrimaryContainer/primaryContainer" to (onPrimaryContainer to primaryContainer),
+            "onSecondary/secondary" to (onSecondary to secondary),
+            "onSecondaryContainer/secondaryContainer" to (onSecondaryContainer to secondaryContainer),
+            "onError/error" to (onError to error),
+            "onErrorContainer/errorContainer" to (onErrorContainer to errorContainer),
+            "onBackground/background" to (onBackground to background),
+            "onSurface/surface" to (onSurface to surface),
+            "onSurfaceVariant/surface" to (onSurfaceVariant to surface),
+            "onSurfaceVariant/surfaceVariant" to (onSurfaceVariant to surfaceVariant),
+            // Texto de error y de botones secundarios dibujado directamente sobre la superficie.
+            "error/surface" to (error to surface),
+            "primary/surface" to (primary to surface),
+        )
 
-    private fun NamiColorTokens.textPairs() = mapOf(
-        "onPrimary/primary" to (onPrimary to primary),
-        "onPrimaryContainer/primaryContainer" to (onPrimaryContainer to primaryContainer),
-        "onSecondary/secondary" to (onSecondary to secondary),
-        "onSecondaryContainer/secondaryContainer" to (onSecondaryContainer to secondaryContainer),
-        "onError/error" to (onError to error),
-        "onErrorContainer/errorContainer" to (onErrorContainer to errorContainer),
-        "onBackground/background" to (onBackground to background),
-        "onSurface/surface" to (onSurface to surface),
-        "onSurfaceVariant/surface" to (onSurfaceVariant to surface),
-        "onSurfaceVariant/surfaceVariant" to (onSurfaceVariant to surfaceVariant),
-        // Texto de error y de botones secundarios dibujado directamente sobre la superficie.
-        "error/surface" to (error to surface),
-        "primary/surface" to (primary to surface),
-    )
-
-    private fun NamiColorTokens.nonTextPairs() = mapOf(
-        "outline/surface" to (outline to surface),
-        "primary/background" to (primary to background),
-        "error/background" to (error to background),
-    )
+    private fun NamiColorTokens.nonTextPairs() =
+        mapOf(
+            "outline/surface" to (outline to surface),
+            "primary/background" to (primary to background),
+            "error/background" to (error to background),
+        )
 
     @Test
     fun textColorsMeetAaContrast() {

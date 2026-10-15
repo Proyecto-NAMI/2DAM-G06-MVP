@@ -66,7 +66,7 @@ TEST_UNITARIO=./gradlew testDebugUnitTest (Windows: .\gradlew.bat testDebugUnitT
 COBERTURA_DOMINIO=./gradlew koverVerifyDebug (Windows: .\gradlew.bat koverVerifyDebug; mínimo RNF-08: 70 % de líneas por paquete de dominio)
 TEST_UI=./gradlew connectedDebugAndroidTest (Windows: .\gradlew.bat connectedDebugAndroidTest; requiere emulador o dispositivo conectado)
 BUILD=./gradlew assembleDebug (Windows: .\gradlew.bat assembleDebug)
-EMULADORES_FIREBASE=Pendiente de T-05: aún no hay firebase.json ni reglas de emulador.
+EMULADORES_FIREBASE=firebase emulators:start --project demo-nami --only auth,firestore,storage (requiere Firebase CLI; ver FIREBASE.md)
 ```
 
 CI ejecuta formato, lint, pruebas unitarias, cobertura de dominio RNF-08, pruebas instrumentadas en emulador y compilación debug. En Windows se usa `gradlew.bat` en lugar de `./gradlew`.

@@ -73,6 +73,15 @@ class PhoneNumberValidatorTest {
         assertThrows(IllegalArgumentException::class.java) {
             PhoneNumberValidator.validate("612345678", defaultCallingCode = "")
         }
+        assertThrows(IllegalArgumentException::class.java) {
+            PhoneNumberValidator.validate("612345678", defaultCallingCode = "3x4")
+        }
+    }
+
+    @Test
+    fun defaultCallingCodeConvertsInternationalDigitsToAscii() {
+        assertValid(expected = "+34612345678", raw = "612345678", defaultCallingCode = "٣٤")
+        assertValid(expected = "+34612345678", raw = "612345678", defaultCallingCode = "+٣٤")
     }
 
     @Test

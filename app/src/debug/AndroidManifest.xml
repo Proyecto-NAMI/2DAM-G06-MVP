@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- T-05: Auth y Storage del Emulator Suite usan HTTP sin cifrar; solo se permite en debug. -->
+    <application android:networkSecurityConfig="@xml/network_security_config" />
+</manifest>

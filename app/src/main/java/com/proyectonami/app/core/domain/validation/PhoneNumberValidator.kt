@@ -115,10 +115,27 @@ object PhoneNumberValidator {
     }
 
     private fun normalizeCallingCode(callingCode: String): String {
-        val digits = callingCode.removePrefix(E164_PREFIX).filter { it.isDigit() }
-        require(digits.isNotEmpty() && digits.length <= 3 && !digits.startsWith('0')) {
-            "defaultCallingCode debe tener entre 1 y 3 cifras y no empezar por 0: $callingCode"
+        val digits = StringBuilder(callingCode.length)
+        var index = 0
+        while (index < callingCode.length) {
+            val codePoint = callingCode.codePointAt(index)
+            index += Character.charCount(codePoint)
+            if (codePoint == PLUS.code && index == Character.charCount(codePoint)) {
+                continue
+            }
+            require(Character.isDigit(codePoint)) {
+                "defaultCallingCode solo puede contener cifras y un + inicial"
+            }
+            val digit = Character.digit(codePoint, 10)
+            require(digit in 0..9) {
+                "defaultCallingCode solo puede contener cifras y un + inicial"
+            }
+            digits.append(('0'.code + digit).toChar())
         }
-        return digits
+        val normalized = digits.toString()
+        require(normalized.isNotEmpty() && normalized.length <= 3 && !normalized.startsWith('0')) {
+            "defaultCallingCode debe tener entre 1 y 3 cifras y no empezar por 0"
+        }
+        return normalized
     }
 }

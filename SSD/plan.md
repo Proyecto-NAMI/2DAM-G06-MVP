@@ -26,6 +26,13 @@ T-03 añade Spotless con ktlint para comprobar Kotlin y scripts Gradle Kotlin DS
 
 T-06 sitúa la validación de nombre, apellidos y teléfono en `core.domain.validation` con Kotlin puro, sin dependencias de Android ni de Firebase: los nombres y apellidos se recortan, se limitan a 50 caracteres Unicode y rechazan cifras y símbolos, y el teléfono se normaliza a E.164 comprobando prefijo internacional, entre 7 y 15 cifras y una primera cifra distinta de 0. No se añade ninguna librería de numeración telefónica, así que no se validan los prefijos ni las longitudes propias de cada país; adoptar `libphonenumber` exigiría justificarlo antes en este documento.
 
+### Dependencias Firebase de T-05
+
+- **Necesidad:** Firebase Authentication permite implementar la identidad por teléfono definida en RF-01; Cloud Firestore almacena perfiles, contactos y mensajes; Firebase Storage conserva las notas de voz fuera de Firestore. Firebase BoM mantiene versiones compatibles entre los tres SDK.
+- **Mantenimiento:** son SDK oficiales mantenidos por Google. La versión de la BoM queda fijada en el catálogo Gradle y cualquier actualización deberá pasar compilación, lint, pruebas unitarias, pruebas instrumentadas y Emulator Suite antes de incorporarse.
+- **Licencia:** el repositorio abierto de Firebase Android declara Apache License 2.0 para sus componentes, entre ellos Firestore y Storage. Firebase Authentication no forma parte de ese repositorio abierto; antes de distribuir el piloto se revisarán y registrarán en los avisos de terceros la licencia y las condiciones declaradas por su artefacto y sus dependencias transitivas.
+- **Privacidad:** `debug` utiliza exclusivamente el proyecto ficticio `demo-nami` y Emulator Suite. Las reglas exigen autenticación y pertenencia a la conversación, los archivos sensibles permanecen fuera de Git y los logs no incluyen teléfonos, mensajes, tokens ni rutas privadas de audio.
+
 ## 2. Arquitectura
 
 ```text
