@@ -20,6 +20,10 @@ subprojects {
             target("src/**/*.kt")
             ktlint()
         }
+        kotlinGradle {
+            target("*.gradle.kts")
+            ktlint()
+        }
     }
 }
 
