@@ -5,6 +5,22 @@
     <string name="welcome_description">Un espacio sencillo para comunicarte con las personas de confianza.</string>
     <string name="project_status">La base de la aplicación está preparada.</string>
 
+    <!--
+      Mensajes de validación de cuenta y contactos (T-06, RF-01).
+      El dominio devuelve un motivo y la pantalla usa la cadena
+      validation_person_name_<motivo> o validation_phone_number_<motivo>.
+    -->
+    <string name="validation_person_name_empty">Escribe este dato para continuar</string>
+    <string name="validation_person_name_too_long">Es demasiado largo: máximo 50 caracteres</string>
+    <string name="validation_person_name_invalid_characters">Solo se admiten letras, espacios, guiones y apóstrofos</string>
+    <string name="validation_person_name_invalid_format">No puede empezar ni terminar con guion, apóstrofo o punto</string>
+    <string name="validation_phone_number_empty">Escribe el teléfono para continuar</string>
+    <string name="validation_phone_number_invalid_characters">Usa solo cifras y los signos +, -, (, ) y punto</string>
+    <string name="validation_phone_number_missing_country_code">Incluye el prefijo del país, por ejemplo +34</string>
+    <string name="validation_phone_number_too_short">Faltan cifras: revisa el prefijo del país y el número</string>
+    <string name="validation_phone_number_too_long">El teléfono tiene demasiadas cifras: máximo 15</string>
+    <string name="validation_phone_number_invalid_country_code">El prefijo del país no es válido: debe empezar por 1 y no por 0</string>
+
     <!-- Vistas previas del sistema de diseño (T-04). Solo datos ficticios. -->
     <string name="designsystem_preview_primary">Enviar mensaje a Carlos</string>
     <string name="designsystem_preview_secondary">Añadir contacto</string>

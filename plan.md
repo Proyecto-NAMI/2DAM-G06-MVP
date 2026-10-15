@@ -24,6 +24,8 @@ T-02 usa el soporte Kotlin integrado en AGP 9.4.1, sin aplicar `org.jetbrains.ko
 
 T-03 añade Spotless con ktlint para comprobar Kotlin y scripts Gradle Kotlin DSL en CI, y Kover para generar y verificar cobertura de pruebas en código Kotlin/Android. Se justifican porque proporcionan tareas Gradle reproducibles y permiten imponer el 70 % de líneas en cada paquete de dominio (RNF-08); al inicio, el filtro no encuentra paquetes de dominio en T-02 y empezará a verificar cuando se incorporen. Kover recopila cobertura de pruebas unitarias JVM, no de pruebas instrumentadas ejecutadas en el dispositivo. Android Lint cubre análisis estático, JUnit las pruebas locales y Compose UI Test las pruebas instrumentadas. Firebase Emulator Suite queda fuera de estos comandos hasta T-05, que debe aportar `firebase.json` y reglas.
 
+T-06 sitúa la validación de nombre, apellidos y teléfono en `core.domain.validation` con Kotlin puro, sin dependencias de Android ni de Firebase: los nombres y apellidos se recortan, se limitan a 50 caracteres Unicode y rechazan cifras y símbolos, y el teléfono se normaliza a E.164 comprobando prefijo internacional, entre 7 y 15 cifras y una primera cifra distinta de 0. No se añade ninguna librería de numeración telefónica, así que no se validan los prefijos ni las longitudes propias de cada país; adoptar `libphonenumber` exigiría justificarlo antes en este documento.
+
 ## 2. Arquitectura
 
 ```text
@@ -46,6 +48,7 @@ DataStore (preferencias locales)
 ### Paquetes principales
 
 - `core.designsystem`: colores, tipografía, dimensiones y componentes accesibles.
+- `core.domain`: reglas y validaciones compartidas sin dependencias de Android ni de Firebase.
 - `core.model`: modelos compartidos sin dependencias de Firebase.
 - `core.data`: configuración, mapeos, resultados y utilidades.
 - `feature.auth`, `feature.profile`, `feature.contacts`.
