@@ -36,9 +36,9 @@ El contraste de la paleta se calculó con la fórmula WCAG 2.2 fuera de Gradle: 
 
 | Comprobación | Resultado |
 |---|---|
-| `gradlew.bat assembleDebug` | Pendiente de ejecutar en local |
-| `gradlew.bat testDebugUnitTest` (incluye `NamiColorContrastTest`) | Pendiente de ejecutar en local |
-| `gradlew.bat lintDebug` | Pendiente de ejecutar en local |
+| `gradlew.bat assembleDebug` | Correcto (15/10/2026, en local) |
+| `gradlew.bat testDebugUnitTest` (incluye `NamiColorContrastTest`) | Correcto (15/10/2026, en local) |
+| `gradlew.bat lintDebug` | Sin errores (15/10/2026, en local) |
 | `gradlew.bat connectedDebugAndroidTest` (incluye `NamiComponentsTest`) | Pendiente; ver el fallo de infraestructura en Android 17 descrito arriba |
 | Revisión manual de las vistas previas y en emulador al 200 % | Pendiente |
 | Comparación de la paleta con el prototipo de Figma | Pendiente: la paleta es provisional |
