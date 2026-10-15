@@ -6,6 +6,7 @@ Esta configuración cubre **T-05**, los requisitos **RF-01, RF-03, RF-05, RF-06*
 
 - `debug` usa por defecto el proyecto ficticio `demo-nami` y conecta Auth, Firestore y Storage al equipo anfitrión mediante `10.0.2.2`.
 - `release` no usa emuladores y exige configuración local. Si faltan valores, la aplicación falla de forma explícita al solicitar el contenedor Firebase, en vez de conectar accidentalmente con un proyecto.
+- Solo `debug` permite tráfico HTTP sin cifrar, y únicamente hacia `10.0.2.2`, `localhost` y `127.0.0.1` (`app/src/debug/res/xml/network_security_config.xml`), porque los emuladores de Auth y Storage no usan HTTPS. `release` mantiene el bloqueo por defecto.
 - `google-services.json`, `.firebaserc`, `firebase.local.properties`, cuentas de servicio, exportaciones y logs están ignorados.
 
 No se debe usar un identificador de proyecto real con los emuladores. La clase `FirebaseEnvironment` exige el prefijo `demo-` para reducir el riesgo de escribir en servicios reales.
@@ -27,7 +28,7 @@ No se debe usar un identificador de proyecto real con los emuladores. La clase `
    .\gradlew.bat connectedDebugAndroidTest
    ```
 
-La prueba `FirebaseEmulatorSmokeTest` crea exclusivamente una cuenta anónima efímera, un perfil y una conversación ficticios y un pequeño contenido de audio ficticio. Valida conjuntamente Authentication, Firestore, Storage y las reglas. La verificación telefónica emulada se añadirá con el flujo de T-07; el emulador no envía SMS reales.
+La prueba `FirebaseEmulatorSmokeTest` crea exclusivamente una cuenta anónima efímera, un perfil y una conversación ficticios y un pequeño contenido de audio ficticio. Valida conjuntamente Authentication, Firestore, Storage y las reglas. Si el Emulator Suite no responde en el host y los puertos configurados, la prueba se omite (no falla) para no bloquear el resto de pruebas instrumentadas. La verificación telefónica emulada se añadirá con el flujo de T-07; el emulador no envía SMS reales.
 
 ## Inyección
 

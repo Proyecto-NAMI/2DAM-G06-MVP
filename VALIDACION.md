@@ -44,3 +44,28 @@ El contraste de la paleta se calculó con la fórmula WCAG 2.2 fuera de Gradle: 
 | Comparación de la paleta con el prototipo de Figma | Pendiente: la paleta es provisional |
 
 No se añadieron dependencias: los iconos son vectores locales en `res/drawable`.
+
+# Validación de T-05 (RF-01, RF-03, RF-05, RF-06; RNF-05, RNF-06)
+
+Rama: `yang_dev`, con `main` integrada (incluye T-03). Cambios de cierre generados con ayuda de IA (Claude) y pendientes de revisión humana.
+
+Qué se completó sobre la configuración inicial de T-05:
+
+- Integración de `main` (T-03: Spotless y Kover) y resolución del conflicto en `AndroidManifest.xml`.
+- Formato Spotless/ktlint en todo el código y `.editorconfig` para admitir nombres en PascalCase en funciones `@Composable`; sin esto `spotlessCheck` fallaba también en `main`.
+- `network_security_config` solo para `debug`: permite HTTP sin cifrar únicamente hacia `10.0.2.2`, `localhost` y `127.0.0.1`, necesario para los emuladores de Auth y Storage. `release` mantiene el bloqueo por defecto.
+- `FirebaseEmulatorSmokeTest` se omite si el Emulator Suite no responde, en vez de fallar y bloquear el resto de pruebas instrumentadas.
+- Comando `EMULADORES_FIREBASE` documentado en `AGENTS.md`.
+
+| Comprobación | Resultado |
+|---|---|
+| `gradlew.bat spotlessCheck` | Correcto (15/10/2026, en local) |
+| `gradlew.bat assembleDebug assembleRelease` | Correcto (15/10/2026, en local) |
+| `gradlew.bat testDebugUnitTest` | 10 pruebas, 0 fallos (incluye `FirebaseEnvironmentTest` y `FirebasePathsTest`) |
+| `gradlew.bat lintDebug` | Sin errores; 5 advertencias |
+| `gradlew.bat koverVerifyDebug` | Correcto (aún no hay paquetes de dominio) |
+| `gradlew.bat assembleDebugAndroidTest` | Correcto |
+| `gradlew.bat connectedDebugAndroidTest` con Emulator Suite activo | Pendiente: no había dispositivo conectado ni Firebase CLI instalado en el equipo de la validación |
+| Prueba manual de Auth, Firestore y Storage en emuladores | Pendiente |
+
+Fuera de alcance y pendiente: pruebas exhaustivas de reglas con participantes y terceros (T-26), flujo telefónico (T-07) y tamaño o duración máximos del audio en `storage.rules` (pregunta abierta de `spec.md`).
