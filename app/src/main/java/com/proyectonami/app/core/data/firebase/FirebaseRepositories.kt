@@ -6,11 +6,16 @@ import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageReference
+import com.proyectonami.app.core.domain.auth.AccountProfile
+import com.proyectonami.app.core.domain.auth.AccountProfileRepository
+import com.proyectonami.app.core.domain.auth.AccountProfileSaveResult
 import com.proyectonami.app.core.domain.auth.AuthSession
 import com.proyectonami.app.core.domain.auth.PhoneCodeVerificationResult
 import com.proyectonami.app.core.domain.auth.PhoneVerificationChallenge
 import com.proyectonami.app.core.domain.auth.PhoneVerificationRequestResult
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
 
 interface AuthRepository {
     val currentUserId: String?
@@ -73,6 +78,33 @@ class FirebaseFirestoreRepository(
     ): DocumentReference = firestore.document(FirebasePaths.message(conversationId, messageId))
 }
 
+class FirebaseAccountProfileRepository(
+    private val firestore: FirebaseFirestore,
+) : AccountProfileRepository {
+    override suspend fun saveProfile(profile: AccountProfile): AccountProfileSaveResult =
+        suspendCancellableCoroutine { continuation ->
+            firestore
+                .document(FirebasePaths.user(profile.userId))
+                .set(
+                    mapOf(
+                        "displayName" to profile.displayName,
+                        "surname" to profile.surname,
+                        "phoneNumber" to profile.phoneNumber,
+                    ),
+                ).addOnCompleteListener { task ->
+                    if (continuation.isActive) {
+                        continuation.resume(
+                            if (task.isSuccessful) {
+                                AccountProfileSaveResult.Saved
+                            } else {
+                                AccountProfileSaveResult.Failed
+                            },
+                        )
+                    }
+                }
+        }
+}
+
 class FirebaseAudioStorageRepository(
     private val storage: FirebaseStorage,
 ) : AudioStorageRepository {
@@ -84,6 +116,7 @@ class FirebaseAudioStorageRepository(
 
 class FirebaseRepositoryContainer(
     val authRepository: AuthRepository,
+    val accountProfileRepository: AccountProfileRepository,
     val firestoreRepository: FirestoreRepository,
     val audioStorageRepository: AudioStorageRepository,
 ) {
@@ -95,6 +128,7 @@ class FirebaseRepositoryContainer(
             val services = FirebaseServicesFactory.create(context, environment)
             return FirebaseRepositoryContainer(
                 authRepository = FirebasePhoneAuthRepository(services.auth),
+                accountProfileRepository = FirebaseAccountProfileRepository(services.firestore),
                 firestoreRepository = FirebaseFirestoreRepository(services.firestore),
                 audioStorageRepository = FirebaseAudioStorageRepository(services.storage),
             )

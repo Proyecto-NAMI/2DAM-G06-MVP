@@ -28,6 +28,8 @@ T-06 sitúa la validación de nombre, apellidos y teléfono en `core.domain.vali
 
 T-07 amplía el repositorio de autenticación con verificación telefónica Firebase, observación de la sesión y reenvío del código. Los errores del SDK se traducen a motivos de dominio; el reto de verificación y el token de reenvío se conservan tras un código incorrecto para permitir el reintento. `PhoneAuthViewModel` mantiene el nombre, los apellidos y el teléfono mientras presenta errores o solicita un nuevo código; la sesión comienza en estado `Restoring` hasta recibir el estado persistido de Firebase. Firebase Auth mantiene la sesión localmente entre aperturas de la aplicación; T-08 conectará este estado con la pantalla de creación de cuenta.
 
+T-08 conecta el estado de autenticación a una pantalla Compose de creación de cuenta. El teléfono se presenta con `+34` editable y se valida con las reglas de T-06; tras verificarlo se guarda el perfil mínimo (`displayName`, `surname` y `phoneNumber`) en el documento privado `users/{uid}` antes de mostrar el estado de cuenta lista. Un fallo al guardar conserva el formulario y permite reintentar el guardado sin volver a solicitar el código. La pantalla usa recursos de cadenas, campos etiquetados, errores semánticos anunciables, acciones de teclado y desplazamiento vertical para texto ampliado.
+
 ### Dependencias Firebase de T-05
 
 - **Necesidad:** Firebase Authentication permite implementar la identidad por teléfono definida en RF-01; Cloud Firestore almacena perfiles, contactos y mensajes; Firebase Storage conserva las notas de voz fuera de Firestore. Firebase BoM mantiene versiones compatibles entre los tres SDK.

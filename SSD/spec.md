@@ -179,4 +179,4 @@ Los iconos de cámara, llamada y vídeo presentes en Figma son exploraciones vis
 4. Definir conservación y borrado de cuenta, mensajes y audios antes de usar datos reales.
 5. Decidir si el estado escuchado/leído entrará después del MVP.
 6. Confirmar que los nombres y teléfonos visibles en el prototipo son ficticios y autorizados para pruebas.
-7. Decidir si el formulario de cuenta y el de nuevo contacto exigen escribir el prefijo internacional (`+34`) o asumen un país por defecto. T-06 admite ambas opciones mediante un prefijo opcional, pero la pantalla de T-08 debe elegir una.
+7. Para la creación de cuenta, el teléfono muestra `+34` como prefijo inicial editable; la persona puede sustituirlo por otro prefijo internacional. T-13 deberá reutilizar este comportamiento o documentar su diferencia para el alta de contactos.

@@ -8,9 +8,19 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import com.proyectonami.app.core.designsystem.theme.NamiSize
 
 /**
@@ -31,16 +41,49 @@ fun NamiTextField(
     errorMessage: String? = null,
     enabled: Boolean = true,
     singleLine: Boolean = true,
+    moveCursorToEndOnFocus: Boolean = false,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
 ) {
+    var isFocused by remember { mutableStateOf(false) }
+    var textFieldValue by remember {
+        mutableStateOf(
+            TextFieldValue(
+                text = value,
+                selection = TextRange(value.length),
+            ),
+        )
+    }
+    SideEffect {
+        if (textFieldValue.text != value) {
+            textFieldValue =
+                TextFieldValue(
+                    text = value,
+                    selection = TextRange(value.length),
+                )
+        }
+    }
+    LaunchedEffect(isFocused, moveCursorToEndOnFocus) {
+        if (isFocused && moveCursorToEndOnFocus) {
+            withFrameNanos { }
+            textFieldValue =
+                textFieldValue.copy(
+                    selection = TextRange(textFieldValue.text.length),
+                )
+        }
+    }
     val helperText = errorMessage ?: supportingText
     OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
+        value = textFieldValue,
+        onValueChange = {
+            textFieldValue = it
+            onValueChange(it.text)
+        },
         modifier =
             modifier
-                .fillMaxWidth()
+                .onFocusChanged {
+                    isFocused = it.isFocused
+                }.fillMaxWidth()
                 .heightIn(min = NamiSize.PrimaryControlHeight)
                 .semantics {
                     if (errorMessage != null) error(errorMessage)
