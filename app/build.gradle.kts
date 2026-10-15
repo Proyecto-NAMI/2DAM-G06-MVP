@@ -30,12 +30,14 @@ plugins {
     alias(libs.plugins.kover)
 }
 
-// RNF-08: enforce 70% line coverage for every feature domain package.
+// RNF-08: enforce 70% line coverage for every domain package, including the
+// shared rules in core.domain introduced by T-06.
 kover {
     reports {
         filters {
             includes {
                 packages("com.proyectonami.app.feature.*.domain")
+                packages("com.proyectonami.app.core.domain.*")
             }
         }
         verify {
