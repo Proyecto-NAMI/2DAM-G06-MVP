@@ -29,6 +29,7 @@ import com.proyectonami.app.core.domain.auth.PhoneAuthFailure
 import com.proyectonami.app.core.domain.auth.PhoneCodeVerificationResult
 import com.proyectonami.app.core.domain.auth.PhoneVerificationChallenge
 import com.proyectonami.app.core.domain.auth.PhoneVerificationRequestResult
+import com.proyectonami.app.core.media.MediaSessionController
 import com.proyectonami.app.feature.auth.presentation.PhoneAuthViewModel
 import com.proyectonami.app.ui.NamiApp
 import kotlinx.coroutines.flow.Flow
@@ -51,6 +52,7 @@ class AccountCreationScreenTest {
     private lateinit var activity: Activity
     private lateinit var authRepository: FakeAuthRepository
     private lateinit var profileRepository: FakeAccountProfileRepository
+    private lateinit var mediaSessionController: FakeMediaSessionController
     private lateinit var viewModel: PhoneAuthViewModel
 
     @Before
@@ -60,10 +62,12 @@ class AccountCreationScreenTest {
         }
         authRepository = FakeAuthRepository()
         profileRepository = FakeAccountProfileRepository()
+        mediaSessionController = FakeMediaSessionController()
         viewModel =
             PhoneAuthViewModel(
                 authRepository = authRepository,
                 accountProfileRepository = profileRepository,
+                mediaSessionController = mediaSessionController,
             )
         composeRule.setContent {
             val fontScale = if (testName.methodName == "accountFormRemainsScrollableAt200PercentText") 2f else 1f
@@ -217,6 +221,51 @@ class AccountCreationScreenTest {
             .assertIsDisplayed()
     }
 
+    @Test
+    fun signOutRequiresConfirmationAndCanBeCancelled() {
+        createSignedInAccount()
+        composeRule.onNodeWithText("Cerrar sesión").performClick()
+        composeRule.onNodeWithText("¿Cerrar sesión?").assertIsDisplayed()
+        composeRule.onNodeWithText("Seguir en NAMI").performClick()
+
+        composeRule.onNodeWithText("Cuenta creada").assertIsDisplayed()
+        assertEquals(0, authRepository.signOutCount)
+        assertEquals(0, mediaSessionController.stopCount)
+    }
+
+    @Test
+    fun confirmedSignOutStopsMediaAndClearsPrivateState() {
+        createSignedInAccount()
+        composeRule.onNodeWithText("Cerrar sesión").performClick()
+        composeRule.onNodeWithText("¿Cerrar sesión?").assertIsDisplayed()
+        composeRule.onNodeWithText("Sí, cerrar sesión").performClick()
+        composeRule.onNodeWithText("Crear cuenta").assertIsDisplayed()
+
+        assertEquals(AuthSession.SignedOut, viewModel.uiState.value.session)
+        assertEquals("", viewModel.uiState.value.name)
+        assertEquals("", viewModel.uiState.value.surname)
+        assertEquals(PhoneAuthViewModel.DEFAULT_PHONE_PREFIX, viewModel.uiState.value.phoneNumber)
+        assertEquals("", viewModel.uiState.value.verificationCode)
+        assertEquals(null, viewModel.uiState.value.challenge)
+        assertEquals(null, viewModel.uiState.value.verifiedUserId)
+        assertEquals(false, viewModel.uiState.value.isAccountReady)
+        assertEquals(1, authRepository.signOutCount)
+        assertEquals(1, mediaSessionController.stopCount)
+    }
+
+    @Test
+    fun mediaCleanupFailureIsReportedAfterSessionRevocation() {
+        mediaSessionController.stopResult = false
+        createSignedInAccount()
+        composeRule.onNodeWithText("Cerrar sesión").performClick()
+        composeRule.onNodeWithText("Sí, cerrar sesión").performClick()
+
+        composeRule
+            .onNodeWithText("La sesión se cerró, pero no se pudo detener todo el audio.")
+            .assertIsDisplayed()
+        assertEquals(AuthSession.SignedOut, viewModel.uiState.value.session)
+    }
+
     private fun fillAccountForm() {
         composeRule.onAllNodes(hasSetTextAction())[0].performTextInput("Ana")
         composeRule.onAllNodes(hasSetTextAction())[1].performTextInput("Prueba")
@@ -226,6 +275,17 @@ class AccountCreationScreenTest {
         composeRule
             .onAllNodes(hasSetTextAction())[2]
             .performTextInput("+15555550100")
+    }
+
+    private fun createSignedInAccount() {
+        fillAccountForm()
+        composeRule.onNodeWithText("Enviar código de verificación").performClick()
+        enterCode()
+        composeRule
+            .onNodeWithText("Verificar teléfono")
+            .performScrollTo()
+            .performClick()
+        composeRule.onNodeWithText("Cuenta creada").assertIsDisplayed()
     }
 
     private fun enterCode() {
@@ -240,6 +300,8 @@ private class FakeAuthRepository : AuthRepository {
     var requestedPhoneNumber: String? = null
         private set
     var requestCount: Int = 0
+        private set
+    var signOutCount: Int = 0
         private set
     var verificationResult: PhoneCodeVerificationResult =
         PhoneCodeVerificationResult.Verified("fictitious-user")
@@ -267,7 +329,18 @@ private class FakeAuthRepository : AuthRepository {
     ): PhoneCodeVerificationResult = verificationResult
 
     override fun signOut() {
+        signOutCount++
         session.value = AuthSession.SignedOut
+    }
+}
+
+private class FakeMediaSessionController : MediaSessionController {
+    var stopCount: Int = 0
+    var stopResult: Boolean = true
+
+    override fun stopAll(): Boolean {
+        stopCount++
+        return stopResult
     }
 }
 

@@ -18,6 +18,7 @@ import com.proyectonami.app.core.domain.validation.PersonNameValidator
 import com.proyectonami.app.core.domain.validation.PhoneNumberError
 import com.proyectonami.app.core.domain.validation.PhoneNumberValidation
 import com.proyectonami.app.core.domain.validation.PhoneNumberValidator
+import com.proyectonami.app.core.media.MediaSessionController
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -41,12 +42,14 @@ data class PhoneAuthUiState(
     val isVerifyingCode: Boolean = false,
     val isSavingProfile: Boolean = false,
     val profileSaveFailed: Boolean = false,
+    val mediaCleanupFailed: Boolean = false,
     val failure: PhoneAuthFailure? = null,
 )
 
 class PhoneAuthViewModel(
     private val authRepository: AuthRepository,
     private val accountProfileRepository: AccountProfileRepository,
+    private val mediaSessionController: MediaSessionController,
 ) : ViewModel() {
     private val mutableUiState =
         MutableStateFlow(
@@ -58,24 +61,41 @@ class PhoneAuthViewModel(
         viewModelScope.launch {
             authRepository.observeSession().collect { session ->
                 mutableUiState.update { state ->
-                    state.copy(
-                        session = session,
-                        isAccountReady =
-                            when (session) {
-                                AuthSession.Restoring, AuthSession.SignedOut -> false
-                                is AuthSession.SignedIn ->
-                                    if (state.verifiedUserId == session.userId) {
-                                        state.isAccountReady
-                                    } else {
-                                        !state.isRequestingCode &&
-                                            !state.isVerifyingCode &&
-                                            !state.isSavingProfile &&
-                                            state.verifiedUserId == null
-                                    }
-                            },
-                    )
+                    if (session == AuthSession.SignedOut) {
+                        signedOutState(state.mediaCleanupFailed)
+                    } else {
+                        state.copy(
+                            session = session,
+                            isAccountReady =
+                                when (session) {
+                                    AuthSession.Restoring -> false
+                                    is AuthSession.SignedIn ->
+                                        if (state.verifiedUserId == session.userId) {
+                                            state.isAccountReady
+                                        } else {
+                                            !state.isRequestingCode &&
+                                                !state.isVerifyingCode &&
+                                                !state.isSavingProfile &&
+                                                state.verifiedUserId == null
+                                        }
+                                    AuthSession.SignedOut -> false
+                                },
+                        )
+                    }
                 }
             }
+        }
+    }
+
+    fun signOut() {
+        if (mutableUiState.value.session !is AuthSession.SignedIn) {
+            return
+        }
+        mutableUiState.value = signedOutState(mediaCleanupFailed = false)
+        val mediaStopped = mediaSessionController.stopAll()
+        authRepository.signOut()
+        if (!mediaStopped) {
+            mutableUiState.update { it.copy(mediaCleanupFailed = true) }
         }
     }
 
@@ -299,4 +319,11 @@ class PhoneAuthViewModel(
     companion object {
         const val DEFAULT_PHONE_PREFIX = "+34 "
     }
+
+    private fun signedOutState(mediaCleanupFailed: Boolean): PhoneAuthUiState =
+        PhoneAuthUiState(
+            phoneNumber = DEFAULT_PHONE_PREFIX,
+            session = AuthSession.SignedOut,
+            mediaCleanupFailed = mediaCleanupFailed,
+        )
 }
