@@ -84,8 +84,4 @@ jobs:
           script: |
             trap 'rm -f .firebase-ci.json' EXIT
             node -e 'const fs = require("node:fs"); const config = JSON.parse(fs.readFileSync("firebase.json", "utf8")); for (const name of ["auth", "firestore", "storage"]) { if (!config.emulators[name]) throw new Error(`Missing ${name} emulator config`); config.emulators[name].host = "0.0.0.0"; } fs.writeFileSync(".firebase-ci.json", JSON.stringify(config));'
-            firebase emulators:exec \
-              --config .firebase-ci.json \
-              --project demo-nami \
-              --only auth,firestore,storage \
-              "./gradlew connectedDebugAndroidTest"
+            firebase emulators:exec --config .firebase-ci.json --project demo-nami --only auth,firestore,storage "./gradlew connectedDebugAndroidTest"
