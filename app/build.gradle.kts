@@ -3,6 +3,24 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.kover)
+}
+
+// RNF-08: enforce 70% line coverage for every feature domain package.
+kover {
+    reports {
+        filters {
+            includes {
+                packages("com.proyectonami.app.feature.*.domain")
+            }
+        }
+        verify {
+            rule {
+                groupBy.set(kotlinx.kover.gradle.plugin.dsl.GroupingEntityType.PACKAGE)
+                minBound(70)
+            }
+        }
+    }
 }
 
 android {
