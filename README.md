@@ -2,7 +2,7 @@
 
 NAMI es una aplicación Android de mensajería familiar accesible, pensada para personas mayores con visión reducida, menor precisión motora o poca experiencia tecnológica.
 
-Esta rama contiene la base técnica de la tarea **T-02**, trazada con **RNF-07**. El MVP usa Kotlin, Jetpack Compose y Material 3. En esta fase solo se muestra una pantalla inicial mínima; Firebase, navegación y funcionalidades de mensajería pertenecen a tareas posteriores.
+Esta rama contiene la base técnica de **T-02** y la configuración Firebase de **T-05**. El MVP usa Kotlin, Jetpack Compose y Material 3. Authentication, Firestore y Storage se abstraen mediante repositorios inyectables y, en `debug`, se conectan únicamente al Emulator Suite con datos ficticios.
 
 ## Configuración Android
 
@@ -30,13 +30,16 @@ La versión mínima debe validarse en los dispositivos reales del piloto antes d
 
    ```bash
    git clone https://github.com/Proyecto-NAMI/2DAM-G06-MVP.git
-
+   cd 2DAM-G06-MVP
+   git switch yang_dev
    ```
 
 2. Abre el proyecto en Android Studio o crea `local.properties` a partir de `local.properties.example` con la ruta local del SDK.
 3. Sincroniza Gradle.
 
 No subas `local.properties`, `google-services.json`, almacenes de claves ni credenciales. La configuración sensible está excluida mediante `.gitignore`.
+
+Para Firebase local, consulta [`FIREBASE.md`](FIREBASE.md) y parte de `firebase.local.properties.example` y `.firebaserc.example`. Los valores incluidos son ficticios; el build `release` no recibe credenciales desde el repositorio.
 
 ## Compilación y pruebas
 
@@ -56,7 +59,9 @@ En macOS o Linux:
 ./gradlew assembleDebugAndroidTest
 ```
 
-La prueba instrumentada se ejecutará en una tarea posterior con un emulador o dispositivo configurado.
+La prueba instrumentada `FirebaseEmulatorSmokeTest` está preparada para ejecutarse con
+Firebase Emulator Suite y un emulador Android activos; el flujo telefónico completo
+se implementará en T-07.
 
 ## Documentación
 
@@ -68,6 +73,7 @@ La prueba instrumentada se ejecutará en una tarea posterior con un emulador o d
 | [`plan.md`](plan.md) | Arquitectura, tecnologías y estrategia de pruebas. |
 | [`tasks.md`](tasks.md) | Tareas, dependencias y trazabilidad. |
 | [`uso-ia.md`](uso-ia.md) | Registro crítico del uso de IA. |
+| [`FIREBASE.md`](FIREBASE.md) | Configuración segura de Firebase y Emulator Suite. |
 | [`evidencias-ia/`](evidencias-ia/) | Evidencias visuales del proceso SDD. |
 
 ## Prototipo
@@ -77,6 +83,8 @@ La prueba instrumentada se ejecutará en una tarea posterior con un emulador o d
 ## Estado y limitaciones
 
 - T-02 establece la base del proyecto y una pantalla mínima.
-- No hay servicios Firebase configurados en esta tarea.
+- T-05 configura Authentication, Firestore y Storage para el Emulator Suite; el flujo de teléfono se implementará en T-07.
 - No se incluyen datos personales, teléfonos reales, conversaciones ni credenciales.
-- La revisión manual en dispositivo/emulador y la revisión por otra persona siguen pendientes antes de cerrar la tarea.
+- La prueba instrumentada requiere Firebase CLI y un emulador Android en ejecución.
+- La revisión manual y la revisión por otra persona siguen pendientes antes de cerrar la tarea.
+
