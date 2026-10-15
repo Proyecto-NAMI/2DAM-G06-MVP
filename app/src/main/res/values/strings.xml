@@ -4,5 +4,12 @@
     <string name="welcome_title">Bienvenida a NAMI</string>
     <string name="welcome_description">Un espacio sencillo para comunicarte con las personas de confianza.</string>
     <string name="project_status">La base de la aplicación está preparada.</string>
+
+    <!-- Vistas previas del sistema de diseño (T-04). Solo datos ficticios. -->
+    <string name="designsystem_preview_primary">Enviar mensaje a Carlos</string>
+    <string name="designsystem_preview_secondary">Añadir contacto</string>
+    <string name="designsystem_preview_field_label">Nombre</string>
+    <string name="designsystem_preview_field_supporting">Como te llaman tus familiares</string>
+    <string name="designsystem_preview_field_error">Escribe tu nombre para continuar</string>
 </resources>
 
