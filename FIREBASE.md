@@ -5,6 +5,7 @@ Esta configuración cubre **T-05**, los requisitos **RF-01, RF-03, RF-05, RF-06*
 ## Entornos
 
 - `debug` usa por defecto el proyecto ficticio `demo-nami` y conecta Auth, Firestore y Storage al equipo anfitrión mediante `10.0.2.2`.
+- En CI, Firebase Emulator Suite se enlaza temporalmente a `0.0.0.0` para que el emulador Android alojado en la máquina pueda acceder a los puertos del host; la configuración temporal se elimina al terminar y no cambia el enlace local por defecto.
 - `release` no usa emuladores y exige configuración local. Si faltan valores, la aplicación falla de forma explícita al solicitar el contenedor Firebase, en vez de conectar accidentalmente con un proyecto.
 - Solo `debug` permite tráfico HTTP sin cifrar, y únicamente hacia `10.0.2.2`, `localhost` y `127.0.0.1` (`app/src/debug/res/xml/network_security_config.xml`), porque los emuladores de Auth y Storage no usan HTTPS. `release` mantiene el bloqueo por defecto.
 - `google-services.json`, `.firebaserc`, `firebase.local.properties`, cuentas de servicio, exportaciones y logs están ignorados.
