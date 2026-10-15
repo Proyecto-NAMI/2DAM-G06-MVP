@@ -11,12 +11,12 @@ Se elimina el plugin `org.jetbrains.kotlin.android` del módulo, raíz y catálo
 | `gradlew.bat testDebugUnitTest` | 1 prueba, 0 fallos |
 | `gradlew.bat lintDebug` | Sin errores; 5 advertencias |
 | `gradlew.bat assembleDebugAndroidTest` | Correcto |
-| `gradlew.bat connectedDebugAndroidTest` | 1 fallo de infraestructura en Medium_Phone, Android 17 |
+| `gradlew.bat connectedDebugAndroidTest` | Correcto en Android 16/API 36: 10 pruebas, 0 fallos y 0 omitidas (15/10/2026, rama integrada `yang_dev`) |
 | `git diff --check` | Correcto |
 
 Las advertencias de lint son: objetivo Android anterior al último disponible, versiones más recientes de Core KTX y del compilador Compose, ausencia de reglas de extracción de datos y ausencia de icono de aplicación. La compilación también avisa de la API obsoleta `createAndroidComposeRule`.
 
-La prueba instrumentada falla antes de comprobar la pantalla por `NoSuchMethodException: android.hardware.input.InputManager.getInstance`. Solo está instalada la imagen Android 37.2; queda pendiente repetirla con Android 16/API 36 o una infraestructura de pruebas compatible con Android 17. No se puede afirmar que la validación de interfaz haya pasado.
+El fallo histórico de infraestructura en Android 17 (`NoSuchMethodException: android.hardware.input.InputManager.getInstance`) quedó resuelto al repetir la suite en Android 16/API 36. La validación instrumentada completa pasó en la rama integrada `yang_dev`.
 
 No hay tarea de formato ni configuración Firebase en esta base. Siguen pendientes la validación manual en dispositivo, accesibilidad y revisión por otra persona, conforme a la constitución.
 
@@ -39,7 +39,7 @@ El contraste de la paleta se calculó con la fórmula WCAG 2.2 fuera de Gradle: 
 | `gradlew.bat assembleDebug` | Correcto (15/10/2026, en local) |
 | `gradlew.bat testDebugUnitTest` (incluye `NamiColorContrastTest`) | Correcto (15/10/2026, en local) |
 | `gradlew.bat lintDebug` | Sin errores (15/10/2026, en local) |
-| `gradlew.bat connectedDebugAndroidTest` (incluye `NamiComponentsTest`) | Pendiente; ver el fallo de infraestructura en Android 17 descrito arriba |
+| `gradlew.bat connectedDebugAndroidTest` (incluye `NamiComponentsTest`) | 6 pruebas del sistema de diseño, 0 fallos y 0 omitidas en Android 16/API 36 (15/10/2026) |
 | Revisión manual de las vistas previas y en emulador al 200 % | Pendiente |
 | Comparación de la paleta con el prototipo de Figma | Pendiente: la paleta es provisional |
 
@@ -55,17 +55,20 @@ Qué se completó sobre la configuración inicial de T-05:
 - Formato Spotless/ktlint en todo el código y `.editorconfig` para admitir nombres en PascalCase en funciones `@Composable`; sin esto `spotlessCheck` fallaba también en `main`.
 - `network_security_config` solo para `debug`: permite HTTP sin cifrar únicamente hacia `10.0.2.2`, `localhost` y `127.0.0.1`, necesario para los emuladores de Auth y Storage. `release` mantiene el bloqueo por defecto.
 - `FirebaseEmulatorSmokeTest` se omite si el Emulator Suite no responde, en vez de fallar y bloquear el resto de pruebas instrumentadas.
+- `FirebaseEmulatorSmokeTest` incluye casos representativos de denegación: una sesión cerrada no puede escribir perfiles y una tercera persona no puede leer conversaciones ni audios ajenos.
 - Comando `EMULADORES_FIREBASE` documentado en `AGENTS.md`.
+- Workflow `.github/workflows/android-ci.yml` para repetir formato, compilación, lint, pruebas unitarias, cobertura y pruebas instrumentadas con Android 16/API 36 y Firebase Emulator Suite.
 
 | Comprobación | Resultado |
 |---|---|
 | `gradlew.bat spotlessCheck` | Correcto (15/10/2026, en local) |
 | `gradlew.bat assembleDebug assembleRelease` | Correcto (15/10/2026, en local) |
 | `gradlew.bat testDebugUnitTest` | 10 pruebas, 0 fallos (incluye `FirebaseEnvironmentTest` y `FirebasePathsTest`) |
-| `gradlew.bat lintDebug` | Sin errores; 5 advertencias |
+| `gradlew.bat lintDebug` | Sin errores; 7 advertencias |
 | `gradlew.bat koverVerifyDebug` | Correcto (aún no hay paquetes de dominio) |
 | `gradlew.bat assembleDebugAndroidTest` | Correcto |
-| `gradlew.bat connectedDebugAndroidTest` con Emulator Suite activo | Pendiente: no había dispositivo conectado ni Firebase CLI instalado en el equipo de la validación |
-| Prueba manual de Auth, Firestore y Storage en emuladores | Pendiente |
+| `gradlew.bat connectedDebugAndroidTest` con Emulator Suite activo | 10 pruebas, 0 fallos, 0 errores y 0 omitidas en `NAMI_API_36` (Android 16/API 36) |
+| `FirebaseEmulatorSmokeTest` | 3 pruebas: flujo autorizado, sesión no autenticada y tercera persona; 0 fallos y 0 omitidas |
+| Revisión de Auth, Firestore y Storage en Emulator Suite UI | Correcto: cuentas anónimas efímeras, conversaciones ficticias y audios `audio/mp4` visibles; sin datos reales |
 
-Fuera de alcance y pendiente: pruebas exhaustivas de reglas con participantes y terceros (T-26), flujo telefónico (T-07) y tamaño o duración máximos del audio en `storage.rules` (pregunta abierta de `spec.md`).
+Fuera de alcance y pendiente: pruebas exhaustivas de todas las operaciones y combinaciones de participantes (T-26), flujo telefónico (T-07) y tamaño o duración máximos del audio en `storage.rules` (pregunta abierta de `spec.md`). La revisión de otra persona del equipo sigue siendo necesaria antes de fusionar.

@@ -13,7 +13,7 @@ No se debe usar un identificador de proyecto real con los emuladores. La clase `
 
 ## Preparación local
 
-1. Instala Firebase CLI y comprueba que Java esté disponible.
+1. Instala Firebase CLI y comprueba que Java 21 o posterior esté disponible.
 2. Copia `firebase.local.properties.example` como `firebase.local.properties` si necesitas cambiar host o puertos.
 3. Copia `.firebaserc.example` como `.firebaserc`, o indica siempre `--project demo-nami`.
 4. Inicia los servicios:
@@ -28,7 +28,7 @@ No se debe usar un identificador de proyecto real con los emuladores. La clase `
    .\gradlew.bat connectedDebugAndroidTest
    ```
 
-La prueba `FirebaseEmulatorSmokeTest` crea exclusivamente una cuenta anónima efímera, un perfil y una conversación ficticios y un pequeño contenido de audio ficticio. Valida conjuntamente Authentication, Firestore, Storage y las reglas. Si el Emulator Suite no responde en el host y los puertos configurados, la prueba se omite (no falla) para no bloquear el resto de pruebas instrumentadas. La verificación telefónica emulada se añadirá con el flujo de T-07; el emulador no envía SMS reales.
+La prueba `FirebaseEmulatorSmokeTest` crea exclusivamente cuentas anónimas efímeras, un perfil y una conversación ficticios y un pequeño contenido de audio ficticio. Valida conjuntamente Authentication, Firestore, Storage y casos representativos de las reglas: una sesión anónima puede operar sobre sus recursos, una sesión cerrada no puede escribir un perfil y una tercera persona no puede leer la conversación ni su audio. Si el Emulator Suite no responde en el host y los puertos configurados, la prueba se omite (no falla) para no bloquear el resto de pruebas instrumentadas. La verificación telefónica emulada se añadirá con el flujo de T-07; el emulador no envía SMS reales.
 
 ## Inyección
 
@@ -42,5 +42,5 @@ La prueba `FirebaseEmulatorSmokeTest` crea exclusivamente una cuenta anónima ef
 - No se registran teléfonos, tokens, mensajes ni rutas de audio.
 - Los valores del ejemplo son ficticios y no conceden acceso a recursos reales.
 
-Las pruebas exhaustivas de reglas para participantes y terceros corresponden a T-26 y siguen pendientes.
+Las pruebas exhaustivas de todas las operaciones y combinaciones de participantes corresponden a T-26 y siguen pendientes.
 

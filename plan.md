@@ -24,6 +24,13 @@ T-02 usa el soporte Kotlin integrado en AGP 9.4.1, sin aplicar `org.jetbrains.ko
 
 T-03 añade Spotless con ktlint para comprobar Kotlin y scripts Gradle Kotlin DSL en CI, y Kover para generar y verificar cobertura de pruebas en código Kotlin/Android. Se justifican porque proporcionan tareas Gradle reproducibles y permiten imponer el 70 % de líneas en cada paquete de dominio (RNF-08); al inicio, el filtro no encuentra paquetes de dominio en T-02 y empezará a verificar cuando se incorporen. Kover recopila cobertura de pruebas unitarias JVM, no de pruebas instrumentadas ejecutadas en el dispositivo. Android Lint cubre análisis estático, JUnit las pruebas locales y Compose UI Test las pruebas instrumentadas. Firebase Emulator Suite queda fuera de estos comandos hasta T-05, que debe aportar `firebase.json` y reglas.
 
+### Dependencias Firebase de T-05
+
+- **Necesidad:** Firebase Authentication permite implementar la identidad por teléfono definida en RF-01; Cloud Firestore almacena perfiles, contactos y mensajes; Firebase Storage conserva las notas de voz fuera de Firestore. Firebase BoM mantiene versiones compatibles entre los tres SDK.
+- **Mantenimiento:** son SDK oficiales mantenidos por Google. La versión de la BoM queda fijada en el catálogo Gradle y cualquier actualización deberá pasar compilación, lint, pruebas unitarias, pruebas instrumentadas y Emulator Suite antes de incorporarse.
+- **Licencia:** el repositorio abierto de Firebase Android declara Apache License 2.0 para sus componentes, entre ellos Firestore y Storage. Firebase Authentication no forma parte de ese repositorio abierto; antes de distribuir el piloto se revisarán y registrarán en los avisos de terceros la licencia y las condiciones declaradas por su artefacto y sus dependencias transitivas.
+- **Privacidad:** `debug` utiliza exclusivamente el proyecto ficticio `demo-nami` y Emulator Suite. Las reglas exigen autenticación y pertenencia a la conversación, los archivos sensibles permanecen fuera de Git y los logs no incluyen teléfonos, mensajes, tokens ni rutas privadas de audio.
+
 ## 2. Arquitectura
 
 ```text

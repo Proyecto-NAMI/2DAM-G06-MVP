@@ -30,7 +30,8 @@ La versión mínima debe validarse en los dispositivos reales del piloto antes d
 
    ```bash
    git clone https://github.com/Proyecto-NAMI/2DAM-G06-MVP.git
-
+   cd 2DAM-G06-MVP
+   git switch yang_dev
    ```
 
 2. Abre el proyecto en Android Studio o crea `local.properties` a partir de `local.properties.example` con la ruta local del SDK.
