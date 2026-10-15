@@ -47,7 +47,11 @@ fun NamiTextField(
         enabled = enabled,
         textStyle = MaterialTheme.typography.bodyLarge,
         label = { Text(text = label) },
-        supportingText = helperText?.let { message -> { Text(text = message) } },
+        supportingText = if (helperText != null) {
+            { Text(text = helperText) }
+        } else {
+            null
+        },
         isError = errorMessage != null,
         singleLine = singleLine,
         keyboardOptions = keyboardOptions,
