@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.proyectonami.app.core.data.firebase.AuthRepository
 import com.proyectonami.app.core.domain.auth.AccountProfileRepository
+import com.proyectonami.app.core.media.MediaSessionController
 import com.proyectonami.app.feature.auth.presentation.PhoneAuthViewModel
 import com.proyectonami.app.ui.NamiApp
 
@@ -24,6 +25,7 @@ class MainActivity : ComponentActivity() {
                 PhoneAuthViewModelFactory(
                     authRepository = repositories.authRepository,
                     accountProfileRepository = repositories.accountProfileRepository,
+                    mediaSessionController = (application as NamiApplication).mediaSessionCoordinator,
                 ),
             )[PhoneAuthViewModel::class.java]
         setContent {
@@ -38,6 +40,7 @@ class MainActivity : ComponentActivity() {
 private class PhoneAuthViewModelFactory(
     private val authRepository: AuthRepository,
     private val accountProfileRepository: AccountProfileRepository,
+    private val mediaSessionController: MediaSessionController,
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(
         modelClass: Class<T>,
@@ -45,7 +48,13 @@ private class PhoneAuthViewModelFactory(
     ): T {
         require(modelClass.isAssignableFrom(PhoneAuthViewModel::class.java))
         return checkNotNull(
-            modelClass.cast(PhoneAuthViewModel(authRepository, accountProfileRepository)),
+            modelClass.cast(
+                PhoneAuthViewModel(
+                    authRepository,
+                    accountProfileRepository,
+                    mediaSessionController,
+                ),
+            ),
         )
     }
 }

@@ -21,6 +21,12 @@
     <string name="account_retry_profile_save">Reintentar guardado</string>
     <string name="account_created_title">Cuenta creada</string>
     <string name="account_created_description">Tu cuenta de NAMI está lista.</string>
+    <string name="logout_request">Cerrar sesión</string>
+    <string name="logout_confirmation_title">¿Cerrar sesión?</string>
+    <string name="logout_confirmation_message">Tendrás que verificar tu teléfono de nuevo para acceder a NAMI.</string>
+    <string name="logout_confirm">Sí, cerrar sesión</string>
+    <string name="logout_cancel">Seguir en NAMI</string>
+    <string name="logout_media_cleanup_failed">La sesión se cerró, pero no se pudo detener todo el audio.</string>
 
     <!--
       Mensajes de validación de cuenta y contactos (T-06, RF-01).

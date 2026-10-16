@@ -15,6 +15,7 @@ import com.proyectonami.app.core.data.firebase.FirebaseRepositoryContainer
 import com.proyectonami.app.core.data.firebase.FirebaseServicesFactory
 import com.proyectonami.app.core.domain.auth.AuthSession
 import com.proyectonami.app.core.domain.auth.PhoneAuthFailure
+import com.proyectonami.app.core.media.MediaSessionCoordinator
 import com.proyectonami.app.feature.auth.presentation.PhoneAuthViewModel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -113,6 +114,7 @@ class FirebaseEmulatorSmokeTest {
                 PhoneAuthViewModel(
                     authRepository = repositories.authRepository,
                     accountProfileRepository = repositories.accountProfileRepository,
+                    mediaSessionController = MediaSessionCoordinator(),
                 )
 
             ActivityScenario.launch(MainActivity::class.java).use { scenario ->

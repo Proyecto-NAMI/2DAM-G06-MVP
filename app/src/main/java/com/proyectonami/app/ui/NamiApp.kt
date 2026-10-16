@@ -14,6 +14,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -22,6 +23,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalFocusManager
@@ -61,7 +65,7 @@ fun NamiApp(
                 state.session is AuthSession.Restoring ->
                     LoadingScreen()
                 state.session is AuthSession.SignedIn && state.isAccountReady ->
-                    AccountReadyScreen()
+                    AccountReadyScreen(onSignOut = viewModel::signOut)
                 else ->
                     CreateAccountScreen(
                         activity = activity,
@@ -124,6 +128,14 @@ fun CreateAccountScreen(
             text = stringResource(R.string.account_create_description),
             style = MaterialTheme.typography.bodyLarge,
         )
+        if (state.mediaCleanupFailed) {
+            Text(
+                text = stringResource(R.string.logout_media_cleanup_failed),
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive },
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyLarge,
+            )
+        }
         NamiTextField(
             value = state.name,
             onValueChange = viewModel::updateName,
@@ -289,7 +301,8 @@ fun CreateAccountScreen(
 }
 
 @Composable
-private fun AccountReadyScreen() {
+private fun AccountReadyScreen(onSignOut: () -> Unit) {
+    var showSignOutConfirmation by remember { mutableStateOf(false) }
     Column(
         modifier =
             Modifier
@@ -310,6 +323,44 @@ private fun AccountReadyScreen() {
         Text(
             text = stringResource(R.string.account_created_description),
             style = MaterialTheme.typography.bodyLarge,
+        )
+        NamiPrimaryButton(
+            text = stringResource(R.string.logout_request),
+            icon = painterResource(R.drawable.ic_nami_logout),
+            onClick = { showSignOutConfirmation = true },
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+    if (showSignOutConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showSignOutConfirmation = false },
+            title = {
+                Text(
+                    text = stringResource(R.string.logout_confirmation_title),
+                    style = MaterialTheme.typography.headlineSmall,
+                )
+            },
+            text = {
+                Text(
+                    text = stringResource(R.string.logout_confirmation_message),
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showSignOutConfirmation = false
+                        onSignOut()
+                    },
+                ) {
+                    Text(stringResource(R.string.logout_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showSignOutConfirmation = false }) {
+                    Text(stringResource(R.string.logout_cancel))
+                }
+            },
         )
     }
 }

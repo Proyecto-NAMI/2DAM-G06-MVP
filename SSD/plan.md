@@ -75,6 +75,7 @@ El MVP puede conservar un único módulo Gradle `app`. Solo se separarán módul
 - Los repositorios traducen Firebase a modelos y errores de dominio.
 - Cada mensaje recibe un UUID antes del envío y reutiliza ese ID al reintentar.
 - Un único controlador coordina grabación y reproducción para impedir que ambas estén activas a la vez.
+- T-10 solicita confirmación antes del cierre; al confirmarlo borra el estado de autenticación en memoria, cierra los recursos de audio registrados en `MediaSessionCoordinator` y revoca Firebase Auth. Cada grabador o reproductor deberá registrar su sesión activa para que el coordinador pueda detenerla; los fallos de parada no impiden el cierre y se notifican en el acceso.
 
 ## 4. Modelo de datos propuesto
 
