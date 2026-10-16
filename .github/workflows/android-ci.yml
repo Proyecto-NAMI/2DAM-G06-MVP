@@ -84,4 +84,25 @@ jobs:
           script: |
             trap 'rm -f .firebase-ci.json' EXIT
             node -e 'const fs = require("node:fs"); const config = JSON.parse(fs.readFileSync("firebase.json", "utf8")); for (const name of ["auth", "firestore", "storage"]) { if (!config.emulators[name]) throw new Error(`Missing ${name} emulator config`); config.emulators[name].host = "0.0.0.0"; } fs.writeFileSync(".firebase-ci.json", JSON.stringify(config));'
-            firebase emulators:exec --config .firebase-ci.json --project demo-nami --only auth,firestore,storage "./gradlew connectedDebugAndroidTest"
+            status=1
+            for attempt in 1 2 3; do
+              echo "Instrumented test attempt ${attempt}/3"
+              if firebase emulators:exec --config .firebase-ci.json --project demo-nami --only auth,firestore,storage "./gradlew connectedDebugAndroidTest"; then
+                status=0
+                break
+              fi
+              status=$?
+              echo "Instrumented tests failed on attempt ${attempt}; restarting Firebase emulators before retry."
+              sleep 5
+            done
+            exit "${status}"
+
+      - name: Conservar informes de pruebas instrumentadas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-instrumented-test-reports
+          path: |
+            app/build/reports/androidTests/connected/**
+            app/build/outputs/androidTest-results/**
+          if-no-files-found: ignore
