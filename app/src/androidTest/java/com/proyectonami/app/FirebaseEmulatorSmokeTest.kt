@@ -5,6 +5,7 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.android.gms.tasks.Tasks
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.Source
 import com.google.firebase.storage.StorageException
@@ -44,6 +45,7 @@ import java.net.InetSocketAddress
 import java.net.Socket
 import java.net.URL
 import java.util.Date
+import java.util.UUID
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
@@ -434,6 +436,21 @@ class FirebaseEmulatorSmokeTest {
             TIMEOUT_SECONDS,
             TimeUnit.SECONDS,
         )
+        val messageId = UUID.randomUUID().toString()
+        Tasks.await(
+            repositories.firestoreRepository.messageDocument(conversationId, messageId).set(
+                mapOf(
+                    "clientMessageId" to messageId,
+                    "senderId" to ownerId,
+                    "type" to "text",
+                    "text" to "Mensaje ficticio privado",
+                    "createdAt" to FieldValue.serverTimestamp(),
+                    "status" to "sent",
+                ),
+            ),
+            TIMEOUT_SECONDS,
+            TimeUnit.SECONDS,
+        )
         Tasks.await(
             audioReference.putBytes(
                 "audio-ficticio-privado".encodeToByteArray(),
@@ -450,6 +467,15 @@ class FirebaseEmulatorSmokeTest {
             Tasks.await(
                 repositories.firestoreRepository
                     .conversationDocument(conversationId)
+                    .get(Source.SERVER),
+                TIMEOUT_SECONDS,
+                TimeUnit.SECONDS,
+            )
+        }
+        assertPermissionDenied {
+            Tasks.await(
+                repositories.firestoreRepository
+                    .messageDocument(conversationId, messageId)
                     .get(Source.SERVER),
                 TIMEOUT_SECONDS,
                 TimeUnit.SECONDS,

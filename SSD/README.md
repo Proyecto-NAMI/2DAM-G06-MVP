@@ -63,6 +63,13 @@ La prueba instrumentada `FirebaseEmulatorSmokeTest` está preparada para ejecuta
 Firebase Emulator Suite y un emulador Android activos; el flujo telefónico completo
 se implementará en T-07.
 
+Para reproducir en CI las pruebas de autorización y recuperación:
+
+```bash
+firebase emulators:exec --config .firebase-ci.json --project demo-nami \
+  --only auth,firestore,storage "./gradlew connectedDebugAndroidTest"
+```
+
 ## Documentación
 
 | Archivo | Contenido |

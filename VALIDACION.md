@@ -384,4 +384,18 @@ Qué se completó sobre la configuración inicial de T-05:
 | `FirebaseEmulatorSmokeTest` | 3 pruebas: flujo autorizado, sesión no autenticada y tercera persona; 0 fallos y 0 omitidas |
 | Revisión de Auth, Firestore y Storage en Emulator Suite UI | Correcto: cuentas anónimas efímeras, conversaciones ficticias y audios `audio/mp4` visibles; sin datos reales |
 
-Fuera de alcance y pendiente: pruebas exhaustivas de todas las operaciones y combinaciones de participantes (T-26), flujo telefónico (T-07) y tamaño o duración máximos del audio en `storage.rules` (pregunta abierta de `SSD/spec.md`). La revisión de otra persona del equipo sigue siendo necesaria antes de fusionar.
+## Validación de T-15, T-26 y T-27
+
+- T-15 cubre la lista de conversaciones en Compose: carga, vacío, error,
+  nombre, avatar opcional, no leídos, navegación al chat y escala de texto al
+  200 % en `ConversationsScreenTest`.
+- T-26 amplía `FirebaseEmulatorSmokeTest` con autorización negativa para el
+  documento de mensaje, además de los perfiles, conversaciones y audios ya
+  cubiertos. El comando real está documentado en `SSD/README.md` y
+  `SSD/RENDIMIENTO.md`.
+- T-27 documenta objetivos y límites en `SSD/RENDIMIENTO.md`; las pruebas
+  unitarias de `FlowMetricsT27Test` verifican que no haya duplicados y que el
+  borrador/audio permanezcan en estado seguro.
+
+La pérdida de red física, el audio en hardware real y la revisión de otra
+persona siguen siendo validaciones manuales pendientes antes de fusionar.
