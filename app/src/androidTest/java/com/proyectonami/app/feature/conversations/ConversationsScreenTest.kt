@@ -46,31 +46,42 @@ class ConversationsScreenTest {
     }
 
     @Test
-    fun loadingEmptyAndErrorStatesAreAnnouncedAndRemainVisibleAt200Percent() {
-        val states =
-            listOf(
-                ConversationsRemoteState.Loading to "Cargando conversaciones…",
-                ConversationsRemoteState.Loaded(emptyList()) to "Aún no tienes conversaciones.",
-                ConversationsRemoteState.Failed to "No se pudieron cargar las conversaciones. Comprueba la conexión.",
-            )
+    fun loadingStateIsAnnouncedAndRemainsVisibleAt200Percent() {
+        assertStateAt200Percent(ConversationsRemoteState.Loading, "Cargando conversaciones…")
+    }
 
-        states.forEach { (state, expectedText) ->
-            val viewModel = viewModel(state)
-            composeRule.setContent {
-                DeviceConfigurationOverride(DeviceConfigurationOverride.FontScale(2f)) {
-                    NamiTheme {
-                        ConversationsRoute(
-                            viewModel = viewModel,
-                            onOpenConversation = {},
-                            onAddContact = {},
-                            onProfile = {},
-                            onSignOut = {},
-                        )
-                    }
+    @Test
+    fun emptyStateIsAnnouncedAndRemainsVisibleAt200Percent() {
+        assertStateAt200Percent(ConversationsRemoteState.Loaded(emptyList()), "Aún no tienes conversaciones.")
+    }
+
+    @Test
+    fun errorStateIsAnnouncedAndRemainsVisibleAt200Percent() {
+        assertStateAt200Percent(
+            ConversationsRemoteState.Failed,
+            "No se pudieron cargar las conversaciones. Comprueba la conexión.",
+        )
+    }
+
+    private fun assertStateAt200Percent(
+        state: ConversationsRemoteState,
+        expectedText: String,
+    ) {
+        val viewModel = viewModel(state)
+        composeRule.setContent {
+            DeviceConfigurationOverride(DeviceConfigurationOverride.FontScale(2f)) {
+                NamiTheme {
+                    ConversationsRoute(
+                        viewModel = viewModel,
+                        onOpenConversation = {},
+                        onAddContact = {},
+                        onProfile = {},
+                        onSignOut = {},
+                    )
                 }
             }
-            composeRule.onNodeWithText(expectedText).assertIsDisplayed()
         }
+        composeRule.onNodeWithText(expectedText).assertIsDisplayed()
     }
 
     private fun viewModel(state: ConversationsRemoteState) =
