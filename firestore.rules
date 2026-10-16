@@ -54,7 +54,17 @@ service cloud.firestore {
       match /messages/{messageId} {
         allow read: if isConversationParticipant(conversationId);
         allow create: if isConversationParticipant(conversationId)
-          && request.resource.data.senderId == request.auth.uid;
+          && request.resource.data.keys().hasOnly([
+            'clientMessageId', 'senderId', 'type', 'text', 'createdAt', 'status'
+          ])
+          && messageId.matches('^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
+          && request.resource.data.clientMessageId == messageId
+          && request.resource.data.senderId == request.auth.uid
+          && request.resource.data.type == 'text'
+          && request.resource.data.text is string
+          && request.resource.data.text.matches('[\\s\\S]*[^\\s][\\s\\S]*')
+          && request.resource.data.createdAt == request.time
+          && request.resource.data.status == 'sent';
         allow update, delete: if false;
       }
     }

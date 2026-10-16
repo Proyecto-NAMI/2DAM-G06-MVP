@@ -73,3 +73,43 @@ La prueba `FirebaseEmulatorSmokeTest` usa exclusivamente cuentas efímeras y dat
 - Los valores del ejemplo son ficticios y no conceden acceso a recursos reales.
 
 Las pruebas exhaustivas de todas las operaciones y combinaciones de participantes corresponden a T-26 y siguen pendientes.
+
+## Envío de texto idempotente (T-16, RF-05, RNF-04)
+
+El contenedor expone `TextMessagesRepository`; `SendTextMessageUseCase` emite
+`Pending`, `Sent` o `Failed` con el mensaje original y un motivo de error.
+El UUID se genera en `OutgoingTextMessage.create` antes de enviar. Los reintentos
+deben reutilizar ese objeto, también después de cancelar una espera o perder una
+confirmación. Crear otro objeto con la fábrica representa otro mensaje, aunque
+el texto coincida. No se registra el contenido.
+
+La transacción Firestore crea el documento con ese UUID como ID y
+`clientMessageId`, junto con `senderId`, `type: "text"`, `text`, `createdAt` de
+servidor y `status: "sent"`. Actualiza actividad y no leídos del destinatario
+una sola vez. Un documento existente e idéntico devuelve éxito sin escribir;
+otro contenido con el mismo UUID devuelve `ID_CONFLICT`. Las reglas exigen
+participación, remitente autenticado, UUID coincidente, texto no vacío,
+fecha de servidor y esquema cerrado; no permiten editar ni borrar mensajes.
+El esquema de escritura actual es de texto; la subida y metadatos de mensajes
+de audio se incorporarán en T-22. El almacenamiento de audio de T-05 no cambia.
+
+Las transacciones requieren red: pendiente significa espera de confirmación y
+fallido significa que el intento devolvió un error, no que pueda afirmarse que
+el servidor nunca recibió el mensaje. No hay cola offline ni persistencia del
+estado de envío entre procesos en T-16. Historial, composición, restauración del
+borrador y mensajes accesibles de confirmación corresponden a T-17/T-18.
+
+`FirebaseTextMessagesTest` solo necesita Auth y Firestore, y usa datos ficticios:
+
+```powershell
+firebase emulators:start --project demo-nami --only auth,firestore
+# En otro terminal, con un emulador Android arrancado:
+.\gradlew.bat connectedDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=com.proyectonami.app.FirebaseTextMessagesTest"
+```
+
+Comprueba reintentos secuenciales y concurrentes, recreación del repositorio,
+una sola copia y un solo incremento de no leídos, conflicto de contenido,
+fallo de transporte contra un puerto local no disponible y recuperación con el
+mismo UUID, sesión, autorización y reglas de escritura.
+Si faltan Auth o Firestore las pruebas se omiten; comprobar que el informe
+indica cero omisiones antes de dar por validada la integración.

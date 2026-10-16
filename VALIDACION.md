@@ -1,3 +1,34 @@
+# Validación de T-16 (RF-05, RNF-04)
+
+Fecha: 16 de octubre de 2026. Rama: `yang_dev`.
+Responsable: G06-xx (por confirmar). Implementación asistida por IA y pendiente
+de revisión por otra persona del equipo.
+
+- UUID de cliente previo al envío, reutilizable en reintentos.
+- Estados de dominio pendiente, enviado y fallido con motivo explícito.
+- Transacción Firestore: una copia por UUID, sin repetir actividad ni no leídos;
+  rechazo de contenido distinto para el mismo ID.
+- Inyección del repositorio y reglas para texto autenticado e inmutable.
+- No incorpora la interfaz de chat ni una cola persistente offline (T-17/T-18).
+
+| Comprobación | Resultado |
+|---|---|
+| `gradlew.bat testDebugUnitTest` | 102 pruebas, 0 fallos; incluye 8 pruebas nuevas de dominio |
+| `gradlew.bat koverVerifyDebug` | Correcto; mínimo del 70 % por paquete de dominio |
+| `gradlew.bat lintDebug` | Correcto, sin errores |
+| `gradlew.bat assembleDebug` | Correcto |
+| `gradlew.bat spotlessCheck` | Correcto |
+| `FirebaseTextMessagesTest` en Android local API 36 | 7 pruebas, 0 fallos y 0 omitidas; incluye reintento con el mismo UUID tras fallo de transporte |
+| Revisión manual del flujo en dispositivo/emulador | Pendiente; T-16 no añade interfaz de chat, que corresponde a T-17/T-18 |
+| Revisión por otra persona | Pendiente |
+
+El entorno local dispone de SDK en `%LOCALAPPDATA%\Android\Sdk`, indicado con
+`ANDROID_HOME`. La integración usa Auth y Firestore del proyecto ficticio
+`demo-nami`; la suite instrumentada de T-16 se ejecutó localmente en Android
+16/API 36 con ambos emuladores disponibles.
+No considerar cerrada la definición de hecho hasta completar las revisiones
+manual y humana.
+
 # Validación local de T-02 (RNF-07)
 
 Fecha: 13 de octubre de 2026. Rama: `pr-31`.
