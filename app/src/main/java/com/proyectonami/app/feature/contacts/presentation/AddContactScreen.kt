@@ -44,15 +44,16 @@ import com.proyectonami.app.core.designsystem.component.NamiTextField
 import com.proyectonami.app.core.designsystem.theme.NamiSize
 import com.proyectonami.app.core.designsystem.theme.NamiSpacing
 import com.proyectonami.app.core.designsystem.theme.NamiTheme
-import com.proyectonami.app.feature.contacts.domain.Contact
+import com.proyectonami.app.core.domain.contacts.Contact
+import com.proyectonami.app.core.domain.contacts.ContactStatus
 import com.proyectonami.app.ui.personNameErrorMessage
 import com.proyectonami.app.ui.phoneNumberErrorMessage
 
 /**
  * Conecta el estado de [AddContactViewModel] con la pantalla (T-13, RF-03).
  *
- * El punto de entrada definitivo será la pantalla principal (T-15); hasta
- * entonces se abre desde el estado «Cuenta creada» de T-08.
+ * Se abre desde el «+» de la pantalla principal (T-15); el guardado pasa por la
+ * función `addContact` de T-11, así que el cliente nunca escribe el contacto.
  */
 @Composable
 fun AddContactRoute(
@@ -208,7 +209,21 @@ private fun ContactForm(
             style = MaterialTheme.typography.bodyLarge,
         )
     }
-    if (state.saveFailed) {
+    if (state.lookupUnavailable) {
+        Text(
+            text = stringResource(R.string.contact_add_lookup_unavailable),
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive },
+            color = MaterialTheme.colorScheme.error,
+            style = MaterialTheme.typography.bodyLarge,
+        )
+        NamiPrimaryButton(
+            text = stringResource(R.string.contact_add_retry),
+            icon = painterResource(R.drawable.ic_nami_refresh),
+            onClick = submit,
+            modifier = Modifier.fillMaxWidth(),
+            enabled = state.isFormEnabled,
+        )
+    } else if (state.saveFailed) {
         Text(
             text = stringResource(R.string.contact_add_failed),
             modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive },
@@ -254,7 +269,15 @@ private fun ContactAddedConfirmation(
         style = MaterialTheme.typography.headlineMedium,
     )
     Text(
-        text = stringResource(R.string.contact_add_success_description, contact.fullName()),
+        text =
+            stringResource(
+                if (contact.status == ContactStatus.LINKED) {
+                    R.string.contact_add_success_linked
+                } else {
+                    R.string.contact_add_success_description
+                },
+                contact.fullName(),
+            ),
         style = MaterialTheme.typography.bodyLarge,
     )
     NamiSecondaryButton(
@@ -272,7 +295,7 @@ private fun ContactAddedConfirmation(
 }
 
 /** Nombre completo tal como se muestra en la confirmación y en el aviso de duplicado. */
-private fun Contact.fullName(): String = "$displayName $surname"
+private fun Contact.fullName(): String = listOf(displayName, surname).filter { it.isNotBlank() }.joinToString(" ")
 
 @Preview(showBackground = true)
 @Composable
@@ -309,6 +332,37 @@ private fun AddContactScreenDuplicatePreview() {
                                 displayName = "Carlos",
                                 surname = "Prueba",
                                 phoneE164 = "+34612345678",
+                                linkedUserId = null,
+                                status = ContactStatus.PENDING,
+                            ),
+                    ),
+                onNameChange = {},
+                onSurnameChange = {},
+                onPhoneNumberChange = {},
+                onSubmit = {},
+                onAddAnother = {},
+                onBack = {},
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun AddContactScreenLinkedPreview() {
+    NamiTheme {
+        Surface(color = MaterialTheme.colorScheme.background) {
+            AddContactScreen(
+                state =
+                    AddContactUiState(
+                        addedContact =
+                            Contact(
+                                id = "contact_preview",
+                                displayName = "Carlos",
+                                surname = "Prueba",
+                                phoneE164 = "+34612345678",
+                                linkedUserId = "uid-ficticio",
+                                status = ContactStatus.LINKED,
                             ),
                     ),
                 onNameChange = {},

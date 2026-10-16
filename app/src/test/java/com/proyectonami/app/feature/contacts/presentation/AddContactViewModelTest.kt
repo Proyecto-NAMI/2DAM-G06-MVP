@@ -1,13 +1,17 @@
 package com.proyectonami.app.feature.contacts.presentation
 
+import com.proyectonami.app.core.domain.contacts.AddContactResult
+import com.proyectonami.app.core.domain.contacts.AddContactUseCase
+import com.proyectonami.app.core.domain.contacts.Contact
+import com.proyectonami.app.core.domain.contacts.ContactDraft
+import com.proyectonami.app.core.domain.contacts.ContactSaveResult
+import com.proyectonami.app.core.domain.contacts.ContactStatus
+import com.proyectonami.app.core.domain.contacts.ContactsRemoteState
+import com.proyectonami.app.core.domain.contacts.ContactsRepository
 import com.proyectonami.app.core.domain.validation.PersonNameError
 import com.proyectonami.app.core.domain.validation.PhoneNumberError
-import com.proyectonami.app.feature.contacts.domain.AddContactResult
-import com.proyectonami.app.feature.contacts.domain.AddContactUseCase
-import com.proyectonami.app.feature.contacts.domain.Contact
-import com.proyectonami.app.feature.contacts.domain.ContactCreateResult
-import com.proyectonami.app.feature.contacts.domain.ContactFieldError
-import com.proyectonami.app.feature.contacts.domain.ContactRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -27,6 +31,8 @@ class AddContactViewModelTest {
             displayName = "Carlos",
             surname = "Prueba",
             phoneE164 = "+34612345678",
+            linkedUserId = null,
+            status = ContactStatus.PENDING,
         )
 
     @Test
@@ -43,6 +49,7 @@ class AddContactViewModelTest {
         assertNull(state.addedContact)
         assertNull(state.duplicateContact)
         assertFalse(state.isSaving)
+        assertFalse(state.lookupUnavailable)
         assertFalse(state.saveFailed)
         assertTrue(state.isFormEnabled)
     }
@@ -81,24 +88,15 @@ class AddContactViewModelTest {
     }
 
     @Test
-    fun savingKeepsTheFormClosedWhileTheContactIsBeingSaved() {
-        val viewModel = newViewModel()
-        viewModel.updateName("Carlos")
-
-        val saving = viewModel.uiState.value.copy(isSaving = true)
-        assertFalse(saving.isFormEnabled)
-        assertEquals("Carlos", saving.name)
-    }
-
-    @Test
     fun addedResultShowsTheSavedContactAndClosesTheForm() {
         val state =
-            AddContactUiState(isSaving = true, duplicateContact = carlos)
+            AddContactUiState(isSaving = true, duplicateContact = carlos, lookupUnavailable = true)
                 .afterAddResult(AddContactResult.Added(carlos))
 
         assertEquals(carlos, state.addedContact)
         assertNull(state.duplicateContact)
         assertFalse(state.isSaving)
+        assertFalse(state.lookupUnavailable)
         assertFalse(state.saveFailed)
         assertFalse(state.isFormEnabled)
     }
@@ -110,31 +108,38 @@ class AddContactViewModelTest {
         assertEquals(carlos, state.duplicateContact)
         assertNull(state.addedContact)
         assertFalse(state.isSaving)
+        assertFalse(state.lookupUnavailable)
         assertFalse(state.saveFailed)
         assertTrue(state.isFormEnabled)
     }
 
     @Test
-    fun invalidResultIsShownOnItsOwnField() {
+    fun invalidResultsAreShownOnTheirOwnField() {
         val nameState =
             AddContactUiState().afterAddResult(
-                AddContactResult.Invalid(ContactFieldError.Name(PersonNameError.TOO_LONG)),
-            )
-        val surnameState =
-            AddContactUiState().afterAddResult(
-                AddContactResult.Invalid(ContactFieldError.Surname(PersonNameError.EMPTY)),
+                AddContactResult.InvalidName(PersonNameError.TOO_LONG),
             )
         val phoneState =
             AddContactUiState().afterAddResult(
-                AddContactResult.Invalid(ContactFieldError.Phone(PhoneNumberError.TOO_SHORT)),
+                AddContactResult.InvalidPhone(PhoneNumberError.TOO_SHORT),
             )
 
         assertEquals(PersonNameError.TOO_LONG, nameState.nameError)
-        assertNull(nameState.surnameError)
         assertNull(nameState.phoneNumberError)
-        assertEquals(PersonNameError.EMPTY, surnameState.surnameError)
         assertEquals(PhoneNumberError.TOO_SHORT, phoneState.phoneNumberError)
         assertNull(phoneState.nameError)
+    }
+
+    @Test
+    fun unavailableLookupIsReportedAsRecoverableWithoutSaving() {
+        val state = AddContactUiState(isSaving = true).afterAddResult(AddContactResult.LookupUnavailable)
+
+        assertTrue(state.lookupUnavailable)
+        assertFalse(state.isSaving)
+        assertFalse(state.saveFailed)
+        assertNull(state.addedContact)
+        assertNull(state.duplicateContact)
+        assertTrue(state.isFormEnabled)
     }
 
     @Test
@@ -142,21 +147,17 @@ class AddContactViewModelTest {
         val state = AddContactUiState(isSaving = true).afterAddResult(AddContactResult.Failed)
 
         assertTrue(state.saveFailed)
+        assertFalse(state.lookupUnavailable)
         assertFalse(state.isSaving)
         assertTrue(state.isFormEnabled)
         assertNull(state.addedContact)
     }
 
-    private fun newViewModel(): AddContactViewModel =
-        AddContactViewModel(
-            addContactUseCase = AddContactUseCase(FakeContactRepository()),
-            currentUserId = { "fictitious-owner" },
-        )
+    private fun newViewModel(): AddContactViewModel = AddContactViewModel(AddContactUseCase(FakeContactsRepository()))
 }
 
-private class FakeContactRepository : ContactRepository {
-    override suspend fun createContact(
-        userId: String,
-        contact: Contact,
-    ): ContactCreateResult = ContactCreateResult.Created
+private class FakeContactsRepository : ContactsRepository {
+    override fun observeContacts(): Flow<ContactsRemoteState> = flowOf(ContactsRemoteState.Loaded(emptyList()))
+
+    override suspend fun addContact(contact: ContactDraft): ContactSaveResult = ContactSaveResult.Failed
 }

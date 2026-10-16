@@ -29,7 +29,7 @@ Incluye:
 - Validación de identidad y sesión por teléfono
 - Modelo de datos y repositorios para Auth, Firestore y Storage
 - Tema y componentes de diseño accesibles
-- Alta de contactos con validación de los tres campos, aviso de duplicado y confirmación
+- Alta de contactos con validación de los tres campos, aviso de duplicado, vinculación con cuentas existentes y confirmación
 - Reglas y documentación de seguridad y privacidad
 - Estructura de trazabilidad del proyecto en la carpeta `SSD/`
 
@@ -62,6 +62,7 @@ Incluye:
 │   └── uso-ia.md
 ├── evidencias-ia/              # Evidencias visuales del proceso
 ├── Prototype_Reference/        # Capturas del prototipo de baja fidelidad
+├── functions/                  # Cloud Functions: alta de contactos (T-11)
 ├── FIREBASE.md                 # Guía de Firebase y emuladores
 ├── build.gradle.kts            # Configuración raíz de Gradle
 ├── firebase.local.properties.example
@@ -148,6 +149,7 @@ Y luego, en otra terminal:
 - Alta manual de contactos de confianza
 - Validación de nombre y teléfono
 - Prevención de duplicados
+- Vinculación con cuentas existentes mediante la función `addContact`: el servidor comprueba el teléfono con App Check y cuota por UID, y el cliente nunca escribe contactos
 
 ### Mensajería
 

@@ -1,8 +1,8 @@
 package com.proyectonami.app.feature.contacts.presentation
 
+import com.proyectonami.app.core.domain.contacts.NewContact
 import com.proyectonami.app.core.domain.validation.PersonNameError
 import com.proyectonami.app.core.domain.validation.PhoneNumberError
-import com.proyectonami.app.feature.contacts.domain.NewContactRequest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -16,7 +16,7 @@ import org.junit.Test
 class AddContactFormValidationTest {
     @Test
     fun allThreeFieldsAreReportedAtOnceWhenTheyAreEmpty() {
-        val validation = validateContactForm(NewContactRequest("", "", ""))
+        val validation = validateContactForm(NewContact("", "", ""))
 
         val invalid = validation as ContactFormValidation.Invalid
         assertEquals(PersonNameError.EMPTY, invalid.nameError)
@@ -28,7 +28,7 @@ class AddContactFormValidationTest {
     fun invalidNameAndPhoneAreReportedTogetherWithoutBlameOnTheSurname() {
         val validation =
             validateContactForm(
-                NewContactRequest(
+                NewContact(
                     displayName = "Ana2",
                     surname = "Prueba",
                     phoneNumber = "+34 12",
@@ -45,7 +45,7 @@ class AddContactFormValidationTest {
     fun validFieldsArriveNormalizedToTheUseCase() {
         val validation =
             validateContactForm(
-                NewContactRequest(
+                NewContact(
                     displayName = "  Ana   María ",
                     surname = " Prueba ",
                     phoneNumber = "+34 612 345 678",
@@ -66,7 +66,7 @@ class AddContactFormValidationTest {
     fun accentedNamesAreValidAndKeepTheirCharacters() {
         val validation =
             validateContactForm(
-                NewContactRequest(
+                NewContact(
                     displayName = "José",
                     surname = "Núñez",
                     phoneNumber = "+34 612 345 678",
@@ -87,7 +87,7 @@ class AddContactFormValidationTest {
     fun phoneWithoutCountryCodeIsRejectedWithItsOwnReason() {
         val validation =
             validateContactForm(
-                NewContactRequest(
+                NewContact(
                     displayName = "Ana",
                     surname = "Prueba",
                     phoneNumber = "612345678",

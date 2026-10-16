@@ -287,6 +287,9 @@ existen en T-11 y deben revisarse en T-12/T-13 antes de habilitar la vinculació
 
 Fecha: 16 de octubre de 2026. Rama: `t-12-repositorio-contactos`, creada sobre `main` (`da0b25f`). Cambios generados con ayuda de IA (DeepSeek Harness) y pendientes de revisión humana.
 
+> Nota posterior: la pila de contactos que describe esta entrada se retiró al integrar la función `addContact`; ver «Validación de T-12/T-13».
+
+
 Qué incluye:
 
 - `feature.contacts.domain`: `Contact` (con `status` deducido de `linkedUserId`), el puerto `ContactRepository`, `AddContactUseCase` y `ContactIdFactory`, en Kotlin puro y probado en la JVM.
@@ -325,6 +328,9 @@ Informes locales: `app/build/reports/tests/testDebugUnitTest/index.html`, `app/b
 
 Fecha: 16 de octubre de 2026. Rama: `t-13-pantalla-nuevo-contacto`, creada sobre `main` (`203bb58`). Cambios generados con ayuda de IA (DeepSeek Harness) y pendientes de revisión humana.
 
+> Nota posterior: la pila de contactos que describe esta entrada se retiró al integrar la función `addContact`; ver «Validación de T-12/T-13».
+
+
 Qué incluye:
 
 - `feature.contacts.presentation`: `AddContactViewModel` con `AddContactUiState` inmutable en `StateFlow`, la validación conjunta de los tres campos (`validateContactForm`, con los validadores de T-06) y el reductor puro `afterAddResult`; `AddContactScreen` y su `AddContactRoute` en Compose.
@@ -357,6 +363,41 @@ Qué incluye:
 - La detección de duplicados lee el documento del contacto antes de escribir; sin red usa la caché local de Firestore, como en T-12.
 
 Nota de entorno: las comprobaciones se ejecutaron en Linux con `./gradlew` y con `GRADLE_USER_HOME` y `ANDROID_USER_HOME` dentro del proyecto, porque `$HOME` era de solo lectura en el entorno usado; `.gradle/` está ignorado.
+
+# Validación de T-12/T-13 (RF-03, RNF-05, RNF-08)
+
+Fecha: 17 de octubre de 2026. Rama: `t-12-t13-integrar-callable`, creada sobre `main` (`2aa115a`). Cambios generados con ayuda de IA (DeepSeek Harness) y pendientes de revisión humana.
+
+Qué incluye:
+
+- El alta de contactos deja de usar la pila de T-12 (`feature.contacts.domain`, `FirebaseContactRepository` y el puerto `ContactAccountResolver`) y pasa a `core.domain.contacts` + `FirebaseContactsRepository`, que llama a la función `addContact` de T-11. Las reglas de Firestore ya deniegan toda escritura directa del cliente en `contacts`, así que el camino anterior no podía funcionar: el alta fallaba con «no se pudo guardar».
+- `AddContactViewModel` y `AddContactScreen` distinguen los tres desenlaces de la función: vinculado (el servidor confirma que el teléfono tiene cuenta NAMI y la confirmación lo dice), pendiente (no la tiene) y comprobación no disponible (cuota agotada o servicio caído), que **no guarda nada** y se puede reintentar. Desaparece `DisabledContactAccountResolver`, así que el estado «siempre pendiente» ya no se aplica.
+- Se borran la pila antigua, sus pruebas y `FirebaseContactRepositoryMappingTest`, cuyas clases ya no existen. Los mensajes de validación de T-06 siguen compartidos con T-08 (`ui/ValidationMessages.kt`).
+- CI: el trabajo de emuladores arranca también `functions`, el de calidad ejecuta `npm test` dentro de `functions` y un paso nuevo falla si alguna prueba instrumentada se ha omitido. Sin ese paso, `FirebaseEmulatorSmokeTest` se saltaba entero (pedía el puerto de Functions, que no se arrancaba) y el trabajo quedaba verde con la suite de reglas sin ejecutar.
+- El smoke test de contactos se reescribe: crea dos cuentas con teléfono verificado, comprueba que el teléfono conocido queda `linked` con el UID correcto, que un teléfono sin cuenta queda `pending`, que el duplicado no escribe una segunda vez, que cada teléfono deja un solo documento y que otra sesión no puede leerlo.
+
+| Comprobación | Resultado |
+|---|---|
+| `cd functions && npm ci && npm test` | 4 pruebas, 0 fallos (cuota por minuto y por día, E.164, normalización de nombres e identificadores estables) |
+| `cd functions && npm run build` | Correcto (`lib/index.js` y `lib/contactSecurity.js`) |
+| `./gradlew testDebugUnitTest` | 101 pruebas, 0 fallos |
+| `./gradlew spotlessCheck` | Correcto |
+| `./gradlew assembleDebug assembleRelease` | Correcto |
+| `./gradlew lintDebug` | Sin errores; 12 advertencias, ninguna en el código nuevo (la única que apuntaba a una cadena nueva era un falso positivo del corrector sobre «momento», ya reescrito) |
+| `./gradlew koverVerifyDebug` | Correcto |
+| `./gradlew assembleDebugAndroidTest` | Correcto |
+| `connectedDebugAndroidTest` con Emulator Suite | No ejecutable en local (sin Firebase CLI, KVM ni AVD); lo ejecuta CI con los cuatro emuladores |
+| CI `Android CI`, run `38962582758` sobre el commit `63a25e4` | Correcto en los dos trabajos: 50 pruebas instrumentadas, 0 fallos, 0 errores y **0 omitidas**, con Auth, Firestore, Storage y Functions |
+| `FirebaseEmulatorSmokeTest.addContactLinksKnownPhonesAndStoresUnknownOnesAsPending` | Correcto en Android 16/API 36: el teléfono con cuenta queda `linked` con el UID correcto, el desconocido queda `pending` y el duplicado no escribe una segunda vez |
+| Revisión por otra persona | Pendiente |
+
+La primera ejecución completa de la suite (run `38960340598`) hizo 50 pruebas y **0 omisiones**, y solo falló la preparación de `FirebaseTextMessagesTest.retriesAndNewRepositoryKeepOneCopyAndOneUnreadIncrement`: agotó los 20 s de `Tasks.await` en su primera escritura (20,06 s exactos) mientras el resto de la clase tardaba entre 0,06 s y 8,8 s. Era la espera de la primera conexión con el emulador, así que los límites de las dos clases de integración pasan a 60 s y el trabajo quedó verde.
+
+## Limitaciones
+
+- La creación de `conversations/{conversationId}` sigue sin tarea asignada (`spec.md`, duda 9): el alta ya puede vincular un contacto, pero abrir su conversación necesita que alguien cree ese documento. Las sesiones que se ven hoy en la aplicación vienen de datos de prueba.
+- La cuota de la función se prueba en `functions/test`; el caso de cuota agotada se cubre en la interfaz con un repositorio falso y no contra el emulador, para no depender del reloj.
+- App Check solo se puede comprobar en un proyecto real con Play Integrity: en el emulador la función lo desactiva a propósito y en `debug` el cliente no lo instala.
 
 # Validación de T-05 (RF-01, RF-03, RF-05, RF-06; RNF-05, RNF-06)
 

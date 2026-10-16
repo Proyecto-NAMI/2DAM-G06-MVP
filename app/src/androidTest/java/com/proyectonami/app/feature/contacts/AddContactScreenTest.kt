@@ -21,12 +21,11 @@ import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.proyectonami.app.FakeContactRepository
+import com.proyectonami.app.FakeContactsRepository
 import com.proyectonami.app.core.designsystem.theme.NamiTheme
-import com.proyectonami.app.feature.contacts.domain.AddContactUseCase
-import com.proyectonami.app.feature.contacts.domain.Contact
-import com.proyectonami.app.feature.contacts.domain.ContactIdFactory
-import com.proyectonami.app.feature.contacts.domain.ContactStatus
+import com.proyectonami.app.core.domain.contacts.AddContactUseCase
+import com.proyectonami.app.core.domain.contacts.Contact
+import com.proyectonami.app.core.domain.contacts.ContactStatus
 import com.proyectonami.app.feature.contacts.presentation.AddContactRoute
 import com.proyectonami.app.feature.contacts.presentation.AddContactUiState
 import com.proyectonami.app.feature.contacts.presentation.AddContactViewModel
@@ -41,11 +40,12 @@ import org.junit.rules.TestName
 import org.junit.runner.RunWith
 
 /**
- * Pantalla `Nuevo contacto` (T-13, RF-03): alta, validación, duplicados,
- * reintento, acción «Listo» del teclado y texto al 200 %.
+ * Pantalla `Nuevo contacto` (T-13, RF-03): alta, vinculación, validación,
+ * duplicados, reintento, acción «Listo» del teclado y texto al 200 %.
  *
- * Usa datos ficticios y un repositorio en memoria (`FakeContactRepository`), que
- * reproduce la idempotencia de T-12 sin necesitar Firebase.
+ * Usa datos ficticios y un repositorio en memoria (`FakeContactsRepository`),
+ * que reproduce el contrato de la función `addContact` de T-11 sin necesitar
+ * Firebase.
  */
 @RunWith(AndroidJUnit4::class)
 class AddContactScreenTest {
@@ -55,18 +55,14 @@ class AddContactScreenTest {
     @get:Rule
     val testName = TestName()
 
-    private lateinit var repository: FakeContactRepository
+    private lateinit var repository: FakeContactsRepository
     private lateinit var viewModel: AddContactViewModel
     private var backPresses: Int = 0
 
     @Before
     fun setUp() {
-        repository = FakeContactRepository()
-        viewModel =
-            AddContactViewModel(
-                addContactUseCase = AddContactUseCase(repository),
-                currentUserId = { "fictitious-owner" },
-            )
+        repository = FakeContactsRepository()
+        viewModel = AddContactViewModel(AddContactUseCase(repository))
         backPresses = 0
         composeRule.setContent {
             val fontScale = if (testName.methodName == "formRemainsScrollableAt200PercentText") 2f else 1f
@@ -104,6 +100,22 @@ class AddContactScreenTest {
         assertEquals("+34612345678", saved.phoneE164)
         assertEquals("Carlos", viewModel.uiState.value.name)
         assertFalse(viewModel.uiState.value.isFormEnabled)
+    }
+
+    @Test
+    fun linkedContactIsConfirmedWithTheNamiMessage() {
+        repository.savedStatus = ContactStatus.LINKED
+        fillForm()
+        composeRule.onNodeWithText("Crear contacto").performScrollTo().performClick()
+
+        composeRule
+            .onNodeWithText("Carlos Prueba ya usa NAMI.")
+            .performScrollTo()
+            .assertIsDisplayed()
+
+        val saved = repository.stored.single()
+        assertEquals(ContactStatus.LINKED, saved.status)
+        assertEquals(FakeContactsRepository.LINKED_USER_ID, saved.linkedUserId)
     }
 
     @Test
@@ -193,6 +205,31 @@ class AddContactScreenTest {
     }
 
     @Test
+    fun unavailableLookupIsExplainedAndNothingIsSavedUntilRetry() {
+        repository.lookupsUnavailableBeforeSuccess = 1
+        fillForm()
+        composeRule.onNodeWithText("Crear contacto").performScrollTo().performClick()
+
+        composeRule
+            .onNodeWithText(
+                "No hemos podido comprobar si esa persona ya usa NAMI, así que no se ha guardado " +
+                    "el contacto. Espera un poco e inténtalo de nuevo.",
+            ).performScrollTo()
+            .assertIsDisplayed()
+        assertEquals(0, repository.stored.size)
+        assertTrue(viewModel.uiState.value.lookupUnavailable)
+
+        composeRule
+            .onNodeWithText("Reintentar el guardado del contacto")
+            .performScrollTo()
+            .performClick()
+
+        composeRule.onNodeWithText("Contacto añadido").assertIsDisplayed()
+        assertFalse(viewModel.uiState.value.lookupUnavailable)
+        assertEquals(1, repository.stored.size)
+    }
+
+    @Test
     fun backControlNotifiesTheRequestedNavigation() {
         composeRule.onNodeWithContentDescription("Volver").performClick()
 
@@ -238,10 +275,12 @@ class AddContactScreenTest {
     private fun seedContact(): Contact {
         val contact =
             Contact(
-                id = ContactIdFactory.forPhoneE164("+34612345678"),
+                id = "contact_existente",
                 displayName = "Carlos",
                 surname = "Viejo",
                 phoneE164 = "+34612345678",
+                linkedUserId = null,
+                status = ContactStatus.PENDING,
             )
         repository.seed(contact)
         return contact
