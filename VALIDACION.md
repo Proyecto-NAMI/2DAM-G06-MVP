@@ -1,5 +1,24 @@
 # Validación de T-09 (RF-02)
 
+# Validación de T-20/T-21/T-22 (RF-06, RNF-05, RNF-06, RNF-09)
+
+Fecha: 16 de octubre de 2026. Rama: `yang_dev`. Responsable: G06-xx.
+
+- `RECORD_AUDIO` se solicita antes de iniciar; la UI anuncia grabando, duración, parada, denegación e interrupción.
+- La máquina de estados conserva una vista previa o un estado seguro; nunca presenta una grabación activa sin indicador.
+- Límite acordado y documentado: 120 segundos o 5 MiB, lo que ocurra primero.
+- Storage usa una ruta por conversación y `clientMessageId`; Firestore recibe solo metadatos y las reglas restringen el acceso a participantes.
+- Cobertura añadida en `AudioRecordingT20T21Test` para grabación vacía, límite y estados visibles.
+
+| Comprobación | Resultado |
+|---|---|
+| `gradlew.bat spotlessApply` | Correcto |
+| `gradlew.bat testDebugUnitTest` | Correcto |
+| `gradlew.bat assembleDebug` | Correcto |
+| `gradlew.bat assembleDebugAndroidTest` | Correcto |
+| Revisión manual en dispositivo/emulador | Pendiente |
+| Revisión por otra persona | Pendiente |
+
 Fecha: 16 de octubre de 2026. Rama: `yang_dev`.
 
 - `ProfileViewModel` carga y actualiza nombre, apellidos, teléfono y avatar opcional.
