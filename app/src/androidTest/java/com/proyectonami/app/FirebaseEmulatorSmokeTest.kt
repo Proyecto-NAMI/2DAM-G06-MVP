@@ -10,6 +10,7 @@ import com.google.firebase.firestore.Source
 import com.google.firebase.storage.StorageException
 import com.google.firebase.storage.StorageMetadata
 import com.proyectonami.app.core.data.firebase.FirebaseEnvironment
+import com.proyectonami.app.core.data.firebase.FirebasePaths
 import com.proyectonami.app.core.data.firebase.FirebasePhoneAuthRepository
 import com.proyectonami.app.core.data.firebase.FirebaseRepositoryContainer
 import com.proyectonami.app.core.data.firebase.FirebaseServicesFactory
@@ -19,12 +20,17 @@ import com.proyectonami.app.core.domain.auth.AuthSession
 import com.proyectonami.app.core.domain.auth.PhoneAuthFailure
 import com.proyectonami.app.core.media.MediaSessionCoordinator
 import com.proyectonami.app.feature.auth.presentation.PhoneAuthViewModel
+import com.proyectonami.app.feature.contacts.domain.AddContactResult
+import com.proyectonami.app.feature.contacts.domain.AddContactUseCase
+import com.proyectonami.app.feature.contacts.domain.ContactStatus
+import com.proyectonami.app.feature.contacts.domain.NewContactRequest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
@@ -247,6 +253,54 @@ class FirebaseEmulatorSmokeTest {
                         "phoneE164" to "+15555550100",
                     ),
                 ),
+                TIMEOUT_SECONDS,
+                TimeUnit.SECONDS,
+            )
+        }
+    }
+
+    @Test
+    fun contactCreationIsIdempotentAndContactsStayPrivate() {
+        assumeEmulatorsAreRunning()
+
+        val ownerId = signInAnonymously()
+        val addContact = AddContactUseCase(repositories.contactRepository)
+
+        val added =
+            runBlocking {
+                addContact.add(ownerId, NewContactRequest("Contacto", "Ficticio", "+1 (555) 555-0123"))
+            }
+        val contact = (added as? AddContactResult.Added)?.contact
+        requireNotNull(contact) { "Se esperaba un contacto añadido y se recibió $added" }
+        assertEquals("+15555550123", contact.phoneE164)
+        assertEquals(ContactStatus.PENDING, contact.status)
+
+        val repeated =
+            runBlocking {
+                addContact.add(ownerId, NewContactRequest("Otro Nombre", "Ficticio", "+15555550123"))
+            }
+        assertTrue("El segundo alta debe informar del duplicado: $repeated", repeated is AddContactResult.Duplicate)
+        assertEquals("Contacto", (repeated as AddContactResult.Duplicate).existing.displayName)
+
+        val storedContacts =
+            Tasks.await(
+                services.firestore
+                    .collection("${FirebasePaths.user(ownerId)}/contacts")
+                    .get(Source.SERVER),
+                TIMEOUT_SECONDS,
+                TimeUnit.SECONDS,
+            )
+        assertEquals("El mismo teléfono debe guardarse una sola vez", 1, storedContacts.size())
+        val stored = storedContacts.documents.single()
+        assertEquals("pending", stored.getString("status"))
+        assertNull(stored.getString("linkedUserId"))
+
+        repositories.authRepository.signOut()
+        signInAnonymously()
+
+        assertPermissionDenied {
+            Tasks.await(
+                repositories.firestoreRepository.contactDocument(ownerId, contact.id).get(Source.SERVER),
                 TIMEOUT_SECONDS,
                 TimeUnit.SECONDS,
             )

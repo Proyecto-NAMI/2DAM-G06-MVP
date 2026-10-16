@@ -30,6 +30,8 @@ T-07 amplía el repositorio de autenticación con verificación telefónica Fire
 
 T-08 conecta el estado de autenticación a una pantalla Compose de creación de cuenta. El teléfono se presenta con `+34` editable y se valida con las reglas de T-06; tras verificarlo se guarda el perfil mínimo (`displayName`, `surname` y `phoneE164`) en el documento privado `users/{uid}` antes de mostrar el estado de cuenta lista. Un fallo al guardar conserva el formulario y permite reintentar el guardado sin volver a solicitar el código. La pantalla usa recursos de cadenas, campos etiquetados, errores semánticos anunciables, acciones de teclado y desplazamiento vertical para texto ampliado.
 
+T-12 añade `feature.contacts.domain` con el modelo `Contact`, el puerto `ContactRepository` y `AddContactUseCase`, y su implementación `FirebaseContactRepository` sobre `users/{uid}/contacts`. El identificador del contacto se deriva del teléfono normalizado (`ContactIdFactory`), de modo que el alta es idempotente: el mismo teléfono apunta siempre al mismo documento y no puede generar dos contactos. El duplicado se detecta leyendo ese documento antes de escribir y se informa con el contacto existente para poder indicar cuál es. Nombre, apellidos y teléfono se validan con T-06 y se guardan normalizados. La vinculación con una cuenta existente depende del puerto `ContactAccountResolver`; el MVP inyecta `DisabledContactAccountResolver`, que responde `Unavailable`, así que los contactos se guardan como `pending` y el cliente sigue sin consultar el directorio de personas usuarias, como exige T-11. Activar la vinculación exigirá la operación de backend autenticada, con App Check y cuota por UID, descrita en `FIREBASE.md`.
+
 ### Dependencias Firebase de T-05
 
 - **Necesidad:** Firebase Authentication permite implementar la identidad por teléfono definida en RF-01; Cloud Firestore almacena perfiles, contactos y mensajes; Firebase Storage conserva las notas de voz fuera de Firestore. Firebase BoM mantiene versiones compatibles entre los tres SDK.
@@ -107,6 +109,13 @@ pueden leer por su propio UID. El cliente no consulta el directorio de usuarios.
 La consulta exacta de una cuenta, cuando se integre en T-12, deberá pasar por
 una operación de backend autenticada y limitada; una búsqueda de directorio no
 se habilita mediante reglas de Firestore.
+
+T-12 implementa el alta sin activar esa consulta. `contactId` no es aleatorio:
+`ContactIdFactory` lo deriva del teléfono normalizado con SHA-256 truncado, para
+que el alta sea idempotente y para no escribir el teléfono en la ruta del
+documento. La vinculación queda como puerto (`ContactAccountResolver`) y el MVP
+guarda siempre `status: "pending"` con `linkedUserId` nulo; activar la
+vinculación requiere la operación de backend anterior y su cuota.
 
 ### `conversations/{conversationId}`
 

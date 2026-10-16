@@ -180,3 +180,4 @@ Los iconos de cámara, llamada y vídeo presentes en Figma son exploraciones vis
 5. Decidir si el estado escuchado/leído entrará después del MVP.
 6. Confirmar que los nombres y teléfonos visibles en el prototipo son ficticios y autorizados para pruebas.
 7. Para la creación de cuenta, el teléfono muestra `+34` como prefijo inicial editable; la persona puede sustituirlo por otro prefijo internacional. T-13 deberá reutilizar este comportamiento o documentar su diferencia para el alta de contactos.
+8. RF-03 pide «añadirlo o vincularlo con una cuenta existente», pero T-11 cerró la consulta del directorio desde el cliente y exige una operación de backend autenticada, con App Check y cuota por UID, antes de vincular. Confirmar si el piloto acepta que el alta quede siempre como contacto pendiente hasta que exista esa operación, o si se amplía el alcance con ese backend.
