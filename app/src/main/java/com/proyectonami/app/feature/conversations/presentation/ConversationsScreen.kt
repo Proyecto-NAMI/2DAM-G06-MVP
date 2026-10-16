@@ -1,28 +1,37 @@
 package com.proyectonami.app.feature.conversations.presentation
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import com.proyectonami.app.R
 import com.proyectonami.app.core.designsystem.component.NamiSecondaryButton
 import com.proyectonami.app.core.designsystem.theme.NamiSpacing
@@ -70,12 +79,39 @@ fun ConversationsRoute(
                 } else {
                     LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(NamiSpacing.Small)) {
                         items(remote.conversations, key = { it.id }) { conversation ->
-                            NamiSecondaryButton(
-                                text = "${conversation.displayName} ${conversation.surname}".trim(),
-                                icon = painterResource(R.drawable.ic_nami_arrow_forward),
-                                onClick = { onOpenConversation(conversation.id) },
-                                modifier = Modifier.fillMaxWidth(),
-                            )
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(NamiSpacing.Small),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Box(
+                                    modifier =
+                                        Modifier
+                                            .size(
+                                                48.dp,
+                                            ).clip(CircleShape)
+                                            .background(MaterialTheme.colorScheme.secondaryContainer)
+                                            .semantics {
+                                                contentDescription =
+                                                    conversationAvatarDescription(
+                                                        conversation.displayName,
+                                                        conversation.surname,
+                                                        conversation.avatarPath != null,
+                                                    )
+                                            },
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        initials(conversation.displayName, conversation.surname),
+                                        style = MaterialTheme.typography.titleMedium,
+                                    )
+                                }
+                                NamiSecondaryButton(
+                                    text = conversationLabel(conversation.displayName, conversation.surname, conversation.unreadCount),
+                                    icon = painterResource(R.drawable.ic_nami_arrow_forward),
+                                    onClick = { onOpenConversation(conversation.id) },
+                                    modifier = Modifier.weight(1f),
+                                )
+                            }
                         }
                     }
                 }
@@ -101,3 +137,23 @@ fun ConversationsRoute(
         )
     }
 }
+
+private fun conversationLabel(
+    displayName: String,
+    surname: String,
+    unreadCount: Int,
+): String {
+    val name = "$displayName $surname".trim()
+    return if (unreadCount > 0) "$name, $unreadCount mensajes sin leer" else name
+}
+
+private fun initials(
+    displayName: String,
+    surname: String,
+): String = listOf(displayName, surname).mapNotNull { it.trim().firstOrNull()?.uppercaseChar() }.joinToString("")
+
+private fun conversationAvatarDescription(
+    displayName: String,
+    surname: String,
+    hasAvatar: Boolean,
+): String = if (hasAvatar) "Avatar de $displayName $surname" else "Iniciales de $displayName $surname"
