@@ -2,10 +2,15 @@ package com.proyectonami.app.core.data.firebase
 
 import android.app.Activity
 import android.content.Context
+import android.net.Uri
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageReference
+import com.proyectonami.app.core.domain.audio.AudioNoteMetadata
+import com.proyectonami.app.core.domain.audio.AudioNotesRepository
+import com.proyectonami.app.core.domain.audio.AudioUploadFailure
+import com.proyectonami.app.core.domain.audio.AudioUploadState
 import com.proyectonami.app.core.domain.auth.AccountProfile
 import com.proyectonami.app.core.domain.auth.AccountProfileLoadResult
 import com.proyectonami.app.core.domain.auth.AccountProfileRepository
@@ -21,6 +26,7 @@ import com.proyectonami.app.core.domain.validation.PhoneNumberValidation
 import com.proyectonami.app.core.domain.validation.PhoneNumberValidator
 import com.proyectonami.app.feature.contacts.domain.ContactRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
@@ -168,6 +174,71 @@ class FirebaseAudioStorageRepository(
     ): StorageReference = storage.reference.child(FirebasePaths.audio(conversationId, messageId))
 }
 
+class FirebaseAudioNotesRepository(
+    private val storage: FirebaseStorage,
+    private val firestore: FirebaseFirestore,
+) : AudioNotesRepository {
+    override fun upload(
+        metadata: AudioNoteMetadata,
+        localPath: String,
+    ): Flow<AudioUploadState> =
+        flow {
+            emit(AudioUploadState.Pending)
+            if (metadata.durationMillis <= 0L || metadata.sizeBytes <= 0L) {
+                emit(AudioUploadState.Failed(metadata, AudioUploadFailure.INVALID_NOTE))
+                return@flow
+            }
+            try {
+                val reference = storage.reference.child(FirebasePaths.audio(metadata.conversationId, metadata.clientMessageId))
+                val uri = Uri.fromFile(java.io.File(localPath))
+                emit(AudioUploadState.Progress(0f))
+                awaitUpload(reference, uri)
+                emit(AudioUploadState.Progress(1f))
+                val values =
+                    mapOf(
+                        "type" to "audio",
+                        "senderId" to metadata.senderId,
+                        "createdAt" to
+                            com.google.firebase.firestore.FieldValue
+                                .serverTimestamp(),
+                        "durationMillis" to metadata.durationMillis,
+                        "sizeBytes" to metadata.sizeBytes,
+                        "contentType" to metadata.contentType,
+                    )
+                awaitSet(firestore.document(FirebasePaths.message(metadata.conversationId, metadata.clientMessageId)), values)
+                emit(AudioUploadState.Sent(metadata))
+            } catch (_: Exception) {
+                emit(AudioUploadState.Failed(metadata, AudioUploadFailure.NETWORK))
+            }
+        }
+
+    override suspend fun deleteLocal(localPath: String): Result<Unit> =
+        runCatching {
+            val file = java.io.File(localPath)
+            if (file.exists() && !file.delete()) error("Unable to delete temporary audio")
+        }
+
+    private suspend fun awaitUpload(
+        reference: StorageReference,
+        uri: Uri,
+    ) = suspendCancellableCoroutine<Unit> { continuation ->
+        val task = reference.putFile(uri)
+        task.addOnSuccessListener { continuation.resume(Unit) }
+        task.addOnFailureListener { continuation.resumeWith(Result.failure(it)) }
+    }
+
+    private suspend fun awaitSet(
+        reference: com.google.firebase.firestore.DocumentReference,
+        values: Map<String, Any>,
+    ) = suspendCancellableCoroutine<Unit> { continuation ->
+        reference
+            .set(values)
+            .addOnSuccessListener {
+                continuation.resume(Unit)
+            }.addOnFailureListener { continuation.resumeWith(Result.failure(it)) }
+    }
+}
+
 class FirebaseRepositoryContainer(
     val authRepository: AuthRepository,
     val accountProfileRepository: AccountProfileRepository,
@@ -177,6 +248,7 @@ class FirebaseRepositoryContainer(
     val conversationsRepository: ConversationsRepository,
     val textMessagesRepository: TextMessagesRepository,
     val audioStorageRepository: AudioStorageRepository,
+    val audioNotesRepository: AudioNotesRepository,
 ) {
     companion object {
         fun create(
@@ -198,6 +270,7 @@ class FirebaseRepositoryContainer(
                 conversationsRepository = FirebaseConversationsRepository(services.firestore, services.auth),
                 textMessagesRepository = FirebaseTextMessagesRepository(services.firestore, services.auth),
                 audioStorageRepository = FirebaseAudioStorageRepository(services.storage),
+                audioNotesRepository = FirebaseAudioNotesRepository(services.storage, services.firestore),
             )
         }
     }
