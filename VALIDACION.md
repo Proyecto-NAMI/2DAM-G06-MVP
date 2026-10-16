@@ -110,7 +110,7 @@ Qué incluye:
 
 - La app restaura primero la sesión Firebase y presenta el formulario accesible cuando no hay sesión. Incluye nombre, apellidos y teléfono con `+34` editable; valida con los validadores T-06 y utiliza acciones de teclado y desplazamiento vertical.
 - Los errores de formulario y autenticación se muestran en pantalla y se exponen a TalkBack; el código incorrecto y el caducado conservan los datos y permiten reenvío.
-- Tras verificar, guarda `displayName`, `surname` y `phoneNumber` en `users/{uid}` antes de marcar la cuenta como lista. Un fallo de Firestore ofrece reintentar sin volver a verificar.
+- Tras verificar, guarda `displayName`, `surname` y `phoneE164` en `users/{uid}` antes de marcar la cuenta como lista. Un fallo de Firestore ofrece reintentar sin volver a verificar.
 - Las pruebas UI usan fakes y cubren registro correcto, código incorrecto con conservación del formulario, caducidad y reenvío, fallo/reintento de guardado, validación anunciable, uso con texto al 200 % y escritura del teléfono después del prefijo inicial.
 - Revisión manual en el emulador Android 16/API 36 con TalkBack habilitado: se comprobó el orden y foco de los campos, la apertura del teclado numérico y los errores visibles. La persona usuaria confirmó que los anuncios se oyen correctamente.
 - Se verificó el teléfono reservado `+15555550100` en Firebase Emulator Suite con el perfil ficticio `NamiTest Familia`; después de `am force-stop` y abrir NAMI de nuevo, la sesión se restauró y volvió a mostrarse «Cuenta creada».
@@ -126,6 +126,28 @@ Qué incluye:
 | `gradlew.bat connectedDebugAndroidTest` | Correcto en Android 16/API 36 con Firebase Emulator Suite activo: 18 pruebas, 0 fallos y 0 omitidas. Pasaron las 7 de `AccountCreationScreenTest`, las 4 de `FirebaseEmulatorSmokeTest`, `MainActivityTest` y las 6 de `NamiComponentsTest`. |
 
 Limitaciones: la sesión tras cierre forzado y reapertura se verificó manualmente con Firebase Emulator Suite en Android 16/API 36 usando datos ficticios. La pantalla de conversaciones real pertenece a T-15; tras guardar el perfil, T-08 muestra el estado «Cuenta creada» hasta que se implemente esa pantalla. Revisión por otra persona pendiente.
+
+# Validación de T-11 (RF-03, RNF-05, RNF-06)
+
+Fecha: 16 de octubre de 2026. El cliente guarda el teléfono como `phoneE164`,
+validado y normalizado a E.164. Las reglas permiten leer únicamente el perfil
+propio, rechazan consultas al directorio y exigen que un teléfono escrito
+coincida con la credencial telefónica verificada. No hay búsqueda de cuentas
+habilitada en el cliente; el diseño para T-12 requiere backend autenticado,
+App Check y cuota por UID antes de activar la vinculación.
+
+| Comprobación | Resultado |
+|---|---|
+| `gradlew.bat testDebugUnitTest` | 43 pruebas, 0 fallos |
+| `gradlew.bat spotlessCheck` | Correcto |
+| `gradlew.bat :app:compileDebugAndroidTestKotlin` | Correcto |
+| `firebase emulators:exec ... connectedDebugAndroidTest` | Android 16/API 36: 23 pruebas, 0 fallos, 0 errores y 0 omitidas |
+| `FirebaseEmulatorSmokeTest` | 6 pruebas; incluyen lectura propia permitida, lectura ajena y consulta de directorio denegadas, escritura de teléfono sin verificar denegada y teléfono verificado guardado en E.164 |
+| Repetición focalizada de `phoneVerificationCanRetryAndSessionIsRestoredByANewRepository` | Correcta al guardar una entrada con formato y comprobar su forma E.164 persistida |
+
+La revisión manual del flujo de búsqueda/vinculación y la revisión por otra
+persona del equipo quedan pendientes: la UI y el backend de búsqueda todavía no
+existen en T-11 y deben revisarse en T-12/T-13 antes de habilitar la vinculación.
 
 # Validación de T-05 (RF-01, RF-03, RF-05, RF-06; RNF-05, RNF-06)
 

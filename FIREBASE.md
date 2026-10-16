@@ -38,6 +38,25 @@ La prueba `FirebaseEmulatorSmokeTest` crea exclusivamente cuentas anónimas efí
 ## Seguridad y privacidad
 
 - Firestore exige autenticación y limita perfiles y contactos a su propietario.
+- Un cliente no puede listar perfiles ni consultar `users` por teléfono: las
+  reglas solo permiten leer `users/{uid}` cuando el UID coincide con la sesión.
+  Los documentos solo pueden incluir `phoneE164` si coincide con el teléfono
+  verificado en la credencial Firebase; el teléfono es inmutable desde el
+  cliente. El repositorio valida y normaliza a E.164 antes de guardarlo.
+- **Modelo de amenaza de T-11:** un usuario autenticado malicioso podría probar
+  números probables, consultar repetidamente el directorio o leer un perfil
+  ajeno; también podría intentar registrar un teléfono inventado para envenenar
+  una búsqueda. Los activos son el teléfono, la existencia de una cuenta y los
+  datos del perfil. Las reglas deniegan lecturas cruzadas, consultas de colección
+  y teléfonos no verificados; los contactos y teléfonos pendientes quedan
+  privados bajo el UID propietario.
+- No se implementa una consulta de teléfonos desde el cliente. `limit(1)` en una
+  consulta cliente no previene enumeración mediante peticiones repetidas. Si se
+  añade búsqueda exacta en T-12, deberá ser una operación de backend autenticada,
+  con comprobación de App Check y cuota por UID, devolver solo el resultado
+  mínimo necesario, y no aceptar ni exponer consultas de directorio. Hasta que
+  esa operación y su cuota se prueben, el flujo de vinculación con una cuenta
+  existente permanece cerrado; se puede conservar el contacto como pendiente.
 - Conversaciones, mensajes y audios exigen pertenecer a `participantIds`.
 - Storage acepta únicamente contenido con tipo `audio/*` en la ruta de una conversación autorizada.
 - No se registran teléfonos, tokens, mensajes ni rutas de audio.
