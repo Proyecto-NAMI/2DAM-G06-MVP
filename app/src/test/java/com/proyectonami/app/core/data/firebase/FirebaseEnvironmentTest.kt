@@ -24,11 +24,15 @@ class FirebaseEnvironmentTest {
         assertThrows(IllegalArgumentException::class.java) {
             emulatorEnvironment(projectId = "demo-nami", authPort = 0)
         }
+        assertThrows(IllegalArgumentException::class.java) {
+            emulatorEnvironment(projectId = "demo-nami", functionsPort = 65_536)
+        }
     }
 
     private fun emulatorEnvironment(
         projectId: String,
         authPort: Int = 9099,
+        functionsPort: Int = 5001,
     ): FirebaseEnvironment =
         FirebaseEnvironment(
             projectId = projectId,
@@ -39,6 +43,7 @@ class FirebaseEnvironmentTest {
             emulatorHost = "10.0.2.2",
             authEmulatorPort = authPort,
             firestoreEmulatorPort = 8080,
+            functionsEmulatorPort = functionsPort,
             storageEmulatorPort = 9199,
         )
 }

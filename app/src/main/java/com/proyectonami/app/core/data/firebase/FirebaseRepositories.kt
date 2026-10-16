@@ -13,6 +13,8 @@ import com.proyectonami.app.core.domain.auth.AuthSession
 import com.proyectonami.app.core.domain.auth.PhoneCodeVerificationResult
 import com.proyectonami.app.core.domain.auth.PhoneVerificationChallenge
 import com.proyectonami.app.core.domain.auth.PhoneVerificationRequestResult
+import com.proyectonami.app.core.domain.contacts.ContactsRepository
+import com.proyectonami.app.core.domain.conversations.ConversationsRepository
 import com.proyectonami.app.core.domain.validation.PhoneNumberValidation
 import com.proyectonami.app.core.domain.validation.PhoneNumberValidator
 import com.proyectonami.app.feature.contacts.domain.ContactRepository
@@ -129,6 +131,8 @@ class FirebaseRepositoryContainer(
     val accountProfileRepository: AccountProfileRepository,
     val contactRepository: ContactRepository,
     val firestoreRepository: FirestoreRepository,
+    val contactsRepository: ContactsRepository,
+    val conversationsRepository: ConversationsRepository,
     val audioStorageRepository: AudioStorageRepository,
 ) {
     companion object {
@@ -142,6 +146,13 @@ class FirebaseRepositoryContainer(
                 accountProfileRepository = FirebaseAccountProfileRepository(services.firestore),
                 contactRepository = FirebaseContactRepository(services.firestore),
                 firestoreRepository = FirebaseFirestoreRepository(services.firestore),
+                contactsRepository =
+                    FirebaseContactsRepository(
+                        firestore = services.firestore,
+                        auth = services.auth,
+                        functions = services.functions,
+                    ),
+                conversationsRepository = FirebaseConversationsRepository(services.firestore, services.auth),
                 audioStorageRepository = FirebaseAudioStorageRepository(services.storage),
             )
         }

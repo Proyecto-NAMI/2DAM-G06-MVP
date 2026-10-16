@@ -110,9 +110,13 @@ createdAt: timestamp
 `phoneE164` es el teléfono introducido por la persona propietaria del contacto.
 No existe un índice de teléfonos legible por clientes: los perfiles solo se
 pueden leer por su propio UID. El cliente no consulta el directorio de usuarios.
-La consulta exacta de una cuenta, cuando se integre en T-12, deberá pasar por
-una operación de backend autenticada y limitada; una búsqueda de directorio no
-se habilita mediante reglas de Firestore.
+La callable `addContact` de T-11 exige sesión con teléfono verificado y App Check
+en producción, valida E.164, limita cada UID a 5 consultas por minuto y 20 por
+día, consulta solo ese teléfono mediante Firebase Admin Auth y crea el contacto
+en una transacción. El ID es el SHA-256 del E.164; la función devuelve solo el
+contacto añadido/ya existente, no ofrece una API de directorio. Las reglas
+deniegan toda escritura cliente en `contacts` y en `contactLookupLimits`. En
+debug, App Check solo se omite dentro de Functions Emulator; release usa Play Integrity.
 
 T-12 implementa el alta sin activar esa consulta. `contactId` no es aleatorio:
 `ContactIdFactory` lo deriva del teléfono normalizado con SHA-256 truncado, para
@@ -125,10 +129,18 @@ vinculación requiere la operación de backend anterior y su cuota.
 
 ```text
 participantIds: [string, string]
+participantDetails: map<uid, {displayName: string, surname: string, avatarPath: string?}>
+unreadCountByUser: map<uid, integer>
 lastMessageType: "text" | "audio"?
 lastMessagePreview: string?
 lastActivityAt: timestamp
 ```
+
+T-14 consulta solo documentos que contienen el UID autenticado, ordena por
+`lastActivityAt` descendente y lee el nombre/avatar del otro participante junto
+al contador del usuario actual. Las reglas limitan la lectura a participantes;
+el índice compuesto de `participantIds` y `lastActivityAt` está declarado en
+`firestore.indexes.json`.
 
 ### `conversations/{conversationId}/messages/{messageId}`
 
