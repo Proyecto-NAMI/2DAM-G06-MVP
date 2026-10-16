@@ -28,7 +28,7 @@ T-06 sitúa la validación de nombre, apellidos y teléfono en `core.domain.vali
 
 T-07 amplía el repositorio de autenticación con verificación telefónica Firebase, observación de la sesión y reenvío del código. Los errores del SDK se traducen a motivos de dominio; el reto de verificación y el token de reenvío se conservan tras un código incorrecto para permitir el reintento. `PhoneAuthViewModel` mantiene el nombre, los apellidos y el teléfono mientras presenta errores o solicita un nuevo código; la sesión comienza en estado `Restoring` hasta recibir el estado persistido de Firebase. Firebase Auth mantiene la sesión localmente entre aperturas de la aplicación; T-08 conectará este estado con la pantalla de creación de cuenta.
 
-T-08 conecta el estado de autenticación a una pantalla Compose de creación de cuenta. El teléfono se presenta con `+34` editable y se valida con las reglas de T-06; tras verificarlo se guarda el perfil mínimo (`displayName`, `surname` y `phoneNumber`) en el documento privado `users/{uid}` antes de mostrar el estado de cuenta lista. Un fallo al guardar conserva el formulario y permite reintentar el guardado sin volver a solicitar el código. La pantalla usa recursos de cadenas, campos etiquetados, errores semánticos anunciables, acciones de teclado y desplazamiento vertical para texto ampliado.
+T-08 conecta el estado de autenticación a una pantalla Compose de creación de cuenta. El teléfono se presenta con `+34` editable y se valida con las reglas de T-06; tras verificarlo se guarda el perfil mínimo (`displayName`, `surname` y `phoneE164`) en el documento privado `users/{uid}` antes de mostrar el estado de cuenta lista. Un fallo al guardar conserva el formulario y permite reintentar el guardado sin volver a solicitar el código. La pantalla usa recursos de cadenas, campos etiquetados, errores semánticos anunciables, acciones de teclado y desplazamiento vertical para texto ampliado.
 
 ### Dependencias Firebase de T-05
 
@@ -96,10 +96,17 @@ updatedAt: timestamp
 linkedUserId: string?
 displayName: string
 surname: string
-phoneLookup: string
+phoneE164: string
 status: "linked" | "pending"
 createdAt: timestamp
 ```
+
+`phoneE164` es el teléfono introducido por la persona propietaria del contacto.
+No existe un índice de teléfonos legible por clientes: los perfiles solo se
+pueden leer por su propio UID. El cliente no consulta el directorio de usuarios.
+La consulta exacta de una cuenta, cuando se integre en T-12, deberá pasar por
+una operación de backend autenticada y limitada; una búsqueda de directorio no
+se habilita mediante reglas de Firestore.
 
 ### `conversations/{conversationId}`
 
@@ -154,7 +161,9 @@ La implementación será adaptable y no copiará tamaños absolutos de 390 x 844
 - Autenticación obligatoria para datos remotos.
 - Reglas de Firestore y Storage probadas con casos permitidos y denegados.
 - Validación de participantes en backend; el cliente no será la frontera de seguridad.
-- Teléfonos normalizados a E.164 y búsqueda limitada, sin enumeración de cuentas.
+- Teléfonos normalizados a E.164 y perfiles privados por propietario. El cliente
+  no puede consultar el directorio; cualquier búsqueda exacta futura debe estar
+  mediada por backend autenticado y limitada.
 - Entornos separados para desarrollo/pruebas y piloto.
 - Datos ficticios en emuladores, capturas y repositorio.
 - Logs sin mensajes, URLs firmadas, tokens o teléfonos completos.

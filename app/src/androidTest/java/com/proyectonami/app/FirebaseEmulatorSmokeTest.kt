@@ -13,6 +13,8 @@ import com.proyectonami.app.core.data.firebase.FirebaseEnvironment
 import com.proyectonami.app.core.data.firebase.FirebasePhoneAuthRepository
 import com.proyectonami.app.core.data.firebase.FirebaseRepositoryContainer
 import com.proyectonami.app.core.data.firebase.FirebaseServicesFactory
+import com.proyectonami.app.core.domain.auth.AccountProfile
+import com.proyectonami.app.core.domain.auth.AccountProfileSaveResult
 import com.proyectonami.app.core.domain.auth.AuthSession
 import com.proyectonami.app.core.domain.auth.PhoneAuthFailure
 import com.proyectonami.app.core.media.MediaSessionCoordinator
@@ -164,6 +166,17 @@ class FirebaseEmulatorSmokeTest {
                     }
                 val userId = (verifiedState.session as AuthSession.SignedIn).userId
 
+                assertEquals(
+                    AccountProfileSaveResult.Saved,
+                    repositories.accountProfileRepository.saveProfile(
+                        AccountProfile(
+                            userId = userId,
+                            displayName = "Persona",
+                            surname = "Ficticia",
+                            phoneNumber = "+1 (555) 555-0100",
+                        ),
+                    ),
+                )
                 val recreatedRepository = FirebasePhoneAuthRepository(services.auth)
                 assertEquals(userId, recreatedRepository.currentUserId)
                 assertEquals(
@@ -179,9 +192,66 @@ class FirebaseEmulatorSmokeTest {
                     )
                 assertEquals("Persona", profile.getString("displayName"))
                 assertEquals("Ficticia", profile.getString("surname"))
-                assertEquals(phoneNumber, profile.getString("phoneNumber"))
+                assertEquals(phoneNumber, profile.getString("phoneE164"))
+                assertEquals(null, profile.getString("phoneNumber"))
             }
         }
+
+    @Test
+    fun profileReadsAreOwnerOnlyAndPhoneDirectoryQueriesAreDenied() {
+        assumeEmulatorsAreRunning()
+
+        val ownerId = signInAnonymously()
+        val ownerProfile = repositories.firestoreRepository.userDocument(ownerId)
+        Tasks.await(
+            ownerProfile.set(mapOf("displayName" to "Persona Ficticia")),
+            TIMEOUT_SECONDS,
+            TimeUnit.SECONDS,
+        )
+        assertEquals(
+            "Persona Ficticia",
+            Tasks
+                .await(ownerProfile.get(Source.SERVER), TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                .getString("displayName"),
+        )
+
+        repositories.authRepository.signOut()
+        signInAnonymously()
+
+        assertPermissionDenied {
+            Tasks.await(ownerProfile.get(Source.SERVER), TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        }
+        assertPermissionDenied {
+            Tasks.await(
+                services.firestore
+                    .collection("users")
+                    .whereEqualTo("phoneE164", "+15555550100")
+                    .limit(1)
+                    .get(Source.SERVER),
+                TIMEOUT_SECONDS,
+                TimeUnit.SECONDS,
+            )
+        }
+    }
+
+    @Test
+    fun unverifiedUserCannotRegisterPhoneForDirectoryLookup() {
+        assumeEmulatorsAreRunning()
+
+        val userId = signInAnonymously()
+        assertPermissionDenied {
+            Tasks.await(
+                repositories.firestoreRepository.userDocument(userId).set(
+                    mapOf(
+                        "displayName" to "Persona Ficticia",
+                        "phoneE164" to "+15555550100",
+                    ),
+                ),
+                TIMEOUT_SECONDS,
+                TimeUnit.SECONDS,
+            )
+        }
+    }
 
     @Test
     fun unauthenticatedUserCannotWriteAProfile() {

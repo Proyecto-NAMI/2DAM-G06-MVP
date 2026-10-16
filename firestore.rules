@@ -6,6 +6,12 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function hasVerifiedPhoneE164(phoneE164) {
+      return request.auth.token.phone_number is string
+        && phoneE164 == request.auth.token.phone_number
+        && phoneE164.matches('^\\+[1-9][0-9]{6,14}$');
+    }
+
     function isConversationParticipant(conversationId) {
       return isSignedIn()
         && request.auth.uid in get(
@@ -14,7 +20,18 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read, create, update: if isSignedIn() && request.auth.uid == userId;
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow create: if isSignedIn()
+        && request.auth.uid == userId
+        && (!('phoneE164' in request.resource.data)
+          || hasVerifiedPhoneE164(request.resource.data.phoneE164));
+      allow update: if isSignedIn()
+        && request.auth.uid == userId
+        && (!('phoneE164' in request.resource.data)
+          || hasVerifiedPhoneE164(request.resource.data.phoneE164))
+        && (!('phoneE164' in resource.data)
+          || ('phoneE164' in request.resource.data
+            && request.resource.data.phoneE164 == resource.data.phoneE164));
       allow delete: if false;
 
       match /contacts/{contactId} {
@@ -47,4 +64,3 @@ service cloud.firestore {
     }
   }
 }
-

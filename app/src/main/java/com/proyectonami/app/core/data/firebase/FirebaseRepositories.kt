@@ -13,6 +13,8 @@ import com.proyectonami.app.core.domain.auth.AuthSession
 import com.proyectonami.app.core.domain.auth.PhoneCodeVerificationResult
 import com.proyectonami.app.core.domain.auth.PhoneVerificationChallenge
 import com.proyectonami.app.core.domain.auth.PhoneVerificationRequestResult
+import com.proyectonami.app.core.domain.validation.PhoneNumberValidation
+import com.proyectonami.app.core.domain.validation.PhoneNumberValidator
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
@@ -81,15 +83,21 @@ class FirebaseFirestoreRepository(
 class FirebaseAccountProfileRepository(
     private val firestore: FirebaseFirestore,
 ) : AccountProfileRepository {
-    override suspend fun saveProfile(profile: AccountProfile): AccountProfileSaveResult =
-        suspendCancellableCoroutine { continuation ->
+    override suspend fun saveProfile(profile: AccountProfile): AccountProfileSaveResult {
+        val phoneE164 =
+            when (val validation = PhoneNumberValidator.validate(profile.phoneNumber)) {
+                is PhoneNumberValidation.Valid -> validation.e164
+                is PhoneNumberValidation.Invalid -> return AccountProfileSaveResult.Failed
+            }
+
+        return suspendCancellableCoroutine { continuation ->
             firestore
                 .document(FirebasePaths.user(profile.userId))
                 .set(
                     mapOf(
                         "displayName" to profile.displayName,
                         "surname" to profile.surname,
-                        "phoneNumber" to profile.phoneNumber,
+                        "phoneE164" to phoneE164,
                     ),
                 ).addOnCompleteListener { task ->
                     if (continuation.isActive) {
@@ -103,6 +111,7 @@ class FirebaseAccountProfileRepository(
                     }
                 }
         }
+    }
 }
 
 class FirebaseAudioStorageRepository(
