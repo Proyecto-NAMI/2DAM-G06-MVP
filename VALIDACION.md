@@ -399,3 +399,15 @@ Qué se completó sobre la configuración inicial de T-05:
 
 La pérdida de red física, el audio en hardware real y la revisión de otra
 persona siguen siendo validaciones manuales pendientes antes de fusionar.
+
+## Validación de T-28 (RNF-01, RNF-02)
+
+La auditoría automática queda registrada en [`SSD/ACCESIBILIDAD.md`](SSD/ACCESIBILIDAD.md):
+semántica para TalkBack, estados anunciables, foco, objetivos táctiles de 48 dp,
+texto al 200 % en 320/411 dp y perfiles representativos con datos ficticios.
+`ConversationsScreenTest` comprueba además que el título es encabezado, el
+avatar tiene descripción y la acción de conversación mantiene el tamaño mínimo.
+
+La activación de TalkBack en un dispositivo/emulador y la revisión por otra
+persona deben completarse antes de fusionar; no se afirma que una prueba
+instrumentada sustituya esa comprobación manual.
