@@ -84,18 +84,12 @@ jobs:
           script: |
             trap 'rm -f .firebase-ci.json' EXIT
             node -e 'const fs = require("node:fs"); const config = JSON.parse(fs.readFileSync("firebase.json", "utf8")); for (const name of ["auth", "firestore", "storage"]) { if (!config.emulators[name]) throw new Error(`Missing ${name} emulator config`); config.emulators[name].host = "0.0.0.0"; } fs.writeFileSync(".firebase-ci.json", JSON.stringify(config));'
-            status=1
-            for attempt in 1 2 3; do
-              echo "Instrumented test attempt ${attempt}/3"
-              if firebase emulators:exec --config .firebase-ci.json --project demo-nami --only auth,firestore,storage "./gradlew connectedDebugAndroidTest"; then
-                status=0
-                break
-              fi
-              status=$?
-              echo "Instrumented tests failed on attempt ${attempt}; restarting Firebase emulators before retry."
-              sleep 5
-            done
-            exit "${status}"
+            echo "Instrumented test attempt 1/3"
+            firebase emulators:exec --config .firebase-ci.json --project demo-nami --only auth,firestore,storage "./gradlew connectedDebugAndroidTest" || \
+              (echo "Instrumented tests failed on attempt 1; retrying." && sleep 5 && \
+              firebase emulators:exec --config .firebase-ci.json --project demo-nami --only auth,firestore,storage "./gradlew connectedDebugAndroidTest") || \
+              (echo "Instrumented tests failed on attempt 2; retrying." && sleep 5 && \
+              firebase emulators:exec --config .firebase-ci.json --project demo-nami --only auth,firestore,storage "./gradlew connectedDebugAndroidTest")
 
       - name: Conservar informes de pruebas instrumentadas
         if: always()
