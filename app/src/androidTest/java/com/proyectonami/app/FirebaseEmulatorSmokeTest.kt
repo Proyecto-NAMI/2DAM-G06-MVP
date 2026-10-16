@@ -17,6 +17,10 @@ import com.proyectonami.app.core.domain.auth.AccountProfile
 import com.proyectonami.app.core.domain.auth.AccountProfileSaveResult
 import com.proyectonami.app.core.domain.auth.AuthSession
 import com.proyectonami.app.core.domain.auth.PhoneAuthFailure
+import com.proyectonami.app.core.domain.contacts.ContactDraft
+import com.proyectonami.app.core.domain.contacts.ContactSaveResult
+import com.proyectonami.app.core.domain.contacts.ContactStatus
+import com.proyectonami.app.core.domain.conversations.ConversationsRemoteState
 import com.proyectonami.app.core.media.MediaSessionCoordinator
 import com.proyectonami.app.feature.auth.presentation.PhoneAuthViewModel
 import kotlinx.coroutines.flow.first
@@ -34,6 +38,7 @@ import java.net.HttpURLConnection
 import java.net.InetSocketAddress
 import java.net.Socket
 import java.net.URL
+import java.util.Date
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
@@ -110,7 +115,7 @@ class FirebaseEmulatorSmokeTest {
         runBlocking {
             assumeEmulatorsAreRunning()
             repositories.authRepository.signOut()
-            val phoneNumber = "+15555550100"
+            val phoneNumber = fictitiousEmulatorPhoneNumber()
             val activityReference = AtomicReference<Activity>()
             val viewModel =
                 PhoneAuthViewModel(
@@ -173,7 +178,7 @@ class FirebaseEmulatorSmokeTest {
                             userId = userId,
                             displayName = "Persona",
                             surname = "Ficticia",
-                            phoneNumber = "+1 (555) 555-0100",
+                            phoneNumber = phoneNumber,
                         ),
                     ),
                 )
@@ -194,6 +199,22 @@ class FirebaseEmulatorSmokeTest {
                 assertEquals("Ficticia", profile.getString("surname"))
                 assertEquals(phoneNumber, profile.getString("phoneE164"))
                 assertEquals(null, profile.getString("phoneNumber"))
+
+                val contactPhoneNumber = nextFictitiousPhoneNumber(phoneNumber)
+                val firstContact =
+                    repositories.contactsRepository.addContact(
+                        ContactDraft("Contacto", "Ficticio", contactPhoneNumber),
+                    )
+                val duplicateContact =
+                    repositories.contactsRepository.addContact(
+                        ContactDraft("Otro", "Nombre", contactPhoneNumber),
+                    )
+                assertTrue(firstContact is ContactSaveResult.Added)
+                assertEquals(
+                    ContactStatus.PENDING,
+                    (firstContact as ContactSaveResult.Added).contact.status,
+                )
+                assertTrue(duplicateContact is ContactSaveResult.Duplicate)
             }
         }
 
@@ -228,6 +249,77 @@ class FirebaseEmulatorSmokeTest {
                     .whereEqualTo("phoneE164", "+15555550100")
                     .limit(1)
                     .get(Source.SERVER),
+                TIMEOUT_SECONDS,
+                TimeUnit.SECONDS,
+            )
+        }
+    }
+
+    @Test
+    fun conversationsAreScopedToCurrentUserAndOrderedWithUnreadCounts() =
+        runBlocking {
+            assumeEmulatorsAreRunning()
+
+            val unrelatedUserId = signInAnonymously()
+            val unrelatedConversationId = "conversation-unrelated-$unrelatedUserId"
+            Tasks.await(
+                repositories.firestoreRepository.conversationDocument(unrelatedConversationId).set(
+                    conversationData(unrelatedUserId, "uid-ficticio-2", unreadCount = 7, activityMillis = 300L),
+                ),
+                TIMEOUT_SECONDS,
+                TimeUnit.SECONDS,
+            )
+
+            repositories.authRepository.signOut()
+            val currentUserId = signInAnonymously()
+            val olderConversationId = "conversation-older-$currentUserId"
+            val newerConversationId = "conversation-newer-$currentUserId"
+            Tasks.await(
+                repositories.firestoreRepository.conversationDocument(olderConversationId).set(
+                    conversationData(currentUserId, "uid-contact-old", unreadCount = 2, activityMillis = 100L),
+                ),
+                TIMEOUT_SECONDS,
+                TimeUnit.SECONDS,
+            )
+            Tasks.await(
+                repositories.firestoreRepository.conversationDocument(newerConversationId).set(
+                    conversationData(currentUserId, "uid-contact-new", unreadCount = 4, activityMillis = 300L),
+                ),
+                TIMEOUT_SECONDS,
+                TimeUnit.SECONDS,
+            )
+
+            val state =
+                withTimeout(TIMEOUT_SECONDS * 1_000) {
+                    repositories.conversationsRepository
+                        .observeConversations()
+                        .first { it is ConversationsRemoteState.Loaded }
+                } as ConversationsRemoteState.Loaded
+
+            assertEquals(listOf(newerConversationId, olderConversationId), state.conversations.map { it.id })
+            assertEquals(listOf(4, 2), state.conversations.map { it.unreadCount })
+            assertEquals(
+                listOf("Persona uid-contact-new", "Persona uid-contact-old"),
+                state.conversations.map { it.displayName },
+            )
+        }
+
+    @Test
+    fun clientsCannotWriteContactsDirectly() {
+        assumeEmulatorsAreRunning()
+
+        val userId = signInAnonymously()
+        assertPermissionDenied {
+            Tasks.await(
+                repositories.firestoreRepository.contactDocument(userId, "contact-forged").set(
+                    mapOf(
+                        "displayName" to "Persona",
+                        "surname" to "Ficticia",
+                        "phoneE164" to "+15555550101",
+                        "linkedUserId" to "uid-ajeno-ficticio",
+                        "status" to "linked",
+                    ),
+                ),
                 TIMEOUT_SECONDS,
                 TimeUnit.SECONDS,
             )
@@ -326,6 +418,7 @@ class FirebaseEmulatorSmokeTest {
             listOf(
                 environment.authEmulatorPort,
                 environment.firestoreEmulatorPort,
+                environment.functionsEmulatorPort,
                 environment.storageEmulatorPort,
             ).all { port -> isReachable(environment.emulatorHost, port) },
         )
@@ -340,6 +433,38 @@ class FirebaseEmulatorSmokeTest {
             )
         return requireNotNull(authResult.user?.uid)
     }
+
+    private fun fictitiousEmulatorPhoneNumber(): String {
+        val suffix = Math.floorMod(System.nanoTime(), 10_000_000).toString().padStart(7, '0')
+        return "+1555$suffix"
+    }
+
+    private fun nextFictitiousPhoneNumber(phoneNumber: String): String {
+        val nextDigit = ((phoneNumber.last().digitToInt() + 1) % 10).toString()
+        return phoneNumber.dropLast(1) + nextDigit
+    }
+
+    private fun conversationData(
+        currentUserId: String,
+        otherUserId: String,
+        unreadCount: Long,
+        activityMillis: Long,
+    ): Map<String, Any> =
+        mapOf(
+            "participantIds" to listOf(currentUserId, otherUserId),
+            "participantDetails" to
+                mapOf(
+                    currentUserId to mapOf("displayName" to "Usuario", "surname" to "Ficticio"),
+                    otherUserId to
+                        mapOf(
+                            "displayName" to "Persona $otherUserId",
+                            "surname" to otherUserId,
+                            "avatarPath" to "avatars/ficticio.png",
+                        ),
+                ),
+            "unreadCountByUser" to mapOf(currentUserId to unreadCount),
+            "lastActivityAt" to com.google.firebase.Timestamp(Date(activityMillis)),
+        )
 
     private fun getVerificationCode(phoneNumber: String): String {
         val url =

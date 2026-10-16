@@ -6,11 +6,13 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.firebase.firestore.MemoryCacheSettings
+import com.google.firebase.functions.FirebaseFunctions
 import com.google.firebase.storage.FirebaseStorage
 
 data class FirebaseServices(
     val auth: FirebaseAuth,
     val firestore: FirebaseFirestore,
+    val functions: FirebaseFunctions,
     val storage: FirebaseStorage,
 )
 
@@ -30,11 +32,13 @@ object FirebaseServicesFactory {
         require(app.options.projectId == environment.projectId) {
             "La aplicación Firebase existente usa otro projectId"
         }
+        FirebaseAppCheckInstaller.install(app)
 
         val services =
             FirebaseServices(
                 auth = FirebaseAuth.getInstance(app),
                 firestore = FirebaseFirestore.getInstance(app),
+                functions = FirebaseFunctions.getInstance(app),
                 storage = FirebaseStorage.getInstance(app),
             )
 
@@ -46,6 +50,10 @@ object FirebaseServicesFactory {
             services.firestore.useEmulator(
                 environment.emulatorHost,
                 environment.firestoreEmulatorPort,
+            )
+            services.functions.useEmulator(
+                environment.emulatorHost,
+                environment.functionsEmulatorPort,
             )
             services.firestore.firestoreSettings =
                 FirebaseFirestoreSettings

@@ -86,7 +86,7 @@ android {
             buildConfigField(
                 "String",
                 "FIREBASE_API_KEY",
-                buildConfigString(firebaseProperty("NAMI_FIREBASE_API_KEY", "fake-api-key")),
+                buildConfigString(firebaseProperty("NAMI_FIREBASE_API_KEY", "AIzaSyDUMMY0123456789012345678901234567")),
             )
             buildConfigField(
                 "String",
@@ -111,6 +111,11 @@ android {
                 "int",
                 "FIREBASE_FIRESTORE_EMULATOR_PORT",
                 firebasePort("NAMI_FIREBASE_FIRESTORE_EMULATOR_PORT", 8080).toString(),
+            )
+            buildConfigField(
+                "int",
+                "FIREBASE_FUNCTIONS_EMULATOR_PORT",
+                firebasePort("NAMI_FIREBASE_FUNCTIONS_EMULATOR_PORT", 5001).toString(),
             )
             buildConfigField(
                 "int",
@@ -144,6 +149,7 @@ android {
             buildConfigField("String", "FIREBASE_EMULATOR_HOST", buildConfigString(""))
             buildConfigField("int", "FIREBASE_AUTH_EMULATOR_PORT", "0")
             buildConfigField("int", "FIREBASE_FIRESTORE_EMULATOR_PORT", "0")
+            buildConfigField("int", "FIREBASE_FUNCTIONS_EMULATOR_PORT", "0")
             buildConfigField("int", "FIREBASE_STORAGE_EMULATOR_PORT", "0")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -180,8 +186,10 @@ dependencies {
 
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
+    implementation(libs.firebase.functions)
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.storage)
+    releaseImplementation(libs.firebase.appcheck.playintegrity)
 
     val composeBom = platform(libs.androidx.compose.bom)
     implementation(composeBom)

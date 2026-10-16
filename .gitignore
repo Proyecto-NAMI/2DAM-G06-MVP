@@ -3,6 +3,8 @@
 .idea/
 build/
 **/build/
+functions/node_modules/
+functions/lib/
 captures/
 .externalNativeBuild/
 .cxx/

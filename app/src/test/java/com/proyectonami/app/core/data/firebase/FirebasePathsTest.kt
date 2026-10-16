@@ -12,6 +12,7 @@ class FirebasePathsTest {
             "users/user-1/contacts/contact-2",
             FirebasePaths.contact("user-1", "contact-2"),
         )
+        assertEquals("users/user-1/contacts", FirebasePaths.contacts("user-1"))
         assertEquals(
             "conversations/conversation-1/messages/message-1",
             FirebasePaths.message("conversation-1", "message-1"),

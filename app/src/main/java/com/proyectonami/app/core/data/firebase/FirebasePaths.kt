@@ -8,6 +8,8 @@ object FirebasePaths {
         contactId: String,
     ): String = "${user(userId)}/contacts/${safeSegment("contactId", contactId)}"
 
+    fun contacts(userId: String): String = "${user(userId)}/contacts"
+
     fun conversation(conversationId: String): String = "conversations/${safeSegment("conversationId", conversationId)}"
 
     fun message(

@@ -12,6 +12,7 @@ data class FirebaseEnvironment(
     val emulatorHost: String,
     val authEmulatorPort: Int,
     val firestoreEmulatorPort: Int,
+    val functionsEmulatorPort: Int,
     val storageEmulatorPort: Int,
 ) {
     init {
@@ -26,6 +27,7 @@ data class FirebaseEnvironment(
             require(emulatorHost.isNotBlank()) { "Falta NAMI_FIREBASE_EMULATOR_HOST" }
             require(authEmulatorPort in 1..65535)
             require(firestoreEmulatorPort in 1..65535)
+            require(functionsEmulatorPort in 1..65535)
             require(storageEmulatorPort in 1..65535)
         }
     }
@@ -50,6 +52,7 @@ data class FirebaseEnvironment(
                 emulatorHost = BuildConfig.FIREBASE_EMULATOR_HOST,
                 authEmulatorPort = BuildConfig.FIREBASE_AUTH_EMULATOR_PORT,
                 firestoreEmulatorPort = BuildConfig.FIREBASE_FIRESTORE_EMULATOR_PORT,
+                functionsEmulatorPort = BuildConfig.FIREBASE_FUNCTIONS_EMULATOR_PORT,
                 storageEmulatorPort = BuildConfig.FIREBASE_STORAGE_EMULATOR_PORT,
             )
     }
