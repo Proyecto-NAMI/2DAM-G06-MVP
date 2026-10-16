@@ -30,6 +30,12 @@ T-07 amplía el repositorio de autenticación con verificación telefónica Fire
 
 T-08 conecta el estado de autenticación a una pantalla Compose de creación de cuenta. El teléfono se presenta con `+34` editable y se valida con las reglas de T-06; tras verificarlo se guarda el perfil mínimo (`displayName`, `surname` y `phoneE164`) en el documento privado `users/{uid}` antes de mostrar el estado de cuenta lista. Un fallo al guardar conserva el formulario y permite reintentar el guardado sin volver a solicitar el código. La pantalla usa recursos de cadenas, campos etiquetados, errores semánticos anunciables, acciones de teclado y desplazamiento vertical para texto ampliado.
 
+T-12 añade `feature.contacts.domain` con el modelo `Contact`, el puerto `ContactRepository` y `AddContactUseCase`, y su implementación `FirebaseContactRepository` sobre `users/{uid}/contacts`. El identificador del contacto se deriva del teléfono normalizado (`ContactIdFactory`), de modo que el alta es idempotente: el mismo teléfono apunta siempre al mismo documento y no puede generar dos contactos. El duplicado se detecta leyendo ese documento antes de escribir y se informa con el contacto existente para poder indicar cuál es. Nombre, apellidos y teléfono se validan con T-06 y se guardan normalizados. La vinculación con una cuenta existente depende del puerto `ContactAccountResolver`; el MVP inyecta `DisabledContactAccountResolver`, que responde `Unavailable`, así que los contactos se guardan como `pending` y el cliente sigue sin consultar el directorio de personas usuarias, como exige T-11. Activar la vinculación exigirá la operación de backend autenticada, con App Check y cuota por UID, descrita en `FIREBASE.md`.
+
+T-13 construye la pantalla `Nuevo contacto` sobre el caso de uso de T-12. `feature.contacts.presentation` añade `AddContactViewModel` (estado inmutable en `StateFlow`), la validación conjunta de los tres campos y un reductor puro del resultado del alta, y `AddContactScreen` con su `AddContactRoute`. La pantalla usa los tokens y componentes accesibles de T-04, reutiliza las etiquetas y el prefijo `+34` inicial editable de la creación de cuenta (duda 7 de `spec.md`), valida los tres campos en un solo intento para no descubrir un error por envío, informa del duplicado nombrando el contacto existente sin escribir nada en ese caso, permite reintentar un fallo sin duplicar y anuncia errores, duplicado y confirmación como región viva. Los mensajes de validación de T-06 se comparten con T-08 en `ui/ValidationMessages.kt`. El acceso a la pantalla es provisional desde el estado «Cuenta creada» de T-08: el definitivo será la pantalla principal de T-15, que sustituirá ese botón por el `+` del prototipo.
+
+T-13 no afirma en la interfaz que la otra persona no tenga cuenta NAMI. Con `DisabledContactAccountResolver` el cliente no puede saberlo, así que la confirmación solo indica que el contacto se ha guardado; mostrar el estado `pending` queda para cuando exista una operación de backend que lo confirme.
+
 ### Dependencias Firebase de T-05
 
 - **Necesidad:** Firebase Authentication permite implementar la identidad por teléfono definida en RF-01; Cloud Firestore almacena perfiles, contactos y mensajes; Firebase Storage conserva las notas de voz fuera de Firestore. Firebase BoM mantiene versiones compatibles entre los tres SDK.
@@ -129,6 +135,13 @@ contacto añadido/ya existente, no ofrece una API de directorio. Las reglas
 deniegan toda escritura cliente en `contacts` y en `contactLookupLimits`. En
 debug, App Check solo se omite dentro de Functions Emulator; release usa Play Integrity.
 
+T-12 implementa el alta sin activar esa consulta. `contactId` no es aleatorio:
+`ContactIdFactory` lo deriva del teléfono normalizado con SHA-256 truncado, para
+que el alta sea idempotente y para no escribir el teléfono en la ruta del
+documento. La vinculación queda como puerto (`ContactAccountResolver`) y el MVP
+guarda siempre `status: "pending"` con `linkedUserId` nulo; activar la
+vinculación requiere la operación de backend anterior y su cuota.
+
 ### `conversations/{conversationId}`
 
 ```text
@@ -184,6 +197,15 @@ El audio no se almacenará en Firestore. Las reglas de Firestore y Storage compr
 | Cámara, teléfono y vídeo | Ocultos o deshabilitados con explicación. | Fuera de alcance |
 
 La implementación será adaptable y no copiará tamaños absolutos de 390 x 844.
+
+### El prototipo es un boceto, no una especificación de estilo
+
+Las capturas de [`Prototype_Reference/`](../Prototype_Reference) y el archivo de Figma son un prototipo de baja fidelidad. Se usan como referencia de **contenido y flujo** (qué pantallas existen, qué datos pide cada una y en qué orden), no de estilo ni de interacción:
+
+- La implementación debe **mejorar el estilo visual y la forma de interactuar**. El boceto no fija colores, tipografías, iconos, medidas ni gestos.
+- Los colores, tipografías, espaciados y controles salen de los tokens y componentes accesibles de T-04, con las garantías de RNF-01 (objetivo táctil de 48 dp, texto hasta el 200 %, semántica y contraste), no del aspecto del boceto.
+- Los iconos de cámara, llamada y vídeo que aparecen en el chat son exploraciones visuales y no se activan (`spec.md` §3).
+- Si el boceto contradice `constitution.md`, `spec.md` o este plan, se aplica el orden de prioridad de `constitution.md` y se anota la diferencia.
 
 ## 6. Seguridad y privacidad
 

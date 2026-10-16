@@ -18,6 +18,7 @@ import com.proyectonami.app.core.domain.conversations.ConversationsRepository
 import com.proyectonami.app.core.domain.messages.TextMessagesRepository
 import com.proyectonami.app.core.domain.validation.PhoneNumberValidation
 import com.proyectonami.app.core.domain.validation.PhoneNumberValidator
+import com.proyectonami.app.feature.contacts.domain.ContactRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
@@ -129,6 +130,7 @@ class FirebaseAudioStorageRepository(
 class FirebaseRepositoryContainer(
     val authRepository: AuthRepository,
     val accountProfileRepository: AccountProfileRepository,
+    val contactRepository: ContactRepository,
     val firestoreRepository: FirestoreRepository,
     val contactsRepository: ContactsRepository,
     val conversationsRepository: ConversationsRepository,
@@ -144,6 +146,7 @@ class FirebaseRepositoryContainer(
             return FirebaseRepositoryContainer(
                 authRepository = FirebasePhoneAuthRepository(services.auth),
                 accountProfileRepository = FirebaseAccountProfileRepository(services.firestore),
+                contactRepository = FirebaseContactRepository(services.firestore),
                 firestoreRepository = FirebaseFirestoreRepository(services.firestore),
                 contactsRepository =
                     FirebaseContactsRepository(
