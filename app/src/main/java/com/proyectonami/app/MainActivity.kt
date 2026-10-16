@@ -12,11 +12,15 @@ import com.proyectonami.app.core.media.MediaSessionController
 import com.proyectonami.app.feature.auth.presentation.PhoneAuthViewModel
 import com.proyectonami.app.feature.contacts.domain.AddContactUseCase
 import com.proyectonami.app.feature.contacts.presentation.AddContactViewModel
+import com.proyectonami.app.feature.profile.domain.LoadProfileUseCase
+import com.proyectonami.app.feature.profile.domain.UpdateProfileUseCase
+import com.proyectonami.app.feature.profile.presentation.ProfileViewModel
 import com.proyectonami.app.ui.NamiApp
 
 class MainActivity : ComponentActivity() {
     private lateinit var phoneAuthViewModel: PhoneAuthViewModel
     private lateinit var addContactViewModel: AddContactViewModel
+    private lateinit var profileViewModel: ProfileViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,13 +45,46 @@ class MainActivity : ComponentActivity() {
                     currentUserId = { repositories.authRepository.currentUserId },
                 ),
             )[AddContactViewModel::class.java]
+        profileViewModel =
+            ViewModelProvider(
+                this,
+                ProfileViewModelFactory(
+                    authRepository = repositories.authRepository,
+                    accountProfileRepository = repositories.accountProfileRepository,
+                    currentUserId = { repositories.authRepository.currentUserId },
+                ),
+            )[ProfileViewModel::class.java]
         setContent {
             NamiApp(
                 activity = this,
                 viewModel = phoneAuthViewModel,
                 addContactViewModel = addContactViewModel,
+                profileViewModel = profileViewModel,
             )
         }
+    }
+}
+
+private class ProfileViewModelFactory(
+    private val authRepository: AuthRepository,
+    private val accountProfileRepository: AccountProfileRepository,
+    private val currentUserId: () -> String?,
+) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(
+        modelClass: Class<T>,
+        extras: androidx.lifecycle.viewmodel.CreationExtras,
+    ): T {
+        require(modelClass.isAssignableFrom(ProfileViewModel::class.java))
+        return checkNotNull(
+            modelClass.cast(
+                ProfileViewModel(
+                    authRepository = authRepository,
+                    loadProfileUseCase = LoadProfileUseCase(accountProfileRepository),
+                    updateProfileUseCase = UpdateProfileUseCase(accountProfileRepository),
+                    currentUserId = currentUserId,
+                ),
+            ),
+        )
     }
 }
 

@@ -1,3 +1,37 @@
+# Validación de T-09 (RF-02)
+
+Fecha: 16 de octubre de 2026. Rama: `yang_dev`.
+
+- `ProfileViewModel` carga y actualiza nombre, apellidos, teléfono y avatar opcional.
+- El cambio de teléfono usa una nueva verificación y conserva el UID de Firebase mediante `updatePhoneNumber`.
+- Se cubren estados de carga, error, guardado y confirmación; los casos de uso validan y normalizan datos.
+
+| Comprobación | Resultado |
+|---|---|
+| `gradlew.bat spotlessApply` | Correcto |
+| `gradlew.bat testDebugUnitTest` | 105 pruebas, 0 fallos |
+| `gradlew.bat assembleDebug` | Correcto |
+| Revisión manual en dispositivo/emulador | Pendiente |
+| Revisión por otra persona | Pendiente |
+
+# Validación de T-17 (RF-05, RNF-09)
+
+Fecha: 16 de octubre de 2026. Rama: `yang_dev`.
+
+- Historial de texto observado desde Firestore y ordenado por `createdAt`.
+- Estados de carga, vacío, cargado y error representados de forma inmutable.
+- El borrador se conserva en `SavedStateHandle` y se restaura tras recreación.
+- El compositor ignora texto vacío o compuesto solo por espacios; un fallo de
+  envío restaura el borrador para permitir reintentar con el mismo UUID.
+
+| Comprobación | Resultado |
+|---|---|
+| `gradlew.bat spotlessApply` | Correcto |
+| `gradlew.bat testDebugUnitTest` | 107 pruebas, 0 fallos |
+| `gradlew.bat assembleDebug` | Correcto |
+| Revisión manual en dispositivo/emulador | Pendiente |
+| Revisión por otra persona | Pendiente |
+
 # Validación de T-16 (RF-05, RNF-04)
 
 Fecha: 16 de octubre de 2026. Rama: `yang_dev`.

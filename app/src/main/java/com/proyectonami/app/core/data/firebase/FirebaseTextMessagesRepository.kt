@@ -7,8 +7,15 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.proyectonami.app.core.domain.messages.OutgoingTextMessage
 import com.proyectonami.app.core.domain.messages.TextMessageFailure
+import com.proyectonami.app.core.domain.messages.TextMessageRecord
 import com.proyectonami.app.core.domain.messages.TextMessageSendResult
+import com.proyectonami.app.core.domain.messages.TextMessagesRemoteState
 import com.proyectonami.app.core.domain.messages.TextMessagesRepository
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
@@ -16,6 +23,38 @@ class FirebaseTextMessagesRepository(
     private val firestore: FirebaseFirestore,
     private val auth: FirebaseAuth,
 ) : TextMessagesRepository {
+    override fun observe(conversationId: String): Flow<TextMessagesRemoteState> =
+        flow {
+            emit(TextMessagesRemoteState.Loading)
+            val userId = auth.currentUser?.uid
+            if (userId == null || conversationId.isBlank() || '/' in conversationId) {
+                emit(TextMessagesRemoteState.Failed)
+                return@flow
+            }
+            emitAll(
+                callbackFlow {
+                    val listener =
+                        firestore
+                            .collection("conversations/$conversationId/messages")
+                            .orderBy("createdAt")
+                            .addSnapshotListener { snapshot, error ->
+                                if (error != null || snapshot == null) {
+                                    trySend(TextMessagesRemoteState.Failed)
+                                } else {
+                                    trySend(
+                                        TextMessagesRemoteState.Loaded(
+                                            snapshot.documents.mapNotNull { it.toTextMessageRecord() },
+                                        ),
+                                    )
+                                }
+                            }
+                    awaitClose {
+                        listener.remove()
+                    }
+                },
+            )
+        }
+
     override suspend fun send(message: OutgoingTextMessage): TextMessageSendResult {
         val userId =
             auth.currentUser?.uid
@@ -90,6 +129,16 @@ class FirebaseTextMessagesRepository(
                 }
         }
     }
+}
+
+private fun com.google.firebase.firestore.DocumentSnapshot.toTextMessageRecord(): TextMessageRecord? {
+    val clientMessageId = getString("clientMessageId") ?: return null
+    val senderId = getString("senderId") ?: return null
+    val text = getString("text") ?: return null
+    val createdAt = getTimestamp("createdAt") ?: return null
+    val status = getString("status") ?: return null
+    if (clientMessageId.isBlank() || senderId.isBlank() || text.isBlank()) return null
+    return TextMessageRecord(clientMessageId, senderId, text, createdAt.toDate().time, status)
 }
 
 private fun Exception?.toTextMessageFailure(): TextMessageFailure =

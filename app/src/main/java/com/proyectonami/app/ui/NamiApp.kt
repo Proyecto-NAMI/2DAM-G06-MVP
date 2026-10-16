@@ -50,18 +50,22 @@ import com.proyectonami.app.feature.auth.presentation.PhoneAuthUiState
 import com.proyectonami.app.feature.auth.presentation.PhoneAuthViewModel
 import com.proyectonami.app.feature.contacts.presentation.AddContactRoute
 import com.proyectonami.app.feature.contacts.presentation.AddContactViewModel
+import com.proyectonami.app.feature.profile.presentation.ProfileRoute
+import com.proyectonami.app.feature.profile.presentation.ProfileViewModel
 
 @Composable
 fun NamiApp(
     activity: Activity,
     viewModel: PhoneAuthViewModel,
     addContactViewModel: AddContactViewModel,
+    profileViewModel: ProfileViewModel? = null,
 ) {
     val state by viewModel.uiState.collectAsState()
     val signedInUserId = (state.session as? AuthSession.SignedIn)?.userId
     // El alta de contactos se abre desde el estado «Cuenta creada» hasta que T-15
     // construya la pantalla principal. Al cambiar de sesión se vuelve a la raíz.
     var showAddContact by remember(signedInUserId) { mutableStateOf(false) }
+    var showProfile by remember(signedInUserId) { mutableStateOf(false) }
     NamiTheme {
         Surface(
             modifier = Modifier.fillMaxSize(),
@@ -70,6 +74,13 @@ fun NamiApp(
             when {
                 state.session is AuthSession.Restoring ->
                     LoadingScreen()
+                signedInUserId != null && state.isAccountReady && showProfile && profileViewModel != null ->
+                    ProfileRoute(
+                        activity = activity,
+                        state = profileViewModel.uiState.collectAsState().value,
+                        viewModel = profileViewModel,
+                        onBack = { showProfile = false },
+                    )
                 signedInUserId != null && state.isAccountReady && showAddContact ->
                     AddContactRoute(
                         viewModel = addContactViewModel,
@@ -79,6 +90,10 @@ fun NamiApp(
                     AccountReadyScreen(
                         onSignOut = viewModel::signOut,
                         onAddContact = { showAddContact = true },
+                        onProfile = {
+                            profileViewModel?.load()
+                            showProfile = profileViewModel != null
+                        },
                     )
                 else ->
                     CreateAccountScreen(
@@ -318,6 +333,7 @@ fun CreateAccountScreen(
 private fun AccountReadyScreen(
     onSignOut: () -> Unit,
     onAddContact: () -> Unit,
+    onProfile: () -> Unit,
 ) {
     var showSignOutConfirmation by remember { mutableStateOf(false) }
     Column(
@@ -347,6 +363,12 @@ private fun AccountReadyScreen(
             text = stringResource(R.string.contact_add_entry),
             icon = painterResource(R.drawable.ic_nami_add),
             onClick = onAddContact,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        NamiSecondaryButton(
+            text = stringResource(R.string.profile_entry),
+            icon = painterResource(R.drawable.ic_nami_check),
+            onClick = onProfile,
             modifier = Modifier.fillMaxWidth(),
         )
         NamiPrimaryButton(

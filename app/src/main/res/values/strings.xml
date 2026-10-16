@@ -28,6 +28,38 @@
     <string name="logout_cancel">Seguir en NAMI</string>
     <string name="logout_media_cleanup_failed">La sesión se cerró, pero no se pudo detener todo el audio.</string>
 
+    <!-- Perfil (T-09, RF-02). -->
+    <string name="profile_title">Mi perfil</string>
+    <string name="profile_description">Consulta y actualiza tus datos personales.</string>
+    <string name="profile_loading">Cargando tu perfil…</string>
+    <string name="profile_load_failed">No se pudo cargar el perfil. Comprueba la conexión e inténtalo de nuevo.</string>
+    <string name="profile_retry">Reintentar</string>
+    <string name="profile_back">Volver</string>
+    <string name="profile_avatar_label">Avatar (opcional)</string>
+    <string name="profile_avatar_supporting">Indica una ruta de avatar ficticia o déjalo vacío.</string>
+    <string name="profile_avatar_preview">Avatar actual: %1$s</string>
+    <string name="profile_avatar_none">sin avatar</string>
+    <string name="profile_avatar_invalid">La ruta del avatar no puede superar 512 caracteres.</string>
+    <string name="profile_phone_supporting">Cambiar el teléfono requiere un nuevo código de verificación.</string>
+    <string name="profile_phone_requires_verification">Verifica el nuevo teléfono para guardar los cambios.</string>
+    <string name="profile_requesting_code">Enviando código…</string>
+    <string name="profile_verifying_code">Verificando…</string>
+    <string name="profile_save">Guardar cambios</string>
+    <string name="profile_saving">Guardando perfil…</string>
+    <string name="profile_save_failed">No se pudieron guardar los cambios. Comprueba la conexión e inténtalo de nuevo.</string>
+    <string name="profile_saved">Perfil actualizado.</string>
+    <string name="profile_entry">Editar mi perfil</string>
+
+    <!-- Historial y composición de texto (T-17, RF-05, RNF-09). -->
+    <string name="chat_title">Conversación</string>
+    <string name="chat_history_loading">Cargando mensajes…</string>
+    <string name="chat_history_empty">Aún no hay mensajes.</string>
+    <string name="chat_history_error">No se pudo cargar el historial. Comprueba la conexión.</string>
+    <string name="chat_composer_label">Escribe un mensaje</string>
+    <string name="chat_send">Enviar</string>
+    <string name="chat_send_error">No se pudo enviar el mensaje. El borrador se ha conservado para reintentarlo.</string>
+    <string name="chat_back">Volver</string>
+
     <!--
       Mensajes de validación de cuenta y contactos (T-06, RF-01).
       El dominio devuelve un motivo y la pantalla usa la cadena

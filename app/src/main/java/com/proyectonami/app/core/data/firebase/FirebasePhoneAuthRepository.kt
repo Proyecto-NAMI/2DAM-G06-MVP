@@ -143,6 +143,32 @@ class FirebasePhoneAuthRepository(
         }
     }
 
+    override suspend fun verifyPhoneNumberChange(
+        challenge: PhoneVerificationChallenge,
+        code: String,
+    ): PhoneCodeVerificationResult {
+        if (challenge.verificationId.isBlank() || code.isBlank()) {
+            return PhoneCodeVerificationResult.Failed(PhoneAuthFailure.INVALID_CODE)
+        }
+        val currentUser = auth.currentUser ?: return PhoneCodeVerificationResult.Failed(PhoneAuthFailure.UNKNOWN)
+        val credential = PhoneAuthProvider.getCredential(challenge.verificationId, code.trim())
+        return suspendCancellableCoroutine { continuation ->
+            currentUser.updatePhoneNumber(credential).addOnCompleteListener { task ->
+                if (continuation.isActive) {
+                    continuation.resume(
+                        if (task.isSuccessful) {
+                            PhoneCodeVerificationResult.Verified(currentUser.uid)
+                        } else {
+                            PhoneCodeVerificationResult.Failed(
+                                task.exception?.toPhoneAuthFailure() ?: PhoneAuthFailure.UNKNOWN,
+                            )
+                        },
+                    )
+                }
+            }
+        }
+    }
+
     override fun signOut() {
         resendingTokens.clear()
         auth.signOut()

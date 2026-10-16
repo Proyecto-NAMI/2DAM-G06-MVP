@@ -7,6 +7,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageReference
 import com.proyectonami.app.core.domain.auth.AccountProfile
+import com.proyectonami.app.core.domain.auth.AccountProfileLoadResult
 import com.proyectonami.app.core.domain.auth.AccountProfileRepository
 import com.proyectonami.app.core.domain.auth.AccountProfileSaveResult
 import com.proyectonami.app.core.domain.auth.AuthSession
@@ -38,6 +39,11 @@ interface AuthRepository {
         challenge: PhoneVerificationChallenge,
         code: String,
     ): PhoneCodeVerificationResult
+
+    suspend fun verifyPhoneNumberChange(
+        challenge: PhoneVerificationChallenge,
+        code: String,
+    ): PhoneCodeVerificationResult = verifyPhoneCode(challenge, code)
 
     fun signOut()
 }
@@ -102,6 +108,7 @@ class FirebaseAccountProfileRepository(
                         "displayName" to profile.displayName,
                         "surname" to profile.surname,
                         "phoneE164" to phoneE164,
+                        "avatarPath" to profile.avatarPath,
                     ),
                 ).addOnCompleteListener { task ->
                     if (continuation.isActive) {
@@ -116,6 +123,40 @@ class FirebaseAccountProfileRepository(
                 }
         }
     }
+
+    override suspend fun loadProfile(userId: String): AccountProfileLoadResult =
+        suspendCancellableCoroutine { continuation ->
+            firestore.document(FirebasePaths.user(userId)).get().addOnCompleteListener { task ->
+                if (!continuation.isActive) return@addOnCompleteListener
+                val snapshot = task.result
+                val profile =
+                    if (task.isSuccessful && snapshot != null && snapshot.exists()) {
+                        val displayName = snapshot.getString("displayName")
+                        val surname = snapshot.getString("surname")
+                        val phoneE164 = snapshot.getString("phoneE164")
+                        if (displayName != null && surname != null && phoneE164 != null) {
+                            AccountProfile(
+                                userId = userId,
+                                displayName = displayName,
+                                surname = surname,
+                                phoneNumber = phoneE164,
+                                avatarPath = snapshot.getString("avatarPath"),
+                            )
+                        } else {
+                            null
+                        }
+                    } else {
+                        null
+                    }
+                continuation.resume(
+                    when {
+                        profile != null -> AccountProfileLoadResult.Loaded(profile)
+                        task.isSuccessful -> AccountProfileLoadResult.Missing
+                        else -> AccountProfileLoadResult.Failed
+                    },
+                )
+            }
+        }
 }
 
 class FirebaseAudioStorageRepository(
