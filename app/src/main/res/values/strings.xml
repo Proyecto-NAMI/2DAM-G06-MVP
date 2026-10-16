@@ -44,6 +44,10 @@
     <string name="validation_phone_number_too_long">El teléfono tiene demasiadas cifras: máximo 15</string>
     <string name="validation_phone_number_invalid_country_code">El número internacional no puede empezar por 0</string>
 
+    <!-- Alta de contactos (T-12, RF-03). -->
+    <string name="contact_add_duplicate">Ya tienes ese teléfono en tus contactos: %1$s</string>
+    <string name="contact_add_failed">No se pudo guardar el contacto. Comprueba la conexión e inténtalo de nuevo.</string>
+
     <!-- Errores de autenticación telefónica (T-07, RF-01, RNF-05). -->
     <string name="auth_phone_invalid_phone_number">El teléfono no parece correcto. Revísalo e inténtalo de nuevo.</string>
     <string name="auth_phone_invalid_code">Ese código no es correcto. Compruébalo o solicita otro.</string>

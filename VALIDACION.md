@@ -149,6 +149,43 @@ La revisión manual del flujo de búsqueda/vinculación y la revisión por otra
 persona del equipo quedan pendientes: la UI y el backend de búsqueda todavía no
 existen en T-11 y deben revisarse en T-12/T-13 antes de habilitar la vinculación.
 
+# Validación de T-12 (RF-03, RNF-05, RNF-08)
+
+Fecha: 16 de octubre de 2026. Rama: `t-12-repositorio-contactos`, creada sobre `main` (`da0b25f`). Cambios generados con ayuda de IA (DeepSeek Harness) y pendientes de revisión humana.
+
+Qué incluye:
+
+- `feature.contacts.domain`: `Contact` (con `status` deducido de `linkedUserId`), el puerto `ContactRepository`, `AddContactUseCase` y `ContactIdFactory`, en Kotlin puro y probado en la JVM.
+- `AddContactUseCase` valida nombre, apellidos y teléfono con los validadores de T-06, guarda el teléfono normalizado en E.164 y devuelve `Added`, `Duplicate` (con el contacto existente), `Invalid` (con el campo y el motivo) o `Failed`.
+- Detección de duplicados sin consultar el directorio: `ContactIdFactory` deriva el identificador del teléfono normalizado con SHA-256 truncado, así que el mismo teléfono apunta siempre al mismo documento y el alta es idempotente. `FirebaseContactRepository` lee ese documento antes de escribir y devuelve el contacto ya guardado cuando existe.
+- `core.data.firebase.FirebaseContactRepository` escribe en `users/{uid}/contacts` los campos de `plan.md` y añade `createdAt`; el contenedor de repositorios lo expone como `contactRepository`.
+- Vinculación: el puerto `ContactAccountResolver` distingue `Found`, `NotFound` y `Unavailable`. El MVP inyecta `DisabledContactAccountResolver`, que responde `Unavailable`, de modo que el contacto se guarda `pending` y el cliente sigue sin consultar el directorio de personas usuarias, como decidió T-11. La ruta vinculada está implementada y probada con un resolver falso, pero no se activa en producción.
+- `strings.xml`: mensajes `contact_add_duplicate` (nombra el contacto existente) y `contact_add_failed`.
+
+| Comprobación | Resultado |
+|---|---|
+| `./gradlew testDebugUnitTest` | 69 pruebas, 0 fallos (23 nuevas de T-12) |
+| `./gradlew koverVerifyDebug` | Correcto: `feature.contacts.domain` con 100 % de líneas (76/76) |
+| `./gradlew spotlessCheck` | Correcto |
+| `./gradlew assembleDebug assembleRelease` | Correcto |
+| `./gradlew lintDebug` | Sin errores; 10 advertencias, ninguna en el código nuevo |
+| `./gradlew assembleDebugAndroidTest` | Correcto |
+| `./gradlew connectedDebugAndroidTest` con Emulator Suite | Pendiente en local: no hay Firebase CLI, KVM ni AVD disponibles; lo ejecuta CI en el PR |
+| Revisión manual en dispositivo o emulador | No procede en esta tarea: T-12 no añade pantalla y el flujo se revisa en T-13 |
+| Revisión por otra persona | Pendiente |
+
+Pruebas nuevas: `AddContactUseCaseTest` (10), `ContactIdFactoryTest` (5), `FirebaseContactRepositoryMappingTest` (4), `ContactTest` (2) y `ContactMessagesTest` (2). En `FirebaseEmulatorSmokeTest` se añade `contactCreationIsIdempotentAndContactsStayPrivate`, que comprueba contra el Emulator Suite que el mismo teléfono deja un único documento pendiente y que otra sesión no puede leer el contacto.
+
+## Limitaciones
+
+- La vinculación con una cuenta existente sigue cerrada: activarla requiere la operación de backend autenticada, con App Check y cuota por UID, descrita en `FIREBASE.md`, que el MVP no incluye. `spec.md` (RF-03) todavía pide «añadirlo o vincularlo», así que el alta funciona hoy siempre como pendiente y la duda queda recogida en `spec.md` para que el equipo decida.
+- La comprobación de duplicados usa la caché local de Firestore cuando no hay red: el alta puede quedar en cola y sincronizarse después, sin crear duplicados porque el identificador es determinista.
+- No se validan prefijos ni longitudes por país: limitación heredada de T-06.
+
+Nota de entorno: las comprobaciones se ejecutaron en Linux con `./gradlew` y con `GRADLE_USER_HOME` y `ANDROID_USER_HOME` dentro del proyecto, porque `$HOME` era de solo lectura en el entorno usado; `.gradle/` está ignorado.
+
+Informes locales: `app/build/reports/tests/testDebugUnitTest/index.html`, `app/build/reports/kover/reportDebug.xml` y `app/build/reports/lint-results-debug.html`.
+
 # Validación de T-05 (RF-01, RF-03, RF-05, RF-06; RNF-05, RNF-06)
 
 Rama: `yang_dev`, con `main` integrada (incluye T-03). Cambios de cierre generados con ayuda de IA (Claude) y pendientes de revisión humana.
