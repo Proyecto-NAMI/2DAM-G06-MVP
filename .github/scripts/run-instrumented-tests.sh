@@ -6,7 +6,7 @@ for attempt in 1 2 3; do
   firebase emulators:exec \
     --config .firebase-ci.json \
     --project demo-nami \
-    --only auth,firestore,storage \
+    --only auth,firestore,storage,functions \
     "./gradlew connectedDebugAndroidTest"
   status=$?
   if [ "${status}" -eq 0 ]; then

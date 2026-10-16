@@ -33,6 +33,12 @@ jobs:
       - name: Configurar Gradle
         uses: gradle/actions/setup-gradle@v6
 
+      - name: Ejecutar las pruebas de las Cloud Functions
+        working-directory: functions
+        run: |
+          npm ci
+          npm test
+
       - name: Ejecutar validaciones locales
         run: >-
           ./gradlew
@@ -73,6 +79,12 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      - name: Preparar las Cloud Functions
+        working-directory: functions
+        run: |
+          npm ci
+          npm run build
+
       - name: Ejecutar pruebas instrumentadas
         uses: ReactiveCircus/android-emulator-runner@v2.38.0
         with:
@@ -86,8 +98,43 @@ jobs:
           gpu: off
           script: |
             trap 'rm -f .firebase-ci.json' EXIT
-            node -e 'const fs = require("node:fs"); const config = JSON.parse(fs.readFileSync("firebase.json", "utf8")); for (const name of ["auth", "firestore", "storage"]) { if (!config.emulators[name]) throw new Error(`Missing ${name} emulator config`); config.emulators[name].host = "0.0.0.0"; } fs.writeFileSync(".firebase-ci.json", JSON.stringify(config));'
+            node -e 'const fs = require("node:fs"); const config = JSON.parse(fs.readFileSync("firebase.json", "utf8")); for (const name of ["auth", "firestore", "storage", "functions"]) { if (!config.emulators[name]) throw new Error(`Missing ${name} emulator config`); config.emulators[name].host = "0.0.0.0"; } fs.writeFileSync(".firebase-ci.json", JSON.stringify(config));'
             bash .github/scripts/run-instrumented-tests.sh
+
+      - name: Comprobar que no se han omitido pruebas instrumentadas
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import glob
+          import sys
+          import xml.etree.ElementTree as ET
+
+          reports = sorted(glob.glob("app/build/outputs/androidTest-results/**/*.xml", recursive=True))
+          if not reports:
+              print("No hay informes instrumentados; revisa el paso anterior.")
+              sys.exit(0)
+
+          total = 0
+          skipped = []
+          for path in reports:
+              try:
+                  root = ET.parse(path).getroot()
+              except ET.ParseError:
+                  continue
+              for case in root.iter("testcase"):
+                  total += 1
+                  if case.find("skipped") is not None:
+                      skipped.append(f"{case.get('classname')}.{case.get('name')}")
+
+          print(f"Pruebas instrumentadas ejecutadas: {total}; omitidas: {len(skipped)}")
+          for name in skipped:
+              print(f"  OMITIDA: {name}")
+          if skipped:
+              sys.exit(
+                  "Se han omitido pruebas instrumentadas. El Emulator Suite debe arrancar "
+                  "auth, firestore, storage y functions para que no se salten por Assume."
+              )
+          PY
 
       - name: Conservar informes de pruebas instrumentadas
         if: always()
