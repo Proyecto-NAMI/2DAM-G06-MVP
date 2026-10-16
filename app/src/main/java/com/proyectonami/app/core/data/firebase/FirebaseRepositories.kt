@@ -259,7 +259,7 @@ class FirebaseRepositoryContainer(
             return FirebaseRepositoryContainer(
                 authRepository = FirebasePhoneAuthRepository(services.auth),
                 accountProfileRepository = FirebaseAccountProfileRepository(services.firestore),
-                contactRepository = FirebaseContactRepository(services.firestore),
+                contactRepository = FirebaseContactRepository(services.auth, services.functions),
                 firestoreRepository = FirebaseFirestoreRepository(services.firestore),
                 contactsRepository =
                     FirebaseContactsRepository(
