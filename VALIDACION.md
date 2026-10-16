@@ -32,6 +32,22 @@ Fecha: 16 de octubre de 2026. Rama: `yang_dev`.
 | Revisión manual en dispositivo/emulador | Pendiente |
 | Revisión por otra persona | Pendiente |
 
+# Validación de T-18 (RF-08, RNF-04)
+
+Fecha: 16 de octubre de 2026. Rama: `yang_dev-t18`.
+
+- El envío muestra estado pendiente y bloquea el doble envío.
+- La confirmación `Mensaje enviado` se muestra y se anuncia como región viva.
+- Los fallos conservan el borrador y el reintento reutiliza el mismo UUID del cliente.
+
+| Comprobación | Resultado |
+|---|---|
+| `gradlew.bat spotlessApply` | Correcto |
+| `gradlew.bat testDebugUnitTest` | 108 pruebas, 0 fallos |
+| `gradlew.bat assembleDebug` | Correcto |
+| Revisión manual en dispositivo/emulador | Pendiente |
+| Revisión por otra persona | Pendiente |
+
 # Validación de T-16 (RF-05, RNF-04)
 
 Fecha: 16 de octubre de 2026. Rama: `yang_dev`.

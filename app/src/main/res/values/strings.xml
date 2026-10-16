@@ -58,6 +58,8 @@
     <string name="chat_composer_label">Escribe un mensaje</string>
     <string name="chat_send">Enviar</string>
     <string name="chat_send_error">No se pudo enviar el mensaje. El borrador se ha conservado para reintentarlo.</string>
+    <string name="chat_sending">Enviando mensaje…</string>
+    <string name="chat_message_sent">Mensaje enviado</string>
     <string name="chat_back">Volver</string>
 
     <!--

@@ -82,6 +82,23 @@ fun TextConversationRoute(
                     }
                 }
         }
+        when (state.sendState) {
+            is TextMessageSendState.Pending -> {
+                Row(horizontalArrangement = Arrangement.spacedBy(NamiSpacing.Small)) {
+                    CircularProgressIndicator()
+                    Text(
+                        stringResource(R.string.chat_sending),
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                    )
+                }
+            }
+            is TextMessageSendState.Sent ->
+                Text(
+                    stringResource(R.string.chat_message_sent),
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                )
+            else -> Unit
+        }
         state.sendFailure?.let {
             Text(
                 stringResource(R.string.chat_send_error),
