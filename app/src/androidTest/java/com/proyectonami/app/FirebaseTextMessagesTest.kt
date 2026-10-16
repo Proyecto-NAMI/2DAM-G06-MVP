@@ -4,7 +4,9 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.android.gms.tasks.Task
 import com.google.android.gms.tasks.Tasks
+import com.google.firebase.FirebaseApp
 import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.Source
 import com.proyectonami.app.core.data.firebase.FirebaseEnvironment
@@ -136,21 +138,33 @@ class FirebaseTextMessagesTest {
         }
 
     @Test
-    fun offlineFailureRetainsUuidAndRetriesAfterReconnection() =
+    fun unavailableFirestoreRetainsUuidAndRetriesSuccessfully() =
         runBlocking {
             val message = message()
+            val unavailableApp =
+                FirebaseApp.initializeApp(
+                    context,
+                    environment.toFirebaseOptions(),
+                    "nami-unavailable-${UUID.randomUUID()}",
+                )
+            val unavailableFirestore = FirebaseFirestore.getInstance(unavailableApp)
+            unavailableFirestore.useEmulator("127.0.0.1", 1)
             val sender = SendTextMessageUseCase(repository)
-            await(services.firestore.disableNetwork())
             try {
+                val failingSender =
+                    SendTextMessageUseCase(
+                        FirebaseTextMessagesRepository(unavailableFirestore, services.auth),
+                    )
                 assertEquals(
                     listOf(
                         TextMessageSendState.Pending(message),
                         TextMessageSendState.Failed(message, TextMessageFailure.NETWORK),
                     ),
-                    sendStates(sender, message),
+                    sendStates(failingSender, message),
                 )
             } finally {
-                await(services.firestore.enableNetwork())
+                await(unavailableFirestore.terminate())
+                unavailableApp.delete()
             }
 
             assertEquals(TextMessageSendState.Sent(message), sendStates(sender, message).last())

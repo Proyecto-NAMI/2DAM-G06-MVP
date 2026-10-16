@@ -13,20 +13,21 @@ de revisión por otra persona del equipo.
 
 | Comprobación | Resultado |
 |---|---|
-| `gradlew.bat testDebugUnitTest` | 65 pruebas, 0 fallos; incluye 8 pruebas nuevas de dominio |
+| `gradlew.bat testDebugUnitTest` | 102 pruebas, 0 fallos; incluye 8 pruebas nuevas de dominio |
 | `gradlew.bat koverVerifyDebug` | Correcto; mínimo del 70 % por paquete de dominio |
 | `gradlew.bat lintDebug` | Correcto, sin errores |
-| `gradlew.bat assembleDebugAndroidTest` | Correcto |
+| `gradlew.bat assembleDebug` | Correcto |
 | `gradlew.bat spotlessCheck` | Correcto |
-| `FirebaseTextMessagesTest` en Android local API 37 | Primera ejecución: 5 pasan y 2 agotan el tiempo de espera en preparación; segunda ejecución pendiente |
-| Revisión manual del flujo en dispositivo/emulador | Pendiente; la interfaz de chat corresponde a T-17/T-18 |
+| `FirebaseTextMessagesTest` en Android local API 36 | 7 pruebas, 0 fallos y 0 omitidas; incluye reintento con el mismo UUID tras fallo de transporte |
+| Revisión manual del flujo en dispositivo/emulador | Pendiente; T-16 no añade interfaz de chat, que corresponde a T-17/T-18 |
 | Revisión por otra persona | Pendiente |
 
 El entorno local dispone de SDK en `%LOCALAPPDATA%\Android\Sdk`, indicado con
 `ANDROID_HOME`. La integración usa Auth y Firestore del proyecto ficticio
-`demo-nami`; la validación en Android 16/API 36 de CI sigue pendiente.
-No considerar cerrada la definición de hecho hasta resolver la integración y
-completar las revisiones manual y humana.
+`demo-nami`; la suite instrumentada de T-16 se ejecutó localmente en Android
+16/API 36 con ambos emuladores disponibles.
+No considerar cerrada la definición de hecho hasta completar las revisiones
+manual y humana.
 
 # Validación local de T-02 (RNF-07)
 

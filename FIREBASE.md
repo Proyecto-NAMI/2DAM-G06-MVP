@@ -109,6 +109,7 @@ firebase emulators:start --project demo-nami --only auth,firestore
 
 Comprueba reintentos secuenciales y concurrentes, recreación del repositorio,
 una sola copia y un solo incremento de no leídos, conflicto de contenido,
-fallo sin red y recuperación, sesión, autorización y reglas de escritura.
+fallo de transporte contra un puerto local no disponible y recuperación con el
+mismo UUID, sesión, autorización y reglas de escritura.
 Si faltan Auth o Firestore las pruebas se omiten; comprobar que el informe
 indica cero omisiones antes de dar por validada la integración.
