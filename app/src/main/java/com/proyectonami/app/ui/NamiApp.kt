@@ -44,6 +44,7 @@ import com.proyectonami.app.core.designsystem.component.NamiSecondaryButton
 import com.proyectonami.app.core.designsystem.component.NamiTextField
 import com.proyectonami.app.core.designsystem.theme.NamiSpacing
 import com.proyectonami.app.core.designsystem.theme.NamiTheme
+import com.proyectonami.app.core.domain.accessibility.AccessibilityPreferencesRepository
 import com.proyectonami.app.core.domain.auth.AuthSession
 import com.proyectonami.app.core.domain.auth.PhoneAuthFailure
 import com.proyectonami.app.feature.auth.presentation.PhoneAuthUiState
@@ -65,15 +66,27 @@ fun NamiApp(
     profileViewModel: ProfileViewModel? = null,
     conversationsViewModel: ConversationsViewModel? = null,
     createConversationViewModel: ((String) -> TextConversationViewModel)? = null,
+    accessibilityPreferencesRepository: AccessibilityPreferencesRepository? = null,
 ) {
     val state by viewModel.uiState.collectAsState()
+    val accessibilityPreferences by (
+        accessibilityPreferencesRepository?.preferences
+            ?: kotlinx.coroutines.flow.flowOf(
+                com.proyectonami.app.core.domain.accessibility
+                    .AccessibilityPreferences(),
+            )
+    ).collectAsState(
+        initial =
+            com.proyectonami.app.core.domain.accessibility
+                .AccessibilityPreferences(),
+    )
     val signedInUserId = (state.session as? AuthSession.SignedIn)?.userId
     // El alta de contactos se abre desde el estado «Cuenta creada» hasta que T-15
     // construya la pantalla principal. Al cambiar de sesión se vuelve a la raíz.
     var showAddContact by remember(signedInUserId) { mutableStateOf(false) }
     var showProfile by remember(signedInUserId) { mutableStateOf(false) }
     var selectedConversation by remember(signedInUserId) { mutableStateOf<TextConversationViewModel?>(null) }
-    NamiTheme {
+    NamiTheme(textScale = accessibilityPreferences.textScale) {
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background,

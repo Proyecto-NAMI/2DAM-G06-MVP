@@ -1,5 +1,23 @@
 # Validación de T-09 (RF-02)
 
+# Validación de T-23/T-24/T-25 (RF-07, RF-09, RNF-01)
+
+Fecha: 16 de octubre de 2026. Rama: `yang_dev`. Responsable: G06-xx.
+
+- `MediaPlaybackCoordinator` detiene el recurso anterior antes de reproducir otro, permite pausar y expone errores recuperables.
+- `TextToSpeechCoordinator` permite iniciar/detener lectura y conserva el texto visible cuando el motor falla.
+- `DataStoreAccessibilityPreferencesRepository` persiste escala de texto (1–2x) y lectura en voz alta; `NamiTheme` aplica la escala transversalmente.
+- Pruebas con reproductor y motor simulados cubren reproducción exclusiva, pausa, error, lectura y detención.
+
+| Comprobación | Resultado |
+|---|---|
+| `gradlew.bat spotlessApply` | Correcto |
+| `gradlew.bat testDebugUnitTest` | Correcto |
+| `gradlew.bat koverVerifyDebug` | Correcto |
+| `gradlew.bat assembleDebug` | Correcto |
+| Revisión manual al 200 % en dispositivo/emulador | Pendiente |
+| Revisión por otra persona | Pendiente |
+
 # Validación de T-20/T-21/T-22 (RF-06, RNF-05, RNF-06, RNF-09)
 
 Fecha: 16 de octubre de 2026. Rama: `yang_dev`. Responsable: G06-xx.

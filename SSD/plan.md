@@ -115,6 +115,12 @@ El MVP puede conservar un único módulo Gradle `app`. Solo se separarán módul
   grabación se detiene de forma segura al alcanzar cualquiera de los dos límites.
 - T-22 sube el contenido a Storage bajo `conversations/{id}/audio/{messageId}` y
   guarda únicamente metadatos en Firestore; los reintentos reutilizan el mismo ID.
+- T-23 centraliza reproducción y pausa en un único coordinador multimedia; cerrar
+  sesión usa el registro común para detener cualquier sesión activa.
+- T-24 separa el motor TTS de la interfaz, de modo que un motor o idioma no
+  disponible produce un estado explicable sin ocultar el mensaje.
+- T-25 persiste escala de texto y lectura en voz alta en DataStore y aplica la
+  escala mediante la tipografía compartida del tema.
 - Un único controlador coordina grabación y reproducción para impedir que ambas estén activas a la vez.
 - T-10 solicita confirmación antes del cierre; al confirmarlo borra el estado de autenticación en memoria, cierra los recursos de audio registrados en `MediaSessionCoordinator` y revoca Firebase Auth. Cada grabador o reproductor deberá registrar su sesión activa para que el coordinador pueda detenerla; los fallos de parada no impiden el cierre y se notifican en el acceso.
 

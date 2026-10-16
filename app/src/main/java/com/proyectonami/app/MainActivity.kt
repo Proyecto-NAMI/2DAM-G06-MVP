@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.proyectonami.app.core.data.firebase.AuthRepository
+import com.proyectonami.app.core.data.preferences.DataStoreAccessibilityPreferencesRepository
 import com.proyectonami.app.core.domain.auth.AccountProfileRepository
 import com.proyectonami.app.core.domain.conversations.ObserveConversationsUseCase
 import com.proyectonami.app.core.domain.messages.ObserveTextMessagesUseCase
@@ -83,6 +84,7 @@ class MainActivity : ComponentActivity() {
                         ),
                     ).get("text-conversation-$conversationId", TextConversationViewModel::class.java)
                 },
+                accessibilityPreferencesRepository = DataStoreAccessibilityPreferencesRepository(applicationContext),
             )
         }
     }
