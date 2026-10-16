@@ -638,7 +638,9 @@ class FirebaseEmulatorSmokeTest {
         }.isSuccess
 
     companion object {
-        private const val TIMEOUT_SECONDS = 20L
+        // Holgado a propósito: en CI comparten máquina el emulador de Android y
+        // cuatro emuladores de Firebase, y la primera conexión puede tardar.
+        private const val TIMEOUT_SECONDS = 60L
         private const val CONNECT_TIMEOUT_MILLIS = 1_000
         private const val MAX_AUDIO_TEST_BYTES = 1_024L
     }
