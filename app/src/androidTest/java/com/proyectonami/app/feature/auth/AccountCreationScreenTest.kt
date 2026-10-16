@@ -20,6 +20,7 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.proyectonami.app.FakeContactRepository
 import com.proyectonami.app.core.data.firebase.AuthRepository
 import com.proyectonami.app.core.domain.auth.AccountProfile
 import com.proyectonami.app.core.domain.auth.AccountProfileRepository
@@ -31,6 +32,8 @@ import com.proyectonami.app.core.domain.auth.PhoneVerificationChallenge
 import com.proyectonami.app.core.domain.auth.PhoneVerificationRequestResult
 import com.proyectonami.app.core.media.MediaSessionController
 import com.proyectonami.app.feature.auth.presentation.PhoneAuthViewModel
+import com.proyectonami.app.feature.contacts.domain.AddContactUseCase
+import com.proyectonami.app.feature.contacts.presentation.AddContactViewModel
 import com.proyectonami.app.ui.NamiApp
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -54,6 +57,7 @@ class AccountCreationScreenTest {
     private lateinit var profileRepository: FakeAccountProfileRepository
     private lateinit var mediaSessionController: FakeMediaSessionController
     private lateinit var viewModel: PhoneAuthViewModel
+    private lateinit var addContactViewModel: AddContactViewModel
 
     @Before
     fun setUp() {
@@ -69,12 +73,18 @@ class AccountCreationScreenTest {
                 accountProfileRepository = profileRepository,
                 mediaSessionController = mediaSessionController,
             )
+        addContactViewModel =
+            AddContactViewModel(
+                addContactUseCase = AddContactUseCase(FakeContactRepository()),
+                currentUserId = { authRepository.currentUserId },
+            )
         composeRule.setContent {
             val fontScale = if (testName.methodName == "accountFormRemainsScrollableAt200PercentText") 2f else 1f
             DeviceConfigurationOverride(DeviceConfigurationOverride.FontScale(fontScale)) {
                 NamiApp(
                     activity = activity,
                     viewModel = viewModel,
+                    addContactViewModel = addContactViewModel,
                 )
             }
         }

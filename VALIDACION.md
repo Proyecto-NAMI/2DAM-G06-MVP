@@ -187,6 +187,43 @@ Nota de entorno: las comprobaciones se ejecutaron en Linux con `./gradlew` y con
 
 Informes locales: `app/build/reports/tests/testDebugUnitTest/index.html`, `app/build/reports/kover/reportDebug.xml` y `app/build/reports/lint-results-debug.html`.
 
+# Validación de T-13 (RF-03, RNF-01, RNF-08)
+
+Fecha: 16 de octubre de 2026. Rama: `t-13-pantalla-nuevo-contacto`, creada sobre `main` (`203bb58`). Cambios generados con ayuda de IA (DeepSeek Harness) y pendientes de revisión humana.
+
+Qué incluye:
+
+- `feature.contacts.presentation`: `AddContactViewModel` con `AddContactUiState` inmutable en `StateFlow`, la validación conjunta de los tres campos (`validateContactForm`, con los validadores de T-06) y el reductor puro `afterAddResult`; `AddContactScreen` y su `AddContactRoute` en Compose.
+- La pantalla reutiliza los componentes accesibles de T-04, pide el teléfono con el mismo prefijo `+34` inicial editable que la creación de cuenta (duda 7 de `spec.md`), valida los tres campos en un solo intento para no descubrir un error por envío, muestra el duplicado nombrando el contacto existente sin escribir nada, permite reintentar un fallo sin duplicar y confirma el alta. El título es un encabezado, los errores de campo se exponen como errores de accesibilidad, el duplicado y el fallo se anuncian como región viva y todo el contenido es desplazable para el texto al 200 %.
+- Teclado: «Siguiente» en nombre y apellidos y «Listo» en el teléfono, que guarda el contacto; los campos se bloquean mientras se guarda.
+- Los mensajes de validación de T-06 se comparten con T-08 en `ui/ValidationMessages.kt`; no se añadieron dependencias ni se modificó el caso de uso de T-12.
+- Acceso provisional: el estado «Cuenta creada» de T-08 incorpora el botón `Añadir un contacto`. T-15 sustituirá ese punto de entrada por el `+` de la pantalla principal.
+- La vinculación sigue cerrada: `AddContactUseCase` se construye con `DisabledContactAccountResolver`, así que el contacto queda `pending` y la interfaz no afirma que la otra persona no tenga cuenta NAMI.
+- `Prototype_Reference/` (commit anterior de esta rama) guarda las seis capturas del prototipo; `SSD/AGENTS.md`, `SSD/plan.md`, `SSD/README.md` y `README.md` avisan de que es un boceto de baja fidelidad y de que la implementación mejora el estilo y la interacción con los tokens de T-04.
+
+| Comprobación | Resultado |
+|---|---|
+| `./gradlew testDebugUnitTest` | 83 pruebas, 0 fallos (14 nuevas: `AddContactFormValidationTest` con 5 y `AddContactViewModelTest` con 9) |
+| `./gradlew spotlessCheck` | Correcto |
+| `./gradlew assembleDebug assembleRelease` | Correcto |
+| `./gradlew lintDebug` | Sin errores; 9 advertencias, ninguna en el código nuevo |
+| `./gradlew koverVerifyDebug` | Correcto: `feature.contacts.domain` mantiene el 100 % de líneas |
+| `./gradlew assembleDebugAndroidTest` | Correcto |
+| `./gradlew connectedDebugAndroidTest` con Emulator Suite | No ejecutable en local: no hay Firebase CLI, KVM ni AVD disponibles; lo ejecuta CI en el PR |
+| `AddContactScreenTest` (nueva, 9 pruebas) | Pendiente de CI en Android 16/API 36: alta y confirmación, acción «Listo» del teclado, duplicado que nombra el contacto existente, edición del teléfono que retira el aviso, validación anunciada al lector, fallo con reintento sin duplicar, control de volver, «añadir otro contacto» y texto al 200 % |
+| Revisión manual en dispositivo o emulador al 200 % | Pendiente |
+| Revisión por otra persona | Pendiente |
+
+## Limitaciones
+
+- El estado `pending` del contacto no se muestra en la interfaz: con el resolver desactivado el cliente no puede saber si la otra persona tiene cuenta NAMI (duda 8 de `spec.md`). Tampoco se puede «abrir su conversación» desde esta pantalla, porque la lista de conversaciones y el chat son de T-14 a T-17; CA-02 solo se cierra por completo cuando existan.
+- El acceso a la pantalla es provisional desde el estado «Cuenta creada»; el definitivo llega con T-15.
+- `AddContactScreenTest` no se pudo ejecutar en el entorno local: requiere un emulador Android y no hay KVM ni AVD disponibles. Se confirma con el trabajo instrumentado de CI.
+- No se validan prefijos ni longitudes por país: limitación heredada de T-06.
+- La detección de duplicados lee el documento del contacto antes de escribir; sin red usa la caché local de Firestore, como en T-12.
+
+Nota de entorno: las comprobaciones se ejecutaron en Linux con `./gradlew` y con `GRADLE_USER_HOME` y `ANDROID_USER_HOME` dentro del proyecto, porque `$HOME` era de solo lectura en el entorno usado; `.gradle/` está ignorado.
+
 # Validación de T-05 (RF-01, RF-03, RF-05, RF-06; RNF-05, RNF-06)
 
 Rama: `yang_dev`, con `main` integrada (incluye T-03). Cambios de cierre generados con ayuda de IA (Claude) y pendientes de revisión humana.

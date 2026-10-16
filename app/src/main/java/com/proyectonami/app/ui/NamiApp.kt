@@ -40,22 +40,28 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import com.proyectonami.app.R
 import com.proyectonami.app.core.designsystem.component.NamiPrimaryButton
+import com.proyectonami.app.core.designsystem.component.NamiSecondaryButton
 import com.proyectonami.app.core.designsystem.component.NamiTextField
 import com.proyectonami.app.core.designsystem.theme.NamiSpacing
 import com.proyectonami.app.core.designsystem.theme.NamiTheme
 import com.proyectonami.app.core.domain.auth.AuthSession
 import com.proyectonami.app.core.domain.auth.PhoneAuthFailure
-import com.proyectonami.app.core.domain.validation.PersonNameError
-import com.proyectonami.app.core.domain.validation.PhoneNumberError
 import com.proyectonami.app.feature.auth.presentation.PhoneAuthUiState
 import com.proyectonami.app.feature.auth.presentation.PhoneAuthViewModel
+import com.proyectonami.app.feature.contacts.presentation.AddContactRoute
+import com.proyectonami.app.feature.contacts.presentation.AddContactViewModel
 
 @Composable
 fun NamiApp(
     activity: Activity,
     viewModel: PhoneAuthViewModel,
+    addContactViewModel: AddContactViewModel,
 ) {
     val state by viewModel.uiState.collectAsState()
+    val signedInUserId = (state.session as? AuthSession.SignedIn)?.userId
+    // El alta de contactos se abre desde el estado «Cuenta creada» hasta que T-15
+    // construya la pantalla principal. Al cambiar de sesión se vuelve a la raíz.
+    var showAddContact by remember(signedInUserId) { mutableStateOf(false) }
     NamiTheme {
         Surface(
             modifier = Modifier.fillMaxSize(),
@@ -64,8 +70,16 @@ fun NamiApp(
             when {
                 state.session is AuthSession.Restoring ->
                     LoadingScreen()
-                state.session is AuthSession.SignedIn && state.isAccountReady ->
-                    AccountReadyScreen(onSignOut = viewModel::signOut)
+                signedInUserId != null && state.isAccountReady && showAddContact ->
+                    AddContactRoute(
+                        viewModel = addContactViewModel,
+                        onBack = { showAddContact = false },
+                    )
+                signedInUserId != null && state.isAccountReady ->
+                    AccountReadyScreen(
+                        onSignOut = viewModel::signOut,
+                        onAddContact = { showAddContact = true },
+                    )
                 else ->
                     CreateAccountScreen(
                         activity = activity,
@@ -301,7 +315,10 @@ fun CreateAccountScreen(
 }
 
 @Composable
-private fun AccountReadyScreen(onSignOut: () -> Unit) {
+private fun AccountReadyScreen(
+    onSignOut: () -> Unit,
+    onAddContact: () -> Unit,
+) {
     var showSignOutConfirmation by remember { mutableStateOf(false) }
     Column(
         modifier =
@@ -323,6 +340,14 @@ private fun AccountReadyScreen(onSignOut: () -> Unit) {
         Text(
             text = stringResource(R.string.account_created_description),
             style = MaterialTheme.typography.bodyLarge,
+        )
+        // Punto de entrada provisional al alta de contactos hasta que T-15
+        // construya la pantalla principal con la lista de conversaciones.
+        NamiSecondaryButton(
+            text = stringResource(R.string.contact_add_entry),
+            icon = painterResource(R.drawable.ic_nami_add),
+            onClick = onAddContact,
+            modifier = Modifier.fillMaxWidth(),
         )
         NamiPrimaryButton(
             text = stringResource(R.string.logout_request),
@@ -364,34 +389,6 @@ private fun AccountReadyScreen(onSignOut: () -> Unit) {
         )
     }
 }
-
-@Composable
-private fun personNameErrorMessage(error: PersonNameError?): String? =
-    error?.let {
-        stringResource(
-            when (it) {
-                PersonNameError.EMPTY -> R.string.validation_person_name_empty
-                PersonNameError.TOO_LONG -> R.string.validation_person_name_too_long
-                PersonNameError.INVALID_CHARACTERS -> R.string.validation_person_name_invalid_characters
-                PersonNameError.INVALID_FORMAT -> R.string.validation_person_name_invalid_format
-            },
-        )
-    }
-
-@Composable
-private fun phoneNumberErrorMessage(error: PhoneNumberError?): String? =
-    error?.let {
-        stringResource(
-            when (it) {
-                PhoneNumberError.EMPTY -> R.string.validation_phone_number_empty
-                PhoneNumberError.INVALID_CHARACTERS -> R.string.validation_phone_number_invalid_characters
-                PhoneNumberError.MISSING_COUNTRY_CODE -> R.string.validation_phone_number_missing_country_code
-                PhoneNumberError.TOO_SHORT -> R.string.validation_phone_number_too_short
-                PhoneNumberError.TOO_LONG -> R.string.validation_phone_number_too_long
-                PhoneNumberError.INVALID_COUNTRY_CODE -> R.string.validation_phone_number_invalid_country_code
-            },
-        )
-    }
 
 private fun PhoneAuthFailure.messageResource(): Int =
     when (this) {

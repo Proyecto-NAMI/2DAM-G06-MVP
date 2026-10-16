@@ -29,6 +29,7 @@ Incluye:
 - Validación de identidad y sesión por teléfono
 - Modelo de datos y repositorios para Auth, Firestore y Storage
 - Tema y componentes de diseño accesibles
+- Alta de contactos con validación de los tres campos, aviso de duplicado y confirmación
 - Reglas y documentación de seguridad y privacidad
 - Estructura de trazabilidad del proyecto en la carpeta `SSD/`
 

@@ -87,6 +87,7 @@ El prototipo es un boceto muy preliminar. Fija el contenido y el flujo de cada p
 
 - T-02 establece la base del proyecto y una pantalla mínima.
 - T-05 configura Authentication, Firestore y Storage para el Emulator Suite; el flujo de teléfono se implementará en T-07.
+- T-13 añade la pantalla `Nuevo contacto`: alta manual, validación de los tres campos, aviso de duplicado nombrando el contacto existente, reintento y confirmación. El acceso a esa pantalla es provisional desde el estado «Cuenta creada» hasta que T-15 construya la pantalla principal, y la vinculación con una cuenta existente sigue cerrada (T-11).
 - No se incluyen datos personales, teléfonos reales, conversaciones ni credenciales.
 - La prueba instrumentada requiere Firebase CLI y un emulador Android en ejecución.
 - La revisión manual y la revisión por otra persona siguen pendientes antes de cerrar la tarea.
