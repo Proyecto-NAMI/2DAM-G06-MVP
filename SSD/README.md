@@ -78,7 +78,10 @@ se implementará en T-07.
 
 ## Prototipo
 
-[Prototipo NAMI en Figma](https://www.figma.com/design/bGCnnDncM5CUdgVfMmRgz3/NAMI?node-id=0-1&t=NXeWbgK48RRls40z-1)
+- [Prototipo NAMI en Figma](https://www.figma.com/design/bGCnnDncM5CUdgVfMmRgz3/NAMI?node-id=0-1&t=NXeWbgK48RRls40z-1)
+- [`Prototype_Reference/`](../Prototype_Reference): seis capturas locales (creación de cuenta, nuevo contacto, conversaciones y pantalla principal, chat, foto de perfil y modificación y opciones). Son imágenes JPEG con extensión `.png`; se conservan tal como las entregó el equipo.
+
+El prototipo es un boceto muy preliminar. Fija el contenido y el flujo de cada pantalla, pero no su estilo ni su forma de interactuar: la implementación debe mejorar el estilo visual y la interacción con los tokens accesibles de T-04 y RNF-01, sin copiar los tamaños absolutos del boceto, y respetar las exclusiones de `spec.md` §3 (los iconos de cámara, llamada y vídeo no se activan en el MVP).
 
 ## Estado y limitaciones
 

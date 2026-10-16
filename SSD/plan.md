@@ -165,6 +165,15 @@ El audio no se almacenará en Firestore. Las reglas de Firestore y Storage compr
 
 La implementación será adaptable y no copiará tamaños absolutos de 390 x 844.
 
+### El prototipo es un boceto, no una especificación de estilo
+
+Las capturas de [`Prototype_Reference/`](../Prototype_Reference) y el archivo de Figma son un prototipo de baja fidelidad. Se usan como referencia de **contenido y flujo** (qué pantallas existen, qué datos pide cada una y en qué orden), no de estilo ni de interacción:
+
+- La implementación debe **mejorar el estilo visual y la forma de interactuar**. El boceto no fija colores, tipografías, iconos, medidas ni gestos.
+- Los colores, tipografías, espaciados y controles salen de los tokens y componentes accesibles de T-04, con las garantías de RNF-01 (objetivo táctil de 48 dp, texto hasta el 200 %, semántica y contraste), no del aspecto del boceto.
+- Los iconos de cámara, llamada y vídeo que aparecen en el chat son exploraciones visuales y no se activan (`spec.md` §3).
+- Si el boceto contradice `constitution.md`, `spec.md` o este plan, se aplica el orden de prioridad de `constitution.md` y se anota la diferencia.
+
 ## 6. Seguridad y privacidad
 
 - Autenticación obligatoria para datos remotos.

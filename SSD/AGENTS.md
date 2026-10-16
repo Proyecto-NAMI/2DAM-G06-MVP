@@ -14,7 +14,9 @@ Antes de proponer o modificar código, leer en este orden:
 2. `spec.md`: alcance, requisitos y aceptación.
 3. `plan.md`: arquitectura, tecnologías y datos.
 4. `tasks.md`: unidad de trabajo, dependencias y responsable.
-5. Prototipo de Figma: <https://www.figma.com/design/bGCnnDncM5CUdgVfMmRgz3/NAMI?node-id=0-1&t=NXeWbgK48RRls40z-1>.
+5. Prototipo de Figma: <https://www.figma.com/design/bGCnnDncM5CUdgVfMmRgz3/NAMI?node-id=0-1&t=NXeWbgK48RRls40z-1>. Las seis capturas del prototipo están copiadas en [`Prototype_Reference/`](../Prototype_Reference).
+
+El prototipo es un **boceto de baja fidelidad**: sirve para saber qué pantallas existen, qué datos pide cada una y en qué orden, pero no es una especificación de estilo ni de interacción. La implementación debe mejorar el estilo visual y la forma de interactuar usando los tokens y componentes accesibles de T-04 (RNF-01), sin copiar los tamaños absolutos del boceto, y manteniendo fuera de alcance los iconos de cámara, llamada y vídeo de `spec.md` §3.
 
 Si los documentos discrepan, no elegir una interpretación en silencio. Señalar el conflicto y aplicar el orden de prioridad de `constitution.md`.
 
