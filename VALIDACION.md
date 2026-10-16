@@ -170,7 +170,8 @@ Qué incluye:
 | `./gradlew assembleDebug assembleRelease` | Correcto |
 | `./gradlew lintDebug` | Sin errores; 10 advertencias, ninguna en el código nuevo |
 | `./gradlew assembleDebugAndroidTest` | Correcto |
-| `./gradlew connectedDebugAndroidTest` con Emulator Suite | Pendiente en local: no hay Firebase CLI, KVM ni AVD disponibles; lo ejecuta CI en el PR |
+| `./gradlew connectedDebugAndroidTest` con Emulator Suite | No ejecutable en local: no hay Firebase CLI, KVM ni AVD disponibles |
+| CI `Android CI`, run `38913929782` sobre el commit `cddf8fd` | Correcto en los dos jobs: `quality` (formato, compilación debug y release, lint, pruebas unitarias y cobertura) y `Android 16 y Firebase Emulator Suite` (instrumentadas en Android 16/API 36 con Auth, Firestore y Storage, incluida `contactCreationIsIdempotentAndContactsStayPrivate`) |
 | Revisión manual en dispositivo o emulador | No procede en esta tarea: T-12 no añade pantalla y el flujo se revisa en T-13 |
 | Revisión por otra persona | Pendiente |
 
