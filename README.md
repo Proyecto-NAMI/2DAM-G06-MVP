@@ -19,7 +19,7 @@ El proyecto se desarrolla en Kotlin con Jetpack Compose y Material 3, usando Fir
 
 ## Estado actual
 
-Este repositorio contiene una base técnica y funcional del MVP, con la configuración de Firebase y la estructura de dominio/ui del producto.
+Este repositorio contiene el candidato de entrega del MVP, con la configuración de Firebase, la estructura de dominio/ui y los artefactos de piloto documentados en T-30.
 
 Incluye:
 
@@ -32,6 +32,7 @@ Incluye:
 - Alta de contactos con validación de los tres campos, aviso de duplicado, vinculación con cuentas existentes y confirmación
 - Reglas y documentación de seguridad y privacidad
 - Estructura de trazabilidad del proyecto en la carpeta `SSD/`
+- Paquete de entrega en `entrega_G06/`, incluida la presentación PDF y el APK debug disponible
 
 ## Stack tecnológico
 
@@ -122,10 +123,10 @@ macOS / Linux:
 ./gradlew testDebugUnitTest
 ```
 
-Para Firebase local con emuladores:
+Para Firebase local con emuladores (incluye la callable de Functions):
 
 ```powershell
-firebase emulators:start --project demo-nami --only auth,firestore,storage
+firebase emulators:start --project demo-nami --only auth,firestore,functions,storage
 ```
 
 Y luego, en otra terminal:
@@ -133,6 +134,27 @@ Y luego, en otra terminal:
 ```powershell
 ./gradlew.bat connectedDebugAndroidTest
 ```
+
+Para reproducir la ejecución completa en un solo comando, con Functions compiladas:
+
+```powershell
+Push-Location functions
+npm ci
+npm test
+npm run build
+Pop-Location
+firebase emulators:exec --config firebase.json --project demo-nami --only auth,firestore,functions,storage ".\gradlew.bat connectedDebugAndroidTest"
+```
+
+El APK debug queda en `app/build/outputs/apk/debug/app-debug.apk`. Para registrar su huella:
+
+```powershell
+Get-FileHash .\app\build\outputs\apk\debug\app-debug.apk -Algorithm SHA256
+```
+
+La regresión de CI que valida compilación, JVM y Emulator Suite se enlaza desde
+[`VALIDACION.md`](VALIDACION.md). Si el SDK local no tiene las plataformas o Build Tools requeridas,
+se debe usar Android Studio o el runner de CI en lugar de relajar las comprobaciones.
 
 ## Funcionalidades clave del MVP
 
@@ -182,13 +204,16 @@ Y luego, en otra terminal:
 - [SSD/tasks.md](SSD/tasks.md): trazabilidad de tareas
 - [SSD/constitution.md](SSD/constitution.md): principios del proyecto
 - [SSD/uso-ia.md](SSD/uso-ia.md): uso de IA en el desarrollo
+- [SSD/DESIGN_THINKING.md](SSD/DESIGN_THINKING.md): decisiones de Design Thinking y límites del piloto
+- [SSD/FIGMA.md](SSD/FIGMA.md): enlace y capturas esenciales de Figma
 - [FIREBASE.md](FIREBASE.md): configuración segura de Firebase y emuladores
 - [evidencias-ia/](evidencias-ia/): evidencias visuales del proceso
+- [entrega_G06/](entrega_G06/): presentación, manifiesto Moodle y APK debug disponible
 
 ## Notas importantes
 
-- El proyecto está en fase de desarrollo y validación técnica del MVP.
-- Algunas partes de la experiencia y del flujo completo quedan pendientes para próximas tareas.
+- El proyecto está preparado para el piloto y la entrega T-30; la revisión humana final y el acceso docente se deben confirmar externamente.
+- No se activan funciones excluidas como grupos, llamadas, vídeo, adjuntos no previstos o cifrado E2E propio.
 - La configuración sensible no se sube al repositorio (`local.properties`, `google-services.json`, `.firebaserc`, credenciales, logs, etc.).
 - En `debug` el proyecto usa valores ficticios y emuladores. `release` exige configuración real y no usa emuladores.
 

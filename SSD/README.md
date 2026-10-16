@@ -2,7 +2,7 @@
 
 NAMI es una aplicación Android de mensajería familiar accesible, pensada para personas mayores con visión reducida, menor precisión motora o poca experiencia tecnológica.
 
-Esta rama contiene la base técnica de **T-02** y la configuración Firebase de **T-05**. El MVP usa Kotlin, Jetpack Compose y Material 3. Authentication, Firestore y Storage se abstraen mediante repositorios inyectables y, en `debug`, se conectan únicamente al Emulator Suite con datos ficticios.
+Esta rama contiene el candidato de entrega de **T-30**, construido sobre la base técnica de T-02 y la configuración Firebase de T-05. El MVP usa Kotlin, Jetpack Compose y Material 3. Authentication, Firestore, Storage y Functions se abstraen mediante repositorios o casos de uso inyectables y, en `debug`, se conectan únicamente al Emulator Suite con datos ficticios.
 
 ## Configuración Android
 
@@ -67,8 +67,22 @@ Para reproducir en CI las pruebas de autorización y recuperación:
 
 ```bash
 firebase emulators:exec --config .firebase-ci.json --project demo-nami \
-  --only auth,firestore,storage "./gradlew connectedDebugAndroidTest"
+  --only auth,firestore,functions,storage "./gradlew connectedDebugAndroidTest"
 ```
+
+En un clon limpio, el flujo reproducible de T-30 es:
+
+```powershell
+Push-Location functions
+npm ci
+npm test
+npm run build
+Pop-Location
+firebase emulators:exec --config firebase.json --project demo-nami `
+  --only auth,firestore,functions,storage ".\gradlew.bat connectedDebugAndroidTest"
+```
+
+El APK debug se genera en `app/build/outputs/apk/debug/app-debug.apk`; su SHA-256 se puede obtener con `Get-FileHash`.
 
 ## Documentación
 
@@ -80,8 +94,12 @@ firebase emulators:exec --config .firebase-ci.json --project demo-nami \
 | [`plan.md`](plan.md) | Arquitectura, tecnologías y estrategia de pruebas. |
 | [`tasks.md`](tasks.md) | Tareas, dependencias y trazabilidad. |
 | [`uso-ia.md`](uso-ia.md) | Registro crítico del uso de IA. |
+| [`DESIGN_THINKING.md`](DESIGN_THINKING.md) | Empatía, definición, ideación, prototipo y prueba del piloto. |
+| [`FIGMA.md`](FIGMA.md) | Enlace y capturas esenciales de Figma. |
 | [`FIREBASE.md`](FIREBASE.md) | Configuración segura de Firebase y Emulator Suite. |
 | [`evidencias-ia/`](evidencias-ia/) | Evidencias visuales del proceso SDD. |
+| [`../VALIDACION.md`](../VALIDACION.md) | Matriz de requisitos, resultados y limitaciones. |
+| [`../entrega_G06/`](../entrega_G06/) | Presentación PDF, manifiesto y APK debug. |
 
 ## Prototipo
 
@@ -92,10 +110,9 @@ El prototipo es un boceto muy preliminar. Fija el contenido y el flujo de cada p
 
 ## Estado y limitaciones
 
-- T-02 establece la base del proyecto y una pantalla mínima.
-- T-05 configura Authentication, Firestore y Storage para el Emulator Suite; el flujo de teléfono se implementará en T-07.
+- T-02 establece la base del proyecto y T-05 configura Authentication, Firestore, Storage y Functions para el Emulator Suite.
 - T-13 añade la pantalla `Nuevo contacto`, que se abre desde el «+» de la pantalla principal (T-15): alta manual, validación de los tres campos, aviso de duplicado nombrando el contacto existente, reintento y confirmación. El alta pasa por la función `addContact` (T-11), así que el cliente nunca escribe contactos: el servidor decide si el contacto queda vinculado a una cuenta existente o pendiente, y avisa si la comprobación no está disponible.
 - No se incluyen datos personales, teléfonos reales, conversaciones ni credenciales.
 - La prueba instrumentada requiere Firebase CLI y un emulador Android en ejecución, con los emuladores de Auth, Firestore, Storage y Functions; CI los arranca y falla si alguna prueba se omite.
-- La revisión manual y la revisión por otra persona siguen pendientes antes de cerrar la tarea.
+- La auditoría manual con TalkBack, la comprobación de acceso docente y la revisión por otra persona son pasos externos que deben marcarse antes de subir el paquete a Moodle.
 
