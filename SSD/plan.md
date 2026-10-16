@@ -4,6 +4,8 @@
 **Fecha:** 8 de octubre de 2026  
 **Estado:** propuesta para revisión del equipo
 
+> Estado T-30: preparado para piloto y entrega. El acceso docente, la auditoria manual con TalkBack y la segunda revision se declaran como pasos externos en `VALIDACION.md`.
+
 ## 1. Decisiones técnicas
 
 | Área | Elección | Justificación |

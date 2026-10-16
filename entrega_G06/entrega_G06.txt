@@ -1,0 +1,13 @@
+ENTREGA: NAMI MVP
+IDENTIFICADOR: G06
+URL_REPOSITORIO_PRIVADA: https://github.com/Proyecto-NAMI/2DAM-G06-MVP
+URL_PR: https://github.com/Proyecto-NAMI/2DAM-G06-MVP/pull/53
+SHA_FINAL_CODIGO: b456bc801b90d45cfc24ea3ef3b83d98a6ef5068
+APK: entrega_G06/NAMI-debug.apk
+SHA256_APK: 213E5839C153D0CB9EA4F6BCA5A9CBCDE48527531FB9922E7D46F7F4F5CFB012
+PRESENTACION: entrega_G06/presentacion_G06.pdf
+DATOS: ficticios; Firebase Emulator Suite en debug
+SERVICIOS_SIMULADOS: Authentication, Firestore, Storage y Functions
+LIMITACIONES: acceso docente, TalkBack y revision humana final requieren comprobacion externa
+REVISION_IA: SSD/uso-ia.md
+EVIDENCIAS_IA: evidencias-ia/

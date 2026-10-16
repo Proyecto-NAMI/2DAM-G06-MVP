@@ -4,6 +4,8 @@
 **Fecha:** 8 de octubre de 2026  
 **Equipo:** G06
 
+> Actualizado para T-30. Los ejemplos y artefactos usan datos ficticios; la decision final corresponde al equipo G06.
+
 ## Contexto común de la sesión
 
 El equipo facilitó al asistente el enunciado de la entrega SDD, dos documentos de Design Thinking y el prototipo de NAMI en Figma. El prompt principal fue:
@@ -111,3 +113,23 @@ También propuso una arquitectura y un desglose de tareas que el equipo pudo rev
 Detectamos que podía convertir ideas del prototipo en alcance obligatorio, por lo que redujimos el MVP de forma explícita.  
 Evitamos aceptar afirmaciones de seguridad no demostradas y dejamos pendientes las decisiones que requieren pruebas o acuerdo humano.  
 La responsabilidad final sobre privacidad, accesibilidad, reparto de trabajo y viabilidad técnica sigue siendo del equipo.
+
+## Caso 4. Preparacion de entrega y regresion (T-30)
+
+### Tarea y objetivo
+
+Convertir la trazabilidad, las limitaciones y la evidencia de CI en un paquete reproducible para el piloto y Moodle.
+
+### Apoyo y resultado
+
+Codex propuso la estructura del README final, la documentacion de Design Thinking, la referencia de Figma, el manifiesto y la presentacion PDF. Se conservaron solo comandos presentes en el repositorio, se comprobo la ruta del APK y se enlazaron las evidencias existentes.
+
+### Revision humana y limites
+
+El equipo debe confirmar en un dispositivo el flujo de accesibilidad, comprobar el acceso docente y realizar una segunda revision antes de entregar. El PDF y el manifiesto no contienen nombres, telefonos, tokens ni credenciales.
+
+### Evidencia
+
+- [`../entrega_G06/`](../entrega_G06/)
+- [`../VALIDACION.md`](../VALIDACION.md)
+- [`../evidencias-ia/`](../evidencias-ia/)

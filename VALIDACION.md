@@ -524,3 +524,12 @@ física con TalkBack por otra persona, validación de red bajo carga/percentiles
 audio en hardware real, compatibilidad con API 26 y revisión humana formal.
 La definición de hecho no se marca completa hasta que el equipo registre esas
 revisiones.
+
+## T-30 - paquete final
+
+- `README.md` y `SSD/README.md` describen un clon limpio, la compilacion del APK y la ejecucion de Auth, Firestore, Storage y Functions con Emulator Suite.
+- `entrega_G06/` contiene la presentacion PDF, su fuente, el manifiesto para Moodle y el APK debug disponible con SHA-256.
+- `SSD/DESIGN_THINKING.md`, `SSD/FIGMA.md`, `SSD/uso-ia.md` y `evidencias-ia/` enlazan las decisiones, capturas y casos de uso de IA.
+- Verificacion local de artefactos: `git diff --check` pasa, el PDF se renderizo a PNG y se revisaron las paginas 1, 4 y 5; el APK se pudo resumir con `Get-FileHash`.
+- Regresion local de Functions: `npm ci` pasa; `npm test` queda bloqueado en este entorno por `uv_os_get_passwd returned ENOMEM` con Node 24. La regresion completa se delega al workflow de CI, que usa Node 22.
+- Siguen siendo pasos externos la comprobacion de acceso docente, la auditoria TalkBack en dispositivo/emulador y la segunda revision humana.
