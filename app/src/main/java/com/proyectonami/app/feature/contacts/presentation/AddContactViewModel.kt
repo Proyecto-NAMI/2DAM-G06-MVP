@@ -2,17 +2,16 @@ package com.proyectonami.app.feature.contacts.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.proyectonami.app.core.domain.contacts.AddContactResult
+import com.proyectonami.app.core.domain.contacts.AddContactUseCase
+import com.proyectonami.app.core.domain.contacts.Contact
+import com.proyectonami.app.core.domain.contacts.NewContact
 import com.proyectonami.app.core.domain.validation.PersonNameError
 import com.proyectonami.app.core.domain.validation.PersonNameValidation
 import com.proyectonami.app.core.domain.validation.PersonNameValidator
 import com.proyectonami.app.core.domain.validation.PhoneNumberError
 import com.proyectonami.app.core.domain.validation.PhoneNumberValidation
 import com.proyectonami.app.core.domain.validation.PhoneNumberValidator
-import com.proyectonami.app.feature.contacts.domain.AddContactResult
-import com.proyectonami.app.feature.contacts.domain.AddContactUseCase
-import com.proyectonami.app.feature.contacts.domain.Contact
-import com.proyectonami.app.feature.contacts.domain.ContactFieldError
-import com.proyectonami.app.feature.contacts.domain.NewContactRequest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -37,6 +36,12 @@ data class AddContactUiState(
     val addedContact: Contact? = null,
     /** Contacto que ya tenía ese teléfono; el alta no se repite (RF-03). */
     val duplicateContact: Contact? = null,
+    /**
+     * No se pudo comprobar si el teléfono tiene cuenta NAMI, así que **no** se
+     * guardó nada. Ocurre cuando la función `addContact` agota la cuota o no está
+     * disponible; se puede reintentar.
+     */
+    val lookupUnavailable: Boolean = false,
     val saveFailed: Boolean = false,
 ) {
     /** Los campos siguen editables hasta que el contacto se guarda. */
@@ -73,15 +78,15 @@ sealed interface ContactFormValidation {
 /**
  * Valida los tres campos con las reglas de T-06.
  *
- * Se validan todos en el mismo intento, como en la creación de cuenta (T-08),
- * para que la persona pueda corregirlos de una vez en lugar de descubrir un
- * error por envío. El caso de uso de T-12 sigue validando por su cuenta: esto
- * solo decide qué se muestra.
+ * El caso de uso de `core.domain.contacts` también valida, pero informa de un
+ * único motivo y no distingue el nombre de los apellidos. Validar aquí los tres
+ * campos a la vez permite señalarlos todos en un solo intento, como hace la
+ * creación de cuenta (T-08), y enviar después la forma normalizada.
  */
-fun validateContactForm(request: NewContactRequest): ContactFormValidation {
-    val name = PersonNameValidator.validate(request.displayName)
-    val surname = PersonNameValidator.validate(request.surname)
-    val phone = PhoneNumberValidator.validate(request.phoneNumber)
+fun validateContactForm(contact: NewContact): ContactFormValidation {
+    val name = PersonNameValidator.validate(contact.displayName)
+    val surname = PersonNameValidator.validate(contact.surname)
+    val phone = PhoneNumberValidator.validate(contact.phoneNumber)
     val phoneE164 = (phone as? PhoneNumberValidation.Valid)?.e164
     if (name is PersonNameValidation.Valid && surname is PersonNameValidation.Valid && phoneE164 != null) {
         return ContactFormValidation.Valid(
@@ -105,20 +110,38 @@ fun AddContactUiState.afterAddResult(result: AddContactResult): AddContactUiStat
                 isSaving = false,
                 addedContact = result.contact,
                 duplicateContact = null,
+                lookupUnavailable = false,
                 saveFailed = false,
             )
         is AddContactResult.Duplicate ->
             copy(
                 isSaving = false,
                 duplicateContact = result.existing,
+                lookupUnavailable = false,
                 saveFailed = false,
             )
-        is AddContactResult.Invalid ->
+        // El caso de uso devuelve un motivo por campo y sin separar nombre de
+        // apellidos; la validación de la pantalla ya los distingue, así que estos
+        // dos caminos solo cubren una discrepancia entre ambas validaciones.
+        is AddContactResult.InvalidName ->
             copy(
                 isSaving = false,
-                duplicateContact = null,
+                nameError = result.error,
+                lookupUnavailable = false,
                 saveFailed = false,
-            ).withFieldError(result.error)
+            )
+        is AddContactResult.InvalidPhone ->
+            copy(
+                isSaving = false,
+                phoneNumberError = result.error,
+                lookupUnavailable = false,
+                saveFailed = false,
+            )
+        AddContactResult.LookupUnavailable ->
+            copy(
+                isSaving = false,
+                lookupUnavailable = true,
+            )
         AddContactResult.Failed ->
             copy(
                 isSaving = false,
@@ -126,23 +149,15 @@ fun AddContactUiState.afterAddResult(result: AddContactResult): AddContactUiStat
             )
     }
 
-private fun AddContactUiState.withFieldError(error: ContactFieldError): AddContactUiState =
-    when (error) {
-        is ContactFieldError.Name -> copy(nameError = error.reason)
-        is ContactFieldError.Surname -> copy(surnameError = error.reason)
-        is ContactFieldError.Phone -> copy(phoneNumberError = error.reason)
-    }
-
 /**
  * Presentación del alta de contactos (T-13, RF-03).
  *
- * Delega la validación y el guardado en `AddContactUseCase` (T-12) y no accede a
- * Firebase. La persona usuaria actual se consulta en cada envío porque la
- * pantalla se abre después de iniciar sesión.
+ * Delega la validación y el guardado en `AddContactUseCase`, que llama a la
+ * función `addContact` de T-11: la comprobación de si el teléfono tiene cuenta
+ * NAMI y la escritura del contacto ocurren en el servidor, nunca en el cliente.
  */
 class AddContactViewModel(
     private val addContactUseCase: AddContactUseCase,
-    private val currentUserId: () -> String?,
 ) : ViewModel() {
     private val mutableUiState = MutableStateFlow(AddContactUiState())
     val uiState: StateFlow<AddContactUiState> = mutableUiState.asStateFlow()
@@ -150,7 +165,7 @@ class AddContactViewModel(
     fun updateName(value: String) {
         mutableUiState.update {
             if (it.isFormEnabled) {
-                it.copy(name = value, nameError = null, saveFailed = false)
+                it.copy(name = value, nameError = null, saveFailed = false, lookupUnavailable = false)
             } else {
                 it
             }
@@ -160,7 +175,7 @@ class AddContactViewModel(
     fun updateSurname(value: String) {
         mutableUiState.update {
             if (it.isFormEnabled) {
-                it.copy(surname = value, surnameError = null, saveFailed = false)
+                it.copy(surname = value, surnameError = null, saveFailed = false, lookupUnavailable = false)
             } else {
                 it
             }
@@ -175,6 +190,7 @@ class AddContactViewModel(
                     phoneNumberError = null,
                     duplicateContact = null,
                     saveFailed = false,
+                    lookupUnavailable = false,
                 )
             } else {
                 it
@@ -193,14 +209,8 @@ class AddContactViewModel(
         if (!previousState.isFormEnabled) {
             return
         }
-        val targetUserId = currentUserId()
-        if (targetUserId.isNullOrBlank()) {
-            // La pantalla solo se abre con sesión iniciada: si no la hay, se puede reintentar.
-            mutableUiState.update { it.copy(saveFailed = true) }
-            return
-        }
         val request =
-            NewContactRequest(
+            NewContact(
                 displayName = previousState.name,
                 surname = previousState.surname,
                 phoneNumber = previousState.phoneNumber,
@@ -213,10 +223,11 @@ class AddContactViewModel(
                         surnameError = validation.surnameError,
                         phoneNumberError = validation.phoneNumberError,
                         duplicateContact = null,
+                        lookupUnavailable = false,
                         saveFailed = false,
                     )
                 }
-            is ContactFormValidation.Valid -> saveValidatedContact(targetUserId, validation)
+            is ContactFormValidation.Valid -> saveValidatedContact(validation)
         }
     }
 
@@ -225,10 +236,7 @@ class AddContactViewModel(
         mutableUiState.value = AddContactUiState()
     }
 
-    private fun saveValidatedContact(
-        userId: String,
-        validation: ContactFormValidation.Valid,
-    ) {
+    private fun saveValidatedContact(validation: ContactFormValidation.Valid) {
         mutableUiState.update {
             it.copy(
                 name = validation.displayName,
@@ -239,19 +247,18 @@ class AddContactViewModel(
                 phoneNumberError = null,
                 isSaving = true,
                 duplicateContact = null,
+                lookupUnavailable = false,
                 saveFailed = false,
             )
         }
         viewModelScope.launch {
             val result =
-                addContactUseCase.add(
-                    userId = userId,
-                    request =
-                        NewContactRequest(
-                            displayName = validation.displayName,
-                            surname = validation.surname,
-                            phoneNumber = validation.phoneE164,
-                        ),
+                addContactUseCase(
+                    NewContact(
+                        displayName = validation.displayName,
+                        surname = validation.surname,
+                        phoneNumber = validation.phoneE164,
+                    ),
                 )
             mutableUiState.update { it.afterAddResult(result) }
         }

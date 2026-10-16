@@ -1,4 +1,4 @@
-package com.proyectonami.app.feature.contacts.domain
+package com.proyectonami.app.feature.contacts.presentation
 
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -6,13 +6,12 @@ import java.io.File
 
 /**
  * Comprueba que el alta de contactos tiene mensajes comprensibles en
- * `res/values/strings.xml`, que es la parte verificable del criterio «duplicados
- * se rechazan con error comprensible» de T-12.
+ * `res/values/strings.xml` (T-13, RF-03).
  *
- * La pantalla de T-13 será la que resuelva estos identificadores con
- * `stringResource`, indicando el nombre del contacto existente.
+ * La pantalla resuelve estos identificadores con `stringResource`, indicando el
+ * nombre del contacto existente o el del contacto guardado.
  */
-class ContactMessagesTest {
+class AddContactMessagesTest {
     @Test
     fun duplicateMessageNamesTheExistingContact() {
         val message = stringValue("contact_add_duplicate")
@@ -26,6 +25,18 @@ class ContactMessagesTest {
     @Test
     fun failureMessageIsNotEmpty() {
         assertTrue(stringValue("contact_add_failed").isNotBlank())
+    }
+
+    @Test
+    fun unavailableLookupExplainsThatNothingWasSaved() {
+        val message = stringValue("contact_add_lookup_unavailable")
+
+        assertTrue("El aviso debe decir que no se guardó el contacto: $message", message.contains("no se ha guardado"))
+    }
+
+    @Test
+    fun linkedConfirmationNamesTheContact() {
+        assertTrue(stringValue("contact_add_success_linked").contains("%1\$s"))
     }
 
     private fun stringValue(name: String): String {

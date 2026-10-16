@@ -20,7 +20,7 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.proyectonami.app.FakeContactRepository
+import com.proyectonami.app.FakeContactsRepository
 import com.proyectonami.app.core.data.firebase.AuthRepository
 import com.proyectonami.app.core.domain.auth.AccountProfile
 import com.proyectonami.app.core.domain.auth.AccountProfileRepository
@@ -30,9 +30,9 @@ import com.proyectonami.app.core.domain.auth.PhoneAuthFailure
 import com.proyectonami.app.core.domain.auth.PhoneCodeVerificationResult
 import com.proyectonami.app.core.domain.auth.PhoneVerificationChallenge
 import com.proyectonami.app.core.domain.auth.PhoneVerificationRequestResult
+import com.proyectonami.app.core.domain.contacts.AddContactUseCase
 import com.proyectonami.app.core.media.MediaSessionController
 import com.proyectonami.app.feature.auth.presentation.PhoneAuthViewModel
-import com.proyectonami.app.feature.contacts.domain.AddContactUseCase
 import com.proyectonami.app.feature.contacts.presentation.AddContactViewModel
 import com.proyectonami.app.ui.NamiApp
 import kotlinx.coroutines.flow.Flow
@@ -75,8 +75,7 @@ class AccountCreationScreenTest {
             )
         addContactViewModel =
             AddContactViewModel(
-                addContactUseCase = AddContactUseCase(FakeContactRepository()),
-                currentUserId = { authRepository.currentUserId },
+                addContactUseCase = AddContactUseCase(FakeContactsRepository()),
             )
         composeRule.setContent {
             val fontScale = if (testName.methodName == "accountFormRemainsScrollableAt200PercentText") 2f else 1f

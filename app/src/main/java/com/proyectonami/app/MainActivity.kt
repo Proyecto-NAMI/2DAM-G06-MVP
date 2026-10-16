@@ -9,13 +9,13 @@ import androidx.lifecycle.ViewModelProvider
 import com.proyectonami.app.core.data.firebase.AuthRepository
 import com.proyectonami.app.core.data.preferences.DataStoreAccessibilityPreferencesRepository
 import com.proyectonami.app.core.domain.auth.AccountProfileRepository
+import com.proyectonami.app.core.domain.contacts.AddContactUseCase
 import com.proyectonami.app.core.domain.conversations.ObserveConversationsUseCase
 import com.proyectonami.app.core.domain.messages.ObserveTextMessagesUseCase
 import com.proyectonami.app.core.domain.messages.SendTextMessageUseCase
 import com.proyectonami.app.core.media.MediaSessionController
 import com.proyectonami.app.feature.auth.presentation.PhoneAuthViewModel
 import com.proyectonami.app.feature.chat.presentation.TextConversationViewModel
-import com.proyectonami.app.feature.contacts.domain.AddContactUseCase
 import com.proyectonami.app.feature.contacts.presentation.AddContactViewModel
 import com.proyectonami.app.feature.conversations.presentation.ConversationsViewModel
 import com.proyectonami.app.feature.profile.domain.LoadProfileUseCase
@@ -46,10 +46,10 @@ class MainActivity : ComponentActivity() {
             ViewModelProvider(
                 this,
                 AddContactViewModelFactory(
-                    // El MVP no activa la vinculación: AddContactUseCase usa
-                    // DisabledContactAccountResolver y los contactos quedan pendientes (T-11, T-12).
-                    addContactUseCase = AddContactUseCase(repositories.contactRepository),
-                    currentUserId = { repositories.authRepository.currentUserId },
+                    // El alta pasa por la función addContact (T-11): exige teléfono
+                    // verificado, App Check en producción y cuota por UID, y decide en
+                    // el servidor si el contacto queda vinculado o pendiente.
+                    addContactUseCase = AddContactUseCase(repositories.contactsRepository),
                 ),
             )[AddContactViewModel::class.java]
         profileViewModel =
@@ -142,7 +142,6 @@ private class ProfileViewModelFactory(
 
 private class AddContactViewModelFactory(
     private val addContactUseCase: AddContactUseCase,
-    private val currentUserId: () -> String?,
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(
         modelClass: Class<T>,
@@ -151,10 +150,7 @@ private class AddContactViewModelFactory(
         require(modelClass.isAssignableFrom(AddContactViewModel::class.java))
         return checkNotNull(
             modelClass.cast(
-                AddContactViewModel(
-                    addContactUseCase = addContactUseCase,
-                    currentUserId = currentUserId,
-                ),
+                AddContactViewModel(addContactUseCase),
             ),
         )
     }
