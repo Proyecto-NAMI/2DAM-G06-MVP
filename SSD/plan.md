@@ -99,6 +99,12 @@ El MVP puede conservar un único módulo Gradle `app`. Solo se separarán módul
   escritura local en caché como enviada ni se implementa una cola offline.
   Cancelar la espera no garantiza cancelar el commit remoto: se debe reintentar
   con el mismo UUID para resolver una confirmación perdida.
+- T-17 añade la observación ordenada de `conversations/{id}/messages`, con
+  estados inmutables de carga, vacío, cargado y error. `TextConversationViewModel`
+  conserva el borrador en `SavedStateHandle`, rechaza texto vacío o solo de
+  espacios y reutiliza `SendTextMessageUseCase` para emitir pendiente, enviado o
+  fallido. La pantalla queda preparada para conectarse a la navegación de T-15
+  sin inventar una conversación ni datos de usuario.
 - Un único controlador coordina grabación y reproducción para impedir que ambas estén activas a la vez.
 - T-10 solicita confirmación antes del cierre; al confirmarlo borra el estado de autenticación en memoria, cierra los recursos de audio registrados en `MediaSessionCoordinator` y revoca Firebase Auth. Cada grabador o reproductor deberá registrar su sesión activa para que el coordinador pueda detenerla; los fallos de parada no impiden el cierre y se notifican en el acceso.
 

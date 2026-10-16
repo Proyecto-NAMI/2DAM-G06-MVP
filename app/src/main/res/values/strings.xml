@@ -50,6 +50,16 @@
     <string name="profile_saved">Perfil actualizado.</string>
     <string name="profile_entry">Editar mi perfil</string>
 
+    <!-- Historial y composición de texto (T-17, RF-05, RNF-09). -->
+    <string name="chat_title">Conversación</string>
+    <string name="chat_history_loading">Cargando mensajes…</string>
+    <string name="chat_history_empty">Aún no hay mensajes.</string>
+    <string name="chat_history_error">No se pudo cargar el historial. Comprueba la conexión.</string>
+    <string name="chat_composer_label">Escribe un mensaje</string>
+    <string name="chat_send">Enviar</string>
+    <string name="chat_send_error">No se pudo enviar el mensaje. El borrador se ha conservado para reintentarlo.</string>
+    <string name="chat_back">Volver</string>
+
     <!--
       Mensajes de validación de cuenta y contactos (T-06, RF-01).
       El dominio devuelve un motivo y la pantalla usa la cadena

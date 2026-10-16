@@ -2,6 +2,7 @@ package com.proyectonami.app.core.domain.messages
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import java.util.UUID
 
 data class OutgoingTextMessage(
@@ -66,8 +67,30 @@ sealed interface TextMessageSendState {
     ) : TextMessageSendState
 }
 
+data class TextMessageRecord(
+    val clientMessageId: String,
+    val senderId: String,
+    val text: String,
+    val createdAtEpochMillis: Long,
+    val status: String,
+)
+
+fun normalizeTextDraft(raw: String): String? = raw.trim().takeIf { it.isNotEmpty() }
+
+sealed interface TextMessagesRemoteState {
+    data object Loading : TextMessagesRemoteState
+
+    data class Loaded(
+        val messages: List<TextMessageRecord>,
+    ) : TextMessagesRemoteState
+
+    data object Failed : TextMessagesRemoteState
+}
+
 interface TextMessagesRepository {
     suspend fun send(message: OutgoingTextMessage): TextMessageSendResult
+
+    fun observe(conversationId: String): Flow<TextMessagesRemoteState> = flow { emit(TextMessagesRemoteState.Loading) }
 }
 
 class SendTextMessageUseCase(
@@ -82,5 +105,21 @@ class SendTextMessageUseCase(
                     is TextMessageSendResult.Failed -> TextMessageSendState.Failed(message, result.reason)
                 },
             )
+        }
+}
+
+class ObserveTextMessagesUseCase(
+    private val repository: TextMessagesRepository,
+) {
+    operator fun invoke(conversationId: String): Flow<TextMessagesRemoteState> =
+        repository.observe(conversationId).map { state ->
+            when (state) {
+                TextMessagesRemoteState.Loading -> TextMessagesRemoteState.Loading
+                TextMessagesRemoteState.Failed -> TextMessagesRemoteState.Failed
+                is TextMessagesRemoteState.Loaded ->
+                    TextMessagesRemoteState.Loaded(
+                        state.messages.sortedBy { it.createdAtEpochMillis },
+                    )
+            }
         }
 }
