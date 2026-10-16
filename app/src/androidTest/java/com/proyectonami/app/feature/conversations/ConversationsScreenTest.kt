@@ -1,12 +1,16 @@
 package com.proyectonami.app.feature.conversations
 
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.DeviceConfigurationOverride
 import androidx.compose.ui.test.FontScale
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.unit.dp
 import com.proyectonami.app.core.designsystem.theme.NamiTheme
 import com.proyectonami.app.core.domain.conversations.ConversationSummary
 import com.proyectonami.app.core.domain.conversations.ConversationsRemoteState
@@ -40,8 +44,14 @@ class ConversationsScreenTest {
             }
         }
 
+        composeRule.onNodeWithText("Mis conversaciones").assertIsDisplayed()
+        composeRule.onNode(SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading)).assertExists()
         composeRule.onNodeWithContentDescription("Avatar de Persona Ficticia").assertIsDisplayed()
-        composeRule.onNodeWithText("Persona Ficticia, 3 mensajes sin leer").assertIsDisplayed().performClick()
+        composeRule
+            .onNodeWithText("Persona Ficticia, 3 mensajes sin leer")
+            .assertIsDisplayed()
+            .assertHeightIsAtLeast(48.dp)
+            .performClick()
         assertEquals("conversation-fictitious", openedConversation)
     }
 

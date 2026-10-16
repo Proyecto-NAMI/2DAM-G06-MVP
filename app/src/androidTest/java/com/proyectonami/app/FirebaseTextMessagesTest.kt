@@ -61,6 +61,9 @@ class FirebaseTextMessagesTest {
         services.auth.signOut()
         senderId = requireNotNull(await(services.auth.signInAnonymously()).user?.uid)
         conversationId = "text-test-${UUID.randomUUID()}"
+    }
+
+    private fun seedConversation() {
         await(
             conversation().set(
                 mapOf(
@@ -80,6 +83,7 @@ class FirebaseTextMessagesTest {
     @Test
     fun retriesAndNewRepositoryKeepOneCopyAndOneUnreadIncrement() =
         runBlocking {
+            seedConversation()
             val message = message()
             val sender = SendTextMessageUseCase(repository)
             assertEquals(
@@ -112,6 +116,7 @@ class FirebaseTextMessagesTest {
     @Test
     fun concurrentAttemptsStoreOneCopyAndDistinctMessagesRemainDistinct() =
         runBlocking {
+            seedConversation()
             val message = message()
             val results = List(4) { async { repository.send(message) } }.awaitAll()
             assertTrue(results.all { it == TextMessageSendResult.Sent })
@@ -126,6 +131,7 @@ class FirebaseTextMessagesTest {
     @Test
     fun changedPayloadWithSameUuidFailsWithoutOverwriting() =
         runBlocking {
+            seedConversation()
             val message = message()
             assertEquals(TextMessageSendResult.Sent, repository.send(message))
 
@@ -140,6 +146,7 @@ class FirebaseTextMessagesTest {
     @Test
     fun unavailableFirestoreRetainsUuidAndRetriesSuccessfully() =
         runBlocking {
+            seedConversation()
             val message = message()
             val unavailableApp =
                 FirebaseApp.initializeApp(
@@ -189,6 +196,7 @@ class FirebaseTextMessagesTest {
     @Test
     fun thirdPartyCannotReadOrWriteMessagesEvenBypassingRepository() =
         runBlocking {
+            seedConversation()
             val message = message()
             assertEquals(TextMessageSendResult.Sent, repository.send(message))
             services.auth.signOut()
@@ -208,6 +216,7 @@ class FirebaseTextMessagesTest {
     @Test
     fun rulesRejectInvalidPayloadAndPreventEditingCommittedMessages() =
         runBlocking {
+            seedConversation()
             val message = message()
             val valid = payload(message)
             val invalid =
