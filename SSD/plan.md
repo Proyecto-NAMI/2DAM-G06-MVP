@@ -32,11 +32,11 @@ T-08 conecta el estado de autenticación a una pantalla Compose de creación de 
 
 T-09 añade `LoadProfileUseCase`, `UpdateProfileUseCase` y `ProfileViewModel`. El perfil privado se carga desde `users/{uid}` y permite editar nombre, apellidos y `avatarPath` opcional; los nombres y el teléfono se normalizan con T-06. Un cambio de teléfono solicita y verifica un nuevo código mediante `updatePhoneNumber`, conservando el UID actual, antes de persistir el perfil. La pantalla cubre carga, error, guardado y confirmación con controles accesibles.
 
-T-12 añade `feature.contacts.domain` con el modelo `Contact`, el puerto `ContactRepository` y `AddContactUseCase`, y su implementación `FirebaseContactRepository` sobre `users/{uid}/contacts`. El identificador del contacto se deriva del teléfono normalizado (`ContactIdFactory`), de modo que el alta es idempotente: el mismo teléfono apunta siempre al mismo documento y no puede generar dos contactos. El duplicado se detecta leyendo ese documento antes de escribir y se informa con el contacto existente para poder indicar cuál es. Nombre, apellidos y teléfono se validan con T-06 y se guardan normalizados. La vinculación con una cuenta existente depende del puerto `ContactAccountResolver`; el MVP inyecta `DisabledContactAccountResolver`, que responde `Unavailable`, así que los contactos se guardan como `pending` y el cliente sigue sin consultar el directorio de personas usuarias, como exige T-11. Activar la vinculación exigirá la operación de backend autenticada, con App Check y cuota por UID, descrita en `FIREBASE.md`.
+T-12 y T-13 resuelven el alta de contactos con `core.domain.contacts` y `FirebaseContactsRepository`, que no escribe en Firestore: llama a la función `addContact` de T-11. El cliente solo puede leer sus propios contactos (`users/{uid}/contacts`), las reglas deniegan cualquier escritura directa y la vinculación la decide el servidor. El identificador del contacto es el SHA-256 del teléfono normalizado, así que el mismo teléfono apunta siempre al mismo documento y el alta es idempotente; el duplicado se informa con el contacto existente. Nombre, apellidos y teléfono se validan con T-06 antes de salir del dispositivo. La comprobación de si el teléfono tiene cuenta NAMI ocurre dentro de la función, con sesión de teléfono verificado, App Check en producción y cuota por UID, y nunca desde el cliente: no existe ninguna API de directorio.
 
-T-13 construye la pantalla `Nuevo contacto` sobre el caso de uso de T-12. `feature.contacts.presentation` añade `AddContactViewModel` (estado inmutable en `StateFlow`), la validación conjunta de los tres campos y un reductor puro del resultado del alta, y `AddContactScreen` con su `AddContactRoute`. La pantalla usa los tokens y componentes accesibles de T-04, reutiliza las etiquetas y el prefijo `+34` inicial editable de la creación de cuenta (duda 7 de `spec.md`), valida los tres campos en un solo intento para no descubrir un error por envío, informa del duplicado nombrando el contacto existente sin escribir nada en ese caso, permite reintentar un fallo sin duplicar y anuncia errores, duplicado y confirmación como región viva. Los mensajes de validación de T-06 se comparten con T-08 en `ui/ValidationMessages.kt`. El acceso a la pantalla es provisional desde el estado «Cuenta creada» de T-08: el definitivo será la pantalla principal de T-15, que sustituirá ese botón por el `+` del prototipo.
+T-13 construye la pantalla `Nuevo contacto`, que se abre desde el «+» de la pantalla principal (T-15). `feature.contacts.presentation` añade `AddContactViewModel` (estado inmutable en `StateFlow`), la validación conjunta de los tres campos y un reductor puro del resultado del alta, y `AddContactScreen` con su `AddContactRoute`. La pantalla usa los tokens y componentes accesibles de T-04, reutiliza las etiquetas y el prefijo `+34` inicial editable de la creación de cuenta (duda 7 de `spec.md`), valida los tres campos en un solo intento para no descubrir un error por envío, informa del duplicado nombrando el contacto existente sin escribir nada en ese caso y anuncia errores, duplicado y confirmación como región viva. Los mensajes de validación de T-06 se comparten con T-08 en `ui/ValidationMessages.kt`.
 
-T-13 no afirma en la interfaz que la otra persona no tenga cuenta NAMI. Con `DisabledContactAccountResolver` el cliente no puede saberlo, así que la confirmación solo indica que el contacto se ha guardado; mostrar el estado `pending` queda para cuando exista una operación de backend que lo confirme.
+La pantalla distingue los tres desenlaces que devuelve la función: si el servidor confirma que el teléfono tiene cuenta NAMI, la confirmación lo dice («ya usa NAMI»); si no la tiene, el contacto queda `pending` y solo se confirma que se ha guardado; y si la comprobación no está disponible (cuota agotada o servicio caído), avisa de que **no se ha guardado nada** y permite reintentar. Se validan los tres campos en el cliente para poder señalarlos todos, pero quien decide sigue siendo el servidor: el caso de uso valida de nuevo y el repositorio nunca escribe Firestore.
 
 ### Dependencias Firebase de T-05
 
@@ -159,12 +159,16 @@ contacto añadido/ya existente, no ofrece una API de directorio. Las reglas
 deniegan toda escritura cliente en `contacts` y en `contactLookupLimits`. En
 debug, App Check solo se omite dentro de Functions Emulator; release usa Play Integrity.
 
-T-12 implementa el alta sin activar esa consulta. `contactId` no es aleatorio:
-`ContactIdFactory` lo deriva del teléfono normalizado con SHA-256 truncado, para
-que el alta sea idempotente y para no escribir el teléfono en la ruta del
-documento. La vinculación queda como puerto (`ContactAccountResolver`) y el MVP
-guarda siempre `status: "pending"` con `linkedUserId` nulo; activar la
-vinculación requiere la operación de backend anterior y su cuota.
+T-12 y T-13 usan esa función a través de `core.domain.contacts` y
+`FirebaseContactsRepository`; el cliente no escribe contactos. `contactId` no es
+aleatorio: la función lo deriva del teléfono normalizado con SHA-256 truncado,
+de modo que el alta es idempotente y el teléfono no aparece en la ruta del
+documento. El contacto se guarda con `status: "linked"` y `linkedUserId` cuando
+el servidor encuentra la cuenta, y con `status: "pending"` y `linkedUserId` nulo
+cuando no la encuentra. Si la comprobación no está disponible (cuota o servicio),
+la función no escribe nada y el cliente muestra un aviso recuperable; el
+repositorio traduce `RESOURCE_EXHAUSTED`, `UNAVAILABLE` y `DEADLINE_EXCEEDED` a
+`LookupUnavailable` para no confundirlo con un alta correcta.
 
 ### `conversations/{conversationId}`
 
@@ -270,6 +274,14 @@ Las capturas de [`Prototype_Reference/`](../Prototype_Reference) y el archivo de
 - Subida y acceso autorizado a audio.
 - Reglas que permiten participantes y rechazan terceros.
 - Recuperación de conexión sin duplicados.
+- Alta de contactos a través de la función `addContact`: vinculación con una cuenta
+  existente, contacto pendiente cuando el teléfono no tiene cuenta, duplicado sin
+  segunda escritura y denegación de cualquier escritura directa desde el cliente.
+- Las funciones se prueban con `npm test` dentro de `functions` (cuota por minuto
+  y por día, E.164, normalización de nombres e identificadores) y el Emulator
+  Suite de CI arranca auth, firestore, storage **y** functions. Un paso posterior
+  falla si alguna prueba instrumentada se ha omitido, para que las reglas y la
+  función no vuelvan a quedarse sin ejecutar en silencio.
 
 ### Interfaz
 
