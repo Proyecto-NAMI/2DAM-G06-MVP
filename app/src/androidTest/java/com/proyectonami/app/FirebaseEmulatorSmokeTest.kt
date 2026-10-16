@@ -19,6 +19,8 @@ import com.proyectonami.app.core.domain.auth.AccountProfile
 import com.proyectonami.app.core.domain.auth.AccountProfileSaveResult
 import com.proyectonami.app.core.domain.auth.AuthSession
 import com.proyectonami.app.core.domain.auth.PhoneAuthFailure
+import com.proyectonami.app.core.domain.auth.PhoneCodeVerificationResult
+import com.proyectonami.app.core.domain.auth.PhoneVerificationRequestResult
 import com.proyectonami.app.core.domain.contacts.ContactDraft
 import com.proyectonami.app.core.domain.contacts.ContactSaveResult
 import com.proyectonami.app.core.domain.conversations.ConversationsRemoteState
@@ -357,7 +359,7 @@ class FirebaseEmulatorSmokeTest {
     fun contactCreationIsIdempotentAndContactsStayPrivate() {
         assumeEmulatorsAreRunning()
 
-        val ownerId = signInAnonymously()
+        val ownerId = signInWithVerifiedPhone()
         val addContact = AddContactUseCase(repositories.contactRepository)
 
         val added =
@@ -512,6 +514,29 @@ class FirebaseEmulatorSmokeTest {
                 TimeUnit.SECONDS,
             )
         return requireNotNull(authResult.user?.uid)
+    }
+
+    private fun signInWithVerifiedPhone(): String {
+        val phoneNumber = fictitiousEmulatorPhoneNumber()
+        val activityReference = AtomicReference<Activity>()
+        val phoneAuthRepository = FirebasePhoneAuthRepository(services.auth)
+
+        return ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            scenario.onActivity(activityReference::set)
+            val request =
+                runBlocking {
+                    phoneAuthRepository.requestPhoneCode(activityReference.get(), phoneNumber, null)
+                }
+            val challenge =
+                (request as? PhoneVerificationRequestResult.CodeSent)?.challenge
+                    ?: error("No se pudo solicitar el código del teléfono ficticio: $request")
+            val code = getVerificationCode(phoneNumber)
+            when (val verification = runBlocking { phoneAuthRepository.verifyPhoneCode(challenge, code) }) {
+                is PhoneCodeVerificationResult.Verified -> verification.userId
+                is PhoneCodeVerificationResult.Failed ->
+                    error("No se pudo verificar el teléfono ficticio: ${verification.reason}")
+            }
+        }
     }
 
     private fun fictitiousEmulatorPhoneNumber(): String {
