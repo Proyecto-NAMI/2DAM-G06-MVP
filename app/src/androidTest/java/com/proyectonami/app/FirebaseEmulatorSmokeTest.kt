@@ -21,13 +21,10 @@ import com.proyectonami.app.core.domain.auth.AuthSession
 import com.proyectonami.app.core.domain.auth.PhoneAuthFailure
 import com.proyectonami.app.core.domain.contacts.ContactDraft
 import com.proyectonami.app.core.domain.contacts.ContactSaveResult
+import com.proyectonami.app.core.domain.contacts.ContactStatus
 import com.proyectonami.app.core.domain.conversations.ConversationsRemoteState
 import com.proyectonami.app.core.media.MediaSessionCoordinator
 import com.proyectonami.app.feature.auth.presentation.PhoneAuthViewModel
-import com.proyectonami.app.feature.contacts.domain.AddContactResult
-import com.proyectonami.app.feature.contacts.domain.AddContactUseCase
-import com.proyectonami.app.feature.contacts.domain.ContactStatus
-import com.proyectonami.app.feature.contacts.domain.NewContactRequest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
@@ -49,7 +46,6 @@ import java.util.UUID
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
-import com.proyectonami.app.core.domain.contacts.ContactStatus as CoreContactStatus
 
 @RunWith(AndroidJUnit4::class)
 class FirebaseEmulatorSmokeTest {
@@ -219,7 +215,7 @@ class FirebaseEmulatorSmokeTest {
                     )
                 assertTrue(firstContact is ContactSaveResult.Added)
                 assertEquals(
-                    CoreContactStatus.PENDING,
+                    ContactStatus.PENDING,
                     (firstContact as ContactSaveResult.Added).contact.status,
                 )
                 assertTrue(duplicateContact is ContactSaveResult.Duplicate)
@@ -354,52 +350,68 @@ class FirebaseEmulatorSmokeTest {
     }
 
     @Test
-    fun contactCreationIsIdempotentAndContactsStayPrivate() {
-        assumeEmulatorsAreRunning()
+    fun addContactLinksKnownPhonesAndStoresUnknownOnesAsPending() =
+        runBlocking {
+            assumeEmulatorsAreRunning()
 
-        val ownerId = signInAnonymously()
-        val addContact = AddContactUseCase(repositories.contactRepository)
+            // Primero, la cuenta que ya usa NAMI: otro teléfono ficticio verificado.
+            val knownPhoneNumber = fictitiousEmulatorPhoneNumber()
+            signInWithFictitiousPhone(knownPhoneNumber)
+            val knownUserId = requireNotNull(repositories.authRepository.currentUserId)
 
-        val added =
-            runBlocking {
-                addContact.add(ownerId, NewContactRequest("Contacto", "Ficticio", "+1 (555) 555-0123"))
+            // Después, quien añade el contacto.
+            val ownerPhoneNumber = nextFictitiousPhoneNumber(knownPhoneNumber)
+            signInWithFictitiousPhone(ownerPhoneNumber)
+            val ownerUserId = requireNotNull(repositories.authRepository.currentUserId)
+            assertTrue("Cada alta debe partir de una cuenta distinta", ownerUserId != knownUserId)
+
+            val linked =
+                repositories.contactsRepository.addContact(
+                    ContactDraft("Carlos", "Ficticio", knownPhoneNumber),
+                )
+            assertTrue("Se esperaba un contacto vinculado: $linked", linked is ContactSaveResult.Added)
+            val linkedContact = (linked as ContactSaveResult.Added).contact
+            assertEquals(ContactStatus.LINKED, linkedContact.status)
+            assertEquals(knownUserId, linkedContact.linkedUserId)
+
+            val duplicate =
+                repositories.contactsRepository.addContact(
+                    ContactDraft("Otro", "Nombre", knownPhoneNumber),
+                )
+            assertTrue("El segundo alta debe informar del duplicado: $duplicate", duplicate is ContactSaveResult.Duplicate)
+            assertEquals("Carlos", (duplicate as ContactSaveResult.Duplicate).existing.displayName)
+
+            val pending =
+                repositories.contactsRepository.addContact(
+                    ContactDraft("Sin", "Cuenta", nextFictitiousPhoneNumber(knownPhoneNumber)),
+                )
+            assertTrue("Se esperaba un contacto pendiente: $pending", pending is ContactSaveResult.Added)
+            assertEquals(ContactStatus.PENDING, (pending as ContactSaveResult.Added).contact.status)
+            assertNull(pending.contact.linkedUserId)
+
+            val storedContacts =
+                Tasks.await(
+                    services.firestore
+                        .collection("${FirebasePaths.user(ownerUserId)}/contacts")
+                        .get(Source.SERVER),
+                    TIMEOUT_SECONDS,
+                    TimeUnit.SECONDS,
+                )
+            assertEquals("Cada teléfono debe guardarse una sola vez", 2, storedContacts.size())
+
+            repositories.authRepository.signOut()
+            signInAnonymously()
+
+            assertPermissionDenied {
+                Tasks.await(
+                    repositories.firestoreRepository
+                        .contactDocument(ownerUserId, linkedContact.id)
+                        .get(Source.SERVER),
+                    TIMEOUT_SECONDS,
+                    TimeUnit.SECONDS,
+                )
             }
-        val contact = (added as? AddContactResult.Added)?.contact
-        requireNotNull(contact) { "Se esperaba un contacto añadido y se recibió $added" }
-        assertEquals("+15555550123", contact.phoneE164)
-        assertEquals(ContactStatus.PENDING, contact.status)
-
-        val repeated =
-            runBlocking {
-                addContact.add(ownerId, NewContactRequest("Otro Nombre", "Ficticio", "+15555550123"))
-            }
-        assertTrue("El segundo alta debe informar del duplicado: $repeated", repeated is AddContactResult.Duplicate)
-        assertEquals("Contacto", (repeated as AddContactResult.Duplicate).existing.displayName)
-
-        val storedContacts =
-            Tasks.await(
-                services.firestore
-                    .collection("${FirebasePaths.user(ownerId)}/contacts")
-                    .get(Source.SERVER),
-                TIMEOUT_SECONDS,
-                TimeUnit.SECONDS,
-            )
-        assertEquals("El mismo teléfono debe guardarse una sola vez", 1, storedContacts.size())
-        val stored = storedContacts.documents.single()
-        assertEquals("pending", stored.getString("status"))
-        assertNull(stored.getString("linkedUserId"))
-
-        repositories.authRepository.signOut()
-        signInAnonymously()
-
-        assertPermissionDenied {
-            Tasks.await(
-                repositories.firestoreRepository.contactDocument(ownerId, contact.id).get(Source.SERVER),
-                TIMEOUT_SECONDS,
-                TimeUnit.SECONDS,
-            )
         }
-    }
 
     @Test
     fun unauthenticatedUserCannotWriteAProfile() {
@@ -502,6 +514,40 @@ class FirebaseEmulatorSmokeTest {
                 environment.storageEmulatorPort,
             ).all { port -> isReachable(environment.emulatorHost, port) },
         )
+    }
+
+    /**
+     * Crea o recupera la sesión de un teléfono ficticio verificado, que es lo que
+     * exige la función `addContact` (T-11) para poder consultar un número.
+     */
+    private suspend fun signInWithFictitiousPhone(phoneNumber: String) {
+        repositories.authRepository.signOut()
+        val activityReference = AtomicReference<Activity>()
+        val viewModel =
+            PhoneAuthViewModel(
+                authRepository = repositories.authRepository,
+                accountProfileRepository = repositories.accountProfileRepository,
+                mediaSessionController = MediaSessionCoordinator(),
+            )
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            scenario.onActivity(activityReference::set)
+            viewModel.updateName("Persona")
+            viewModel.updateSurname("Ficticia")
+            viewModel.updatePhoneNumber(phoneNumber)
+            viewModel.requestCode(activityReference.get())
+            val requestedState =
+                withTimeout(TIMEOUT_SECONDS * 1_000) {
+                    viewModel.uiState.first { !it.isRequestingCode && (it.challenge != null || it.failure != null) }
+                }
+            assertNull("No se pudo solicitar el código: ${requestedState.failure}", requestedState.failure)
+            viewModel.updateVerificationCode(getVerificationCode(phoneNumber))
+            viewModel.verifyCode()
+            val verifiedState =
+                withTimeout(TIMEOUT_SECONDS * 1_000) {
+                    viewModel.uiState.first { it.isAccountReady || it.profileSaveFailed }
+                }
+            assertTrue("No se pudo verificar el teléfono ficticio: ${verifiedState.failure}", verifiedState.isAccountReady)
+        }
     }
 
     private fun signInAnonymously(): String {
