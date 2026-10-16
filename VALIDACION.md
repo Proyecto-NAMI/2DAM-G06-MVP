@@ -1,3 +1,19 @@
+# Validación de T-09 (RF-02)
+
+Fecha: 16 de octubre de 2026. Rama: `yang_dev`.
+
+- `ProfileViewModel` carga y actualiza nombre, apellidos, teléfono y avatar opcional.
+- El cambio de teléfono usa una nueva verificación y conserva el UID de Firebase mediante `updatePhoneNumber`.
+- Se cubren estados de carga, error, guardado y confirmación; los casos de uso validan y normalizan datos.
+
+| Comprobación | Resultado |
+|---|---|
+| `gradlew.bat spotlessApply` | Correcto |
+| `gradlew.bat testDebugUnitTest` | 105 pruebas, 0 fallos |
+| `gradlew.bat assembleDebug` | Correcto |
+| Revisión manual en dispositivo/emulador | Pendiente |
+| Revisión por otra persona | Pendiente |
+
 # Validación de T-16 (RF-05, RNF-04)
 
 Fecha: 16 de octubre de 2026. Rama: `yang_dev`.
