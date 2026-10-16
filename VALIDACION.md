@@ -452,3 +452,75 @@ avatar tiene descripción y la acción de conversación mantiene el tamaño mín
 La activación de TalkBack en un dispositivo/emulador y la revisión por otra
 persona deben completarse antes de fusionar; no se afirma que una prueba
 instrumentada sustituya esa comprobación manual.
+
+# Validación de T-29 (todos los RF/RNF)
+
+Fecha: 17 de octubre de 2026. Rama: `yang_dev`. Responsable: G06-xx.
+
+Esta revisión consolida la trazabilidad de `SSD/spec.md` y `SSD/tasks.md`.
+Las referencias a pruebas son nombres reales de clases y métodos del
+repositorio; los datos de prueba son sintéticos (`Persona Ficticia`,
+`conversation-fictitious` y teléfonos reservados del emulador).
+
+## Matriz de requisitos y evidencias
+
+| Requisito | Prueba o evidencia verificable |
+|---|---|
+| RF-01 | `AccountCreationScreenTest` (verificación correcta, código incorrecto, caducidad, reintento y formulario al 200 %); `FirebaseEmulatorSmokeTest.phoneVerificationCanRetryAndSessionIsRestoredByANewRepository`. |
+| RF-02 | `ProfileUseCasesTest` (carga, normalización, avatar opcional y rechazo sin escritura); `ProfileViewModel` expone carga/error/guardado. |
+| RF-03 | `AddContactUseCaseTest`, `AddContactScreenTest` y `FirebaseEmulatorSmokeTest.addContactLinksKnownPhonesAndStoresUnknownOnesAsPending` (vinculación, pendiente, duplicado, fallo y reintento). |
+| RF-04 | `ObserveConversationsUseCaseTest`, `ConversationsT19Test`, `ConversationsScreenTest` y `FirebaseEmulatorSmokeTest.conversationsAreScopedToCurrentUserAndOrderedWithUnreadCounts`. |
+| RF-05 | `TextConversationT17Test`, `SendTextMessageUseCaseTest`, `TextConversationScreenTest` y `FirebaseTextMessagesTest` (historial, borrador, vacío, reintento idempotente y reglas). |
+| RF-06 | `AudioRecordingT20T21Test` (permiso, duración, interrupción, vacío y límite); `FirebaseEmulatorSmokeTest.authFirestoreAndStorageWorkWithFictitiousData` y `thirdPartyCannotReadConversationOrAudio`. |
+| RF-07 | `MediaPlaybackT23Test`, `MediaSessionCoordinatorTest` y `TextToSpeechT24Test` (reproducción exclusiva, pausa, error recuperable, detener sesión y motor ausente). |
+| RF-08 | `TextConversationScreenTest.sendShowsConfirmationAndRetryUsesTheSameClientId` y `SendTextMessageUseCaseTest` (pendiente, enviado, fallido, confirmación y ausencia de duplicados). |
+| RF-09 | `AccessibilityPreferencesT25Test`, `NamiComponentsTest`, `ConversationsScreenTest` y `TextToSpeechT24Test` (escala persistente, 200 % y preferencia de lectura). |
+| RF-10 | `AccountCreationScreenTest.signOutRequiresConfirmationAndCanBeCancelled`, `confirmedSignOutStopsMediaAndClearsPrivateState` y `MediaSessionCoordinatorTest`. |
+| RNF-01 | `NamiColorContrastTest`, `NamiComponentsTest` y las pruebas UI de cuenta, conversaciones y chat al 200 %; auditoría detallada en `SSD/ACCESIBILIDAD.md`. |
+| RNF-02 | `ConversationsScreenTest.contentShowsAvatarUnreadCountAndNavigatesToConversation` y `TextConversationScreenTest`; el flujo inicio → conversación → campo → enviar queda en cuatro acciones como máximo. |
+| RNF-03 | `FlowMetricsT27Test` y `SSD/RENDIMIENTO.md` fijan objetivos y límites. Los percentiles de red bajo carga quedan declarados como no medidos. |
+| RNF-04 | `SendTextMessageUseCaseTest`, `FirebaseTextMessagesTest` y `FlowMetricsT27Test` comprueban UUID de cliente, reintento y ausencia de duplicados. |
+| RNF-05 | `FirebaseEmulatorSmokeTest` y `FirebaseTextMessagesTest` cubren sesión no autenticada, terceros y reglas de perfiles, conversaciones, mensajes y audios. |
+| RNF-06 | Reglas, repositorios y pruebas usan datos ficticios; la revisión de fuentes no encuentra logging de contenido, teléfonos completos ni rutas privadas. Los archivos sensibles están excluidos por `.gitignore`. |
+| RNF-07 | CI valida Android 16/API 36 en el emulador. La compatibilidad física con la versión mínima provisional (API 26) y con un segundo tamaño de dispositivo queda pendiente. |
+| RNF-08 | El trabajo `quality` de CI ejecuta `koverVerifyDebug` y termina correctamente con el mínimo del 70 % por paquete de dominio. |
+| RNF-09 | `TextConversationT17Test`, `AudioRecordingT20T21Test`, `FlowMetricsT27Test` y los ViewModel mantienen borrador/audio en estado seguro durante fallos e interrupciones. La recreación física de pantalla queda como revisión manual. |
+
+## Criterios de aceptación revisados
+
+- **Flujo principal:** se recorrió mediante `ConversationsScreenTest` y
+  `TextConversationScreenTest`: abrir una conversación, escribir y enviar un
+  texto ficticio, con confirmación visible/anunciable y máximo cuatro acciones
+  desde inicio.
+- **Error:** `TextConversationScreenTest` y
+  `FirebaseTextMessagesTest.unavailableFirestoreRetainsUuidAndRetriesSuccessfully`
+  fuerzan un fallo de transporte; el estado queda fallido, permite reintentar
+  y conserva el mismo UUID sin crear otra copia.
+- **Caso límite:** se cubren texto vacío o solo con espacios, grabación vacía,
+  límite de 120 segundos o 5 MiB, audio ausente/no decodificable y texto al
+  200 % en anchuras de 320 dp y 411 dp.
+
+## Regresión y resultado
+
+| Comprobación | Resultado |
+|---|---|
+| `git diff --check` | Correcto antes de este cambio documental. |
+| CI `Android CI`, run `38972892443`, commit `a87c3bc` | Correcto: `quality` y `Android 16 y Firebase Emulator Suite` en verde. |
+| `quality` | Correcto: Cloud Functions, Spotless, compilación debug/release, pruebas JVM, lint, Kover y `assembleDebugAndroidTest`. |
+| Suite instrumentada | Correcta en Android 16/API 36; el paso de comprobación de omitidas también terminó correctamente. |
+| Regresión local en este entorno | No ejecutable: el SDK local no permite leer `platforms/android-37.0/package.xml` y Gradle no puede descargar los manifiestos sin red. No se presenta este intento como resultado positivo. |
+
+## Revisión de funciones excluidas y limitaciones
+
+La inspección estática de `app/src/main` no encuentra controles ni rutas
+activas para chats grupales, llamadas, videollamadas, fotografías, vídeos,
+documentos, ubicación, inicio de sesión biométrico, panel web, cifrado de
+extremo a extremo, tutoriales ni contenido generado por IA. Los iconos de
+cámara, llamada y vídeo de Figma siguen siendo exploraciones visuales, tal como
+declara `SSD/spec.md` §3; no se han conectado a ninguna acción.
+
+Quedan abiertas las limitaciones ya declaradas en la especificación: prueba
+física con TalkBack por otra persona, validación de red bajo carga/percentiles,
+audio en hardware real, compatibilidad con API 26 y revisión humana formal.
+La definición de hecho no se marca completa hasta que el equipo registre esas
+revisiones.
