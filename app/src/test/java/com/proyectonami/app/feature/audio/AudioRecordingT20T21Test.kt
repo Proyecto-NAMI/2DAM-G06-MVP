@@ -56,10 +56,10 @@ class AudioRecordingT20T21Test {
             val metadata = AudioNoteMetadata("message-fictitious", "conversation-fictitious", "sender-fictitious", 1_000L, 10_000L)
             assertTrue(AudioRecordingFailure.values().isNotEmpty())
             assertTrue(AudioUploadFailure.values().isNotEmpty())
-        assertTrue(AudioUploadState.Pending == AudioUploadState.Pending)
-        assertTrue(AudioUploadState.Progress(0.5f).fraction > 0f)
-        assertTrue(AudioUploadState.Sent(metadata).metadata == metadata)
-        assertTrue(AudioUploadState.Failed(metadata, AudioUploadFailure.NETWORK).reason == AudioUploadFailure.NETWORK)
+            assertTrue(AudioUploadState.Pending == AudioUploadState.Pending)
+            assertTrue(AudioUploadState.Progress(0.5f).fraction > 0f)
+            assertTrue(AudioUploadState.Sent(metadata).metadata == metadata)
+            assertTrue(AudioUploadState.Failed(metadata, AudioUploadFailure.NETWORK).reason == AudioUploadFailure.NETWORK)
             val recorder =
                 object : AudioRecorder {
                     override suspend fun start(localPath: String) = Result.success(Unit)
