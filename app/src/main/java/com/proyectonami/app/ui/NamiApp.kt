@@ -48,8 +48,12 @@ import com.proyectonami.app.core.domain.auth.AuthSession
 import com.proyectonami.app.core.domain.auth.PhoneAuthFailure
 import com.proyectonami.app.feature.auth.presentation.PhoneAuthUiState
 import com.proyectonami.app.feature.auth.presentation.PhoneAuthViewModel
+import com.proyectonami.app.feature.chat.presentation.TextConversationRoute
+import com.proyectonami.app.feature.chat.presentation.TextConversationViewModel
 import com.proyectonami.app.feature.contacts.presentation.AddContactRoute
 import com.proyectonami.app.feature.contacts.presentation.AddContactViewModel
+import com.proyectonami.app.feature.conversations.presentation.ConversationsRoute
+import com.proyectonami.app.feature.conversations.presentation.ConversationsViewModel
 import com.proyectonami.app.feature.profile.presentation.ProfileRoute
 import com.proyectonami.app.feature.profile.presentation.ProfileViewModel
 
@@ -59,6 +63,8 @@ fun NamiApp(
     viewModel: PhoneAuthViewModel,
     addContactViewModel: AddContactViewModel,
     profileViewModel: ProfileViewModel? = null,
+    conversationsViewModel: ConversationsViewModel? = null,
+    createConversationViewModel: ((String) -> TextConversationViewModel)? = null,
 ) {
     val state by viewModel.uiState.collectAsState()
     val signedInUserId = (state.session as? AuthSession.SignedIn)?.userId
@@ -66,6 +72,7 @@ fun NamiApp(
     // construya la pantalla principal. Al cambiar de sesión se vuelve a la raíz.
     var showAddContact by remember(signedInUserId) { mutableStateOf(false) }
     var showProfile by remember(signedInUserId) { mutableStateOf(false) }
+    var selectedConversation by remember(signedInUserId) { mutableStateOf<TextConversationViewModel?>(null) }
     NamiTheme {
         Surface(
             modifier = Modifier.fillMaxSize(),
@@ -74,6 +81,11 @@ fun NamiApp(
             when {
                 state.session is AuthSession.Restoring ->
                     LoadingScreen()
+                signedInUserId != null && state.isAccountReady && selectedConversation != null ->
+                    TextConversationRoute(
+                        viewModel = selectedConversation!!,
+                        onBack = { selectedConversation = null },
+                    )
                 signedInUserId != null && state.isAccountReady && showProfile && profileViewModel != null ->
                     ProfileRoute(
                         activity = activity,
@@ -87,14 +99,27 @@ fun NamiApp(
                         onBack = { showAddContact = false },
                     )
                 signedInUserId != null && state.isAccountReady ->
-                    AccountReadyScreen(
-                        onSignOut = viewModel::signOut,
-                        onAddContact = { showAddContact = true },
-                        onProfile = {
-                            profileViewModel?.load()
-                            showProfile = profileViewModel != null
-                        },
-                    )
+                    if (conversationsViewModel != null && createConversationViewModel != null) {
+                        ConversationsRoute(
+                            viewModel = conversationsViewModel,
+                            onOpenConversation = { id -> selectedConversation = createConversationViewModel(id) },
+                            onSignOut = viewModel::signOut,
+                            onAddContact = { showAddContact = true },
+                            onProfile = {
+                                profileViewModel?.load()
+                                showProfile = profileViewModel != null
+                            },
+                        )
+                    } else {
+                        AccountReadyScreen(
+                            onSignOut = viewModel::signOut,
+                            onAddContact = { showAddContact = true },
+                            onProfile = {
+                                profileViewModel?.load()
+                                showProfile = profileViewModel != null
+                            },
+                        )
+                    }
                 else ->
                     CreateAccountScreen(
                         activity = activity,

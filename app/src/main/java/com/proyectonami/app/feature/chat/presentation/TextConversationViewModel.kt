@@ -4,12 +4,11 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.proyectonami.app.core.domain.messages.ObserveTextMessagesUseCase
-import com.proyectonami.app.core.domain.messages.OutgoingTextMessage
 import com.proyectonami.app.core.domain.messages.SendTextMessageUseCase
 import com.proyectonami.app.core.domain.messages.TextMessageFailure
 import com.proyectonami.app.core.domain.messages.TextMessageSendState
 import com.proyectonami.app.core.domain.messages.TextMessagesRemoteState
-import com.proyectonami.app.core.domain.messages.normalizeTextDraft
+import com.proyectonami.app.core.domain.messages.prepareOutgoingTextMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,7 +20,12 @@ data class TextConversationUiState(
     val draft: String = "",
     val sendState: TextMessageSendState? = null,
     val sendFailure: TextMessageFailure? = null,
+    val announcement: TextConversationAnnouncement? = null,
 )
+
+enum class TextConversationAnnouncement {
+    MessageSent,
+}
 
 class TextConversationViewModel(
     private val conversationId: String,
@@ -47,21 +51,22 @@ class TextConversationViewModel(
     }
 
     fun updateDraft(value: String) {
-        mutableUiState.update { it.copy(draft = value, sendFailure = null) }
+        mutableUiState.update { it.copy(draft = value, sendState = null, sendFailure = null, announcement = null) }
         savedStateHandle[DRAFT_KEY] = value
     }
 
     fun send() {
         val state = mutableUiState.value
         val sender = senderId()
-        val text = normalizeTextDraft(state.draft)
-        if (text == null || sender.isNullOrBlank() || state.sendState is TextMessageSendState.Pending) return
-        val message = OutgoingTextMessage.create(conversationId, sender, text)
+        if (state.sendState is TextMessageSendState.Pending) return
+        val retryMessage = (state.sendState as? TextMessageSendState.Failed)?.message
+        val message = prepareOutgoingTextMessage(conversationId, sender, state.draft, retryMessage) ?: return
         mutableUiState.update {
             it.copy(
                 draft = "",
                 sendState = TextMessageSendState.Pending(message),
                 sendFailure = null,
+                announcement = null,
             )
         }
         savedStateHandle[DRAFT_KEY] = ""
@@ -71,6 +76,12 @@ class TextConversationViewModel(
                     it.copy(
                         sendState = sendState,
                         sendFailure = (sendState as? TextMessageSendState.Failed)?.reason,
+                        announcement =
+                            if (sendState is TextMessageSendState.Sent) {
+                                TextConversationAnnouncement.MessageSent
+                            } else {
+                                null
+                            },
                         draft =
                             if (sendState is TextMessageSendState.Failed) {
                                 sendState.message.text

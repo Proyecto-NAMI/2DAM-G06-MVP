@@ -14,6 +14,21 @@ class TextConversationT17Test {
     }
 
     @Test
+    fun retryReusesTheOriginalClientMessageId() {
+        val first = prepareOutgoingTextMessage("conversation-fictitious", "sender-fictitious", "Hola")
+        val retry =
+            prepareOutgoingTextMessage(
+                "conversation-fictitious",
+                "sender-fictitious",
+                " Hola ",
+                retryMessage = first,
+            )
+
+        assertEquals(first, retry)
+        assertNull(prepareOutgoingTextMessage("conversation-fictitious", "sender-fictitious", "   "))
+    }
+
+    @Test
     fun historyIsOrderedOldestFirstAndEmptyStateIsPreserved() =
         runBlocking {
             val newest = TextMessageRecord("new", "sender", "dos", 2_000L, "sent")

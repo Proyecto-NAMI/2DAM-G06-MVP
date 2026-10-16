@@ -84,4 +84,14 @@ jobs:
           script: |
             trap 'rm -f .firebase-ci.json' EXIT
             node -e 'const fs = require("node:fs"); const config = JSON.parse(fs.readFileSync("firebase.json", "utf8")); for (const name of ["auth", "firestore", "storage"]) { if (!config.emulators[name]) throw new Error(`Missing ${name} emulator config`); config.emulators[name].host = "0.0.0.0"; } fs.writeFileSync(".firebase-ci.json", JSON.stringify(config));'
-            firebase emulators:exec --config .firebase-ci.json --project demo-nami --only auth,firestore,storage "./gradlew connectedDebugAndroidTest"
+            bash .github/scripts/run-instrumented-tests.sh
+
+      - name: Conservar informes de pruebas instrumentadas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-instrumented-test-reports
+          path: |
+            app/build/reports/androidTests/connected/**
+            app/build/outputs/androidTest-results/**
+          if-no-files-found: ignore
