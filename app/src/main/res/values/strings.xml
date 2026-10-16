@@ -62,6 +62,12 @@
     <string name="chat_message_sent">Mensaje enviado</string>
     <string name="chat_back">Volver</string>
 
+    <!-- Entrada a conversaciones y flujo de envío (T-19, RF-05, RNF-01/RNF-02). -->
+    <string name="conversations_title">Mis conversaciones</string>
+    <string name="conversations_loading">Cargando conversaciones…</string>
+    <string name="conversations_empty">Aún no tienes conversaciones.</string>
+    <string name="conversations_error">No se pudieron cargar las conversaciones. Comprueba la conexión.</string>
+
     <!--
       Mensajes de validación de cuenta y contactos (T-06, RF-01).
       El dominio devuelve un motivo y la pantalla usa la cadena

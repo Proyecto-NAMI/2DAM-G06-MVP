@@ -48,6 +48,22 @@ Fecha: 16 de octubre de 2026. Rama: `yang_dev-t18`.
 | Revisión manual en dispositivo/emulador | Pendiente |
 | Revisión por otra persona | Pendiente |
 
+# Validación de T-19 (RF-05, RNF-01, RNF-02)
+
+Fecha: 16 de octubre de 2026. Rama de trabajo: `yang_dev-t18` (PR compartida con T-18).
+
+- La pantalla de conversaciones observa estados de carga, vacío y error, ordena por actividad y abre el chat con una acción.
+- La composición reutiliza el flujo de T-18: etiqueta accesible, foco/IME de envío, rechazo de texto vacío, bloqueo del doble envío, confirmación y reintento idempotente.
+- `ConversationsT19Test` cubre orden reciente, estado vacío y propagación de fallo.
+
+| Comprobación | Resultado |
+|---|---|
+| `gradlew.bat spotlessApply` | Correcto |
+| `gradlew.bat testDebugUnitTest` | 110 pruebas, 0 fallos |
+| `gradlew.bat assembleDebug` | Correcto |
+| Revisión manual al 200 % en dispositivo/emulador | Pendiente |
+| Revisión por otra persona | Pendiente |
+
 # Validación de T-16 (RF-05, RNF-04)
 
 Fecha: 16 de octubre de 2026. Rama: `yang_dev`.
