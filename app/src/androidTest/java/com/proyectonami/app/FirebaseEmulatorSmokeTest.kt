@@ -19,7 +19,6 @@ import com.proyectonami.app.core.domain.auth.AuthSession
 import com.proyectonami.app.core.domain.auth.PhoneAuthFailure
 import com.proyectonami.app.core.domain.contacts.ContactDraft
 import com.proyectonami.app.core.domain.contacts.ContactSaveResult
-import com.proyectonami.app.core.domain.contacts.ContactStatus
 import com.proyectonami.app.core.domain.conversations.ConversationsRemoteState
 import com.proyectonami.app.core.media.MediaSessionCoordinator
 import com.proyectonami.app.feature.auth.presentation.PhoneAuthViewModel
@@ -42,6 +41,7 @@ import java.util.Date
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
+import com.proyectonami.app.core.domain.contacts.ContactStatus as CoreContactStatus
 
 @RunWith(AndroidJUnit4::class)
 class FirebaseEmulatorSmokeTest {
@@ -211,7 +211,7 @@ class FirebaseEmulatorSmokeTest {
                     )
                 assertTrue(firstContact is ContactSaveResult.Added)
                 assertEquals(
-                    ContactStatus.PENDING,
+                    CoreContactStatus.PENDING,
                     (firstContact as ContactSaveResult.Added).contact.status,
                 )
                 assertTrue(duplicateContact is ContactSaveResult.Duplicate)
