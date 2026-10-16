@@ -387,8 +387,11 @@ Qué incluye:
 | `./gradlew koverVerifyDebug` | Correcto |
 | `./gradlew assembleDebugAndroidTest` | Correcto |
 | `connectedDebugAndroidTest` con Emulator Suite | No ejecutable en local (sin Firebase CLI, KVM ni AVD); lo ejecuta CI con los cuatro emuladores |
-| `FirebaseEmulatorSmokeTest.addContactLinksKnownPhonesAndStoresUnknownOnesAsPending` | Pendiente de CI: es la evidencia de que la vinculación de RF-03 funciona de extremo a extremo |
+| CI `Android CI`, run `38962582758` sobre el commit `63a25e4` | Correcto en los dos trabajos: 50 pruebas instrumentadas, 0 fallos, 0 errores y **0 omitidas**, con Auth, Firestore, Storage y Functions |
+| `FirebaseEmulatorSmokeTest.addContactLinksKnownPhonesAndStoresUnknownOnesAsPending` | Correcto en Android 16/API 36: el teléfono con cuenta queda `linked` con el UID correcto, el desconocido queda `pending` y el duplicado no escribe una segunda vez |
 | Revisión por otra persona | Pendiente |
+
+La primera ejecución completa de la suite (run `38960340598`) hizo 50 pruebas y **0 omisiones**, y solo falló la preparación de `FirebaseTextMessagesTest.retriesAndNewRepositoryKeepOneCopyAndOneUnreadIncrement`: agotó los 20 s de `Tasks.await` en su primera escritura (20,06 s exactos) mientras el resto de la clase tardaba entre 0,06 s y 8,8 s. Era la espera de la primera conexión con el emulador, así que los límites de las dos clases de integración pasan a 60 s y el trabajo quedó verde.
 
 ## Limitaciones
 
