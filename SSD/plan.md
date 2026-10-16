@@ -74,6 +74,23 @@ El MVP puede conservar un único módulo Gradle `app`. Solo se separarán módul
 - Los casos de uso contienen validación y reglas independientes de Android cuando sea posible.
 - Los repositorios traducen Firebase a modelos y errores de dominio.
 - Cada mensaje recibe un UUID antes del envío y reutiliza ese ID al reintentar.
+- T-16 implementa `core.domain.messages` y `FirebaseTextMessagesRepository`.
+  `OutgoingTextMessage.create` genera el UUID una sola vez; el mensaje conserva
+  conversación, remitente y texto inmutables y rechaza texto vacío. El caso de
+  uso emite pendiente y, tras la respuesta del servidor, enviado o fallido con
+  motivo. El consumidor debe conservar el mismo mensaje para reintentar; no
+  debe invocar de nuevo la fábrica. T-17/T-18 conectarán estos estados con la UI
+  y la conservación del borrador.
+- El repositorio usa una transacción sobre
+  `conversations/{conversationId}/messages/{clientMessageId}`: crea el mensaje,
+  fecha de servidor, actividad y contador del destinatario de forma atómica.
+  Si el documento ya existe con el mismo contenido, confirma sin modificarlo
+  ni incrementar de nuevo el contador. Reutilizar el ID con otro contenido
+  devuelve conflicto. Los reintentos concurrentes quedan serializados por
+  Firestore. Una transacción sin red falla explícitamente; no se presenta una
+  escritura local en caché como enviada ni se implementa una cola offline.
+  Cancelar la espera no garantiza cancelar el commit remoto: se debe reintentar
+  con el mismo UUID para resolver una confirmación perdida.
 - Un único controlador coordina grabación y reproducción para impedir que ambas estén activas a la vez.
 - T-10 solicita confirmación antes del cierre; al confirmarlo borra el estado de autenticación en memoria, cierra los recursos de audio registrados en `MediaSessionCoordinator` y revoca Firebase Auth. Cada grabador o reproductor deberá registrar su sesión activa para que el coordinador pueda detenerla; los fallos de parada no impiden el cierre y se notifican en el acceso.
 
