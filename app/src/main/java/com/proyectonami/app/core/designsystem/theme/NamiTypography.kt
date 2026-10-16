@@ -42,3 +42,26 @@ val NamiTypography =
         labelMedium = style(16, 22, FontWeight.Medium),
         labelSmall = style(14, 20, FontWeight.Medium),
     )
+
+private fun TextStyle.scaled(scale: Float): TextStyle = copy(fontSize = fontSize * scale, lineHeight = lineHeight * scale)
+
+fun Typography.scaled(scale: Float): Typography {
+    val factor = scale.coerceIn(1f, 2f)
+    return copy(
+        displayLarge = displayLarge.scaled(factor),
+        displayMedium = displayMedium.scaled(factor),
+        displaySmall = displaySmall.scaled(factor),
+        headlineLarge = headlineLarge.scaled(factor),
+        headlineMedium = headlineMedium.scaled(factor),
+        headlineSmall = headlineSmall.scaled(factor),
+        titleLarge = titleLarge.scaled(factor),
+        titleMedium = titleMedium.scaled(factor),
+        titleSmall = titleSmall.scaled(factor),
+        bodyLarge = bodyLarge.scaled(factor),
+        bodyMedium = bodyMedium.scaled(factor),
+        bodySmall = bodySmall.scaled(factor),
+        labelLarge = labelLarge.scaled(factor),
+        labelMedium = labelMedium.scaled(factor),
+        labelSmall = labelSmall.scaled(factor),
+    )
+}

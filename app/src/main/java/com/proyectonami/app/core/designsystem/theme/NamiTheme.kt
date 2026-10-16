@@ -66,11 +66,12 @@ private val DarkColors = NamiDarkColorTokens.toDarkScheme()
 @Composable
 fun NamiTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    textScale: Float = 1f,
     content: @Composable () -> Unit,
 ) {
     MaterialTheme(
         colorScheme = if (darkTheme) DarkColors else LightColors,
-        typography = NamiTypography,
+        typography = NamiTypography.scaled(textScale),
         content = content,
     )
 }
