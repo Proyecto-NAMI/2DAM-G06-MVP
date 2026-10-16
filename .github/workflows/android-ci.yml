@@ -73,6 +73,12 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      - name: Preparar Firebase Functions
+        working-directory: functions
+        run: |
+          npm ci
+          npm run build
+
       - name: Ejecutar pruebas instrumentadas
         uses: ReactiveCircus/android-emulator-runner@v2.38.0
         with:
@@ -81,12 +87,12 @@ jobs:
           target: google_apis
           profile: pixel_6
           disable-animations: true
-          # API 36 can fail to bind a color buffer even with SwiftShader on hosted runners.
-          # Disable GPU surfaces entirely so instrumentation uses software rendering.
-          gpu: off
+          # API 36 can fail to bind a color buffer with SwiftShader on hosted runners.
+          # Pass the supported emulator option explicitly; the action has no `gpu` input.
+          emulator-options: -no-window -gpu off -no-snapshot -noaudio -no-boot-anim
           script: |
             trap 'rm -f .firebase-ci.json' EXIT
-            node -e 'const fs = require("node:fs"); const config = JSON.parse(fs.readFileSync("firebase.json", "utf8")); for (const name of ["auth", "firestore", "storage"]) { if (!config.emulators[name]) throw new Error(`Missing ${name} emulator config`); config.emulators[name].host = "0.0.0.0"; } fs.writeFileSync(".firebase-ci.json", JSON.stringify(config));'
+            node -e 'const fs = require("node:fs"); const config = JSON.parse(fs.readFileSync("firebase.json", "utf8")); for (const name of ["auth", "firestore", "functions", "storage"]) { if (!config.emulators[name]) throw new Error(`Missing ${name} emulator config`); config.emulators[name].host = "0.0.0.0"; } fs.writeFileSync(".firebase-ci.json", JSON.stringify(config));'
             bash .github/scripts/run-instrumented-tests.sh
 
       - name: Conservar informes de pruebas instrumentadas

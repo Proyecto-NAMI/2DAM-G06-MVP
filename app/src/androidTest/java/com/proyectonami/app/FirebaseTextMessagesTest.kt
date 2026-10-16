@@ -256,7 +256,7 @@ class FirebaseTextMessagesTest {
         message: OutgoingTextMessage,
     ): List<TextMessageSendState> = withTimeout(30_000L) { sender(message).toList() }
 
-    private fun <T> await(task: Task<T>): T = Tasks.await(task, 20, TimeUnit.SECONDS)
+    private fun <T> await(task: Task<T>): T = Tasks.await(task, 60, TimeUnit.SECONDS)
 
     private fun assertPermissionDenied(action: () -> Unit) {
         val error = assertThrows(ExecutionException::class.java, action)
