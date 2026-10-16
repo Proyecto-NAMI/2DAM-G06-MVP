@@ -93,9 +93,9 @@ jobs:
           target: google_apis
           profile: pixel_6
           disable-animations: true
-          # API 36 can fail to bind a color buffer even with SwiftShader on hosted runners.
-          # Disable GPU surfaces entirely so instrumentation uses software rendering.
-          gpu: off
+          # API 36 can fail to bind a color buffer with the action's default
+          # SwiftShader renderer. Pass the supported launcher options explicitly.
+          emulator-options: -no-window -gpu off -no-snapshot -noaudio -no-boot-anim
           script: |
             trap 'rm -f .firebase-ci.json' EXIT
             node -e 'const fs = require("node:fs"); const config = JSON.parse(fs.readFileSync("firebase.json", "utf8")); for (const name of ["auth", "firestore", "storage", "functions"]) { if (!config.emulators[name]) throw new Error(`Missing ${name} emulator config`); config.emulators[name].host = "0.0.0.0"; } fs.writeFileSync(".firebase-ci.json", JSON.stringify(config));'
