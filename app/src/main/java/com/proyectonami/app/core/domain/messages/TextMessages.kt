@@ -77,6 +77,20 @@ data class TextMessageRecord(
 
 fun normalizeTextDraft(raw: String): String? = raw.trim().takeIf { it.isNotEmpty() }
 
+fun prepareOutgoingTextMessage(
+    conversationId: String,
+    senderId: String?,
+    draft: String,
+    retryMessage: OutgoingTextMessage? = null,
+): OutgoingTextMessage? {
+    val normalized = normalizeTextDraft(draft)
+    if (normalized == null || senderId.isNullOrBlank()) return null
+    if (retryMessage != null && retryMessage.senderId == senderId && normalizeTextDraft(retryMessage.text) == normalized) {
+        return retryMessage
+    }
+    return OutgoingTextMessage.create(conversationId, senderId, normalized)
+}
+
 sealed interface TextMessagesRemoteState {
     data object Loading : TextMessagesRemoteState
 

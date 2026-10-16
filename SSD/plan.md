@@ -105,6 +105,12 @@ El MVP puede conservar un único módulo Gradle `app`. Solo se separarán módul
   espacios y reutiliza `SendTextMessageUseCase` para emitir pendiente, enviado o
   fallido. La pantalla queda preparada para conectarse a la navegación de T-15
   sin inventar una conversación ni datos de usuario.
+- T-18 conserva el `clientMessageId` de un envío fallido al reintentar, bloquea
+  acciones mientras el mensaje está pendiente y expone una confirmación
+  accesible (`Mensaje enviado`) cuando Firestore confirma la persistencia.
+- T-19 conecta la lista de conversaciones con el compositor: abrir una conversación
+  requiere una acción y reutiliza los estados de T-18 para enviar o reintentar sin
+  duplicar mensajes.
 - Un único controlador coordina grabación y reproducción para impedir que ambas estén activas a la vez.
 - T-10 solicita confirmación antes del cierre; al confirmarlo borra el estado de autenticación en memoria, cierra los recursos de audio registrados en `MediaSessionCoordinator` y revoca Firebase Auth. Cada grabador o reproductor deberá registrar su sesión activa para que el coordinador pueda detenerla; los fallos de parada no impiden el cierre y se notifican en el acceso.
 
