@@ -29,6 +29,7 @@ Incluye:
 - Validación de identidad y sesión por teléfono
 - Modelo de datos y repositorios para Auth, Firestore y Storage
 - Tema y componentes de diseño accesibles
+- Alta de contactos con validación de los tres campos, aviso de duplicado y confirmación
 - Reglas y documentación de seguridad y privacidad
 - Estructura de trazabilidad del proyecto en la carpeta `SSD/`
 
@@ -60,6 +61,7 @@ Incluye:
 │   ├── tasks.md
 │   └── uso-ia.md
 ├── evidencias-ia/              # Evidencias visuales del proceso
+├── Prototype_Reference/        # Capturas del prototipo de baja fidelidad
 ├── FIREBASE.md                 # Guía de Firebase y emuladores
 ├── build.gradle.kts            # Configuración raíz de Gradle
 ├── firebase.local.properties.example
@@ -191,6 +193,7 @@ Y luego, en otra terminal:
 ## Enlaces útiles
 
 - Prototipo Figma de NAMI: https://www.figma.com/design/bGCnnDncM5CUdgVfMmRgz3/NAMI
+- [Prototype_Reference/](Prototype_Reference/): capturas locales del prototipo. Es un boceto de baja fidelidad y sirve como referencia de contenido y flujo, no de estilo ni de interacción: la implementación debe mejorar el estilo visual y la interacción con los tokens accesibles de `core.designsystem` (RNF-01) y respetar las exclusiones de `SSD/spec.md`.
 
 ## Licencia
 
