@@ -26,7 +26,7 @@ class ProfileUseCasesTest {
                 AccountProfile("user-fictitious", "Ana", "Prueba", "+34612345678", "avatars/ana.png"),
                 (result as ProfileUpdateResult.Validated).profile,
             )
-            assertEquals((result as ProfileUpdateResult.Validated).profile, repository.updated)
+            assertEquals(result.profile, repository.updated)
         }
 
     @Test
