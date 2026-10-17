@@ -62,6 +62,33 @@
     <string name="chat_message_sent">Mensaje enviado</string>
     <string name="chat_back">Volver</string>
 
+    <!-- Grabación y vista previa local de audio (T-20/T-21, RF-06). -->
+    <string name="audio_recording_open">Grabar nota de voz</string>
+    <string name="audio_recording_title">Nota de voz</string>
+    <string name="audio_recording_ready">Pulsa una vez para empezar a grabar. Podrás escuchar la nota antes de enviarla.</string>
+    <string name="audio_recording_start">Grabar</string>
+    <string name="audio_recording_in_progress">Grabando: %1$d s</string>
+    <string name="audio_recording_stop">Detener grabación</string>
+    <string name="audio_recording_try_again">Grabar de nuevo</string>
+    <string name="audio_recording_close">Cerrar</string>
+    <string name="audio_recording_interrupted">La grabación se interrumpió y se eliminó de forma segura. Puedes intentarlo de nuevo o seguir escribiendo.</string>
+    <string name="audio_recording_limit_reached">La nota alcanzó el límite de 120 segundos o 5 MiB y se eliminó. Puedes grabar otra.</string>
+    <string name="audio_recording_empty">La nota era demasiado corta o estaba vacía. Puedes intentarlo de nuevo.</string>
+    <string name="audio_recording_out_of_space">No hay espacio suficiente para guardar la nota. Libera espacio o continúa con texto.</string>
+    <string name="audio_recording_unavailable">El micrófono no está disponible. Comprueba que ninguna otra aplicación lo esté usando.</string>
+    <string name="audio_recording_failed">No se pudo grabar la nota. Puedes intentarlo de nuevo o continuar con texto.</string>
+    <string name="audio_permission_denied_temporary">NAMI necesita permiso para usar el micrófono. Puedes volver a solicitarlo o continuar escribiendo.</string>
+    <string name="audio_permission_denied_permanent">El permiso del micrófono está desactivado. Puedes habilitarlo en Ajustes o continuar escribiendo.</string>
+    <string name="audio_permission_open_settings">Abrir Ajustes</string>
+    <string name="audio_continue_with_text">Continuar con texto</string>
+    <string name="audio_preview_ready">Nota preparada: %1$d s. Escúchala, bórrala o envíala.</string>
+    <string name="audio_preview_listen">Escuchar</string>
+    <string name="audio_preview_stop_listening">Detener escucha</string>
+    <string name="audio_preview_playback_failed">No se pudo reproducir la nota. Puedes borrarla y grabar otra.</string>
+    <string name="audio_preview_delete">Borrar</string>
+    <string name="audio_preview_send">Enviar</string>
+    <string name="audio_prepared_for_send">Nota de voz preparada para el envío.</string>
+
     <!-- Entrada a conversaciones y flujo de envío (T-19, RF-05, RNF-01/RNF-02). -->
     <string name="conversations_title">Mis conversaciones</string>
     <string name="conversations_loading">Cargando conversaciones…</string>

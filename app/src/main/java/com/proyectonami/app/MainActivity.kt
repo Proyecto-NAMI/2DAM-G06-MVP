@@ -1,5 +1,6 @@
 package com.proyectonami.app
 
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -12,9 +13,14 @@ import com.proyectonami.app.core.domain.auth.AccountProfileRepository
 import com.proyectonami.app.core.domain.contacts.AddContactUseCase
 import com.proyectonami.app.core.domain.contacts.OpenConversationUseCase
 import com.proyectonami.app.core.domain.conversations.ObserveConversationsUseCase
+import com.proyectonami.app.core.domain.media.AudioPlaybackController
 import com.proyectonami.app.core.domain.messages.ObserveTextMessagesUseCase
 import com.proyectonami.app.core.domain.messages.SendTextMessageUseCase
+import com.proyectonami.app.core.media.ActiveMediaSession
+import com.proyectonami.app.core.media.AndroidAudioRecorder
 import com.proyectonami.app.core.media.MediaSessionController
+import com.proyectonami.app.core.media.MediaSessionCoordinator
+import com.proyectonami.app.feature.audio.presentation.AudioRecordingViewModel
 import com.proyectonami.app.feature.auth.presentation.PhoneAuthViewModel
 import com.proyectonami.app.feature.chat.presentation.TextConversationViewModel
 import com.proyectonami.app.feature.contacts.presentation.AddContactViewModel
@@ -23,6 +29,8 @@ import com.proyectonami.app.feature.profile.domain.LoadProfileUseCase
 import com.proyectonami.app.feature.profile.domain.UpdateProfileUseCase
 import com.proyectonami.app.feature.profile.presentation.ProfileViewModel
 import com.proyectonami.app.ui.NamiApp
+import java.io.File
+import java.util.UUID
 
 class MainActivity : ComponentActivity() {
     private lateinit var phoneAuthViewModel: PhoneAuthViewModel
@@ -33,14 +41,15 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        val repositories = (application as NamiApplication).repositoryContainer
+        val namiApplication = application as NamiApplication
+        val repositories = namiApplication.repositoryContainer
         phoneAuthViewModel =
             ViewModelProvider(
                 this,
                 PhoneAuthViewModelFactory(
                     authRepository = repositories.authRepository,
                     accountProfileRepository = repositories.accountProfileRepository,
-                    mediaSessionController = (application as NamiApplication).mediaSessionCoordinator,
+                    mediaSessionController = namiApplication.mediaSessionCoordinator,
                 ),
             )[PhoneAuthViewModel::class.java]
         addContactViewModel =
@@ -86,9 +95,54 @@ class MainActivity : ComponentActivity() {
                         ),
                     ).get("text-conversation-$conversationId", TextConversationViewModel::class.java)
                 },
+                createAudioRecordingViewModel = { conversationId ->
+                    val userId = repositories.authRepository.currentUserId.orEmpty()
+                    ViewModelProvider(
+                        this,
+                        AudioRecordingViewModelFactory(
+                            context = applicationContext,
+                            playbackController = namiApplication.audioPlaybackController,
+                            mediaSessionCoordinator = namiApplication.mediaSessionCoordinator,
+                        ),
+                    ).get("audio-recording-$userId-$conversationId", AudioRecordingViewModel::class.java)
+                },
                 accessibilityPreferencesRepository = DataStoreAccessibilityPreferencesRepository(applicationContext),
             )
         }
+    }
+}
+
+private class AudioRecordingViewModelFactory(
+    private val context: Context,
+    private val playbackController: AudioPlaybackController,
+    private val mediaSessionCoordinator: MediaSessionCoordinator,
+) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(
+        modelClass: Class<T>,
+        extras: androidx.lifecycle.viewmodel.CreationExtras,
+    ): T {
+        require(modelClass.isAssignableFrom(AudioRecordingViewModel::class.java))
+        val recorder = AndroidAudioRecorder(context)
+        val registration =
+            mediaSessionCoordinator.register(
+                ActiveMediaSession {
+                    recorder.close()
+                    playbackController.stop()
+                },
+            )
+        return checkNotNull(
+            modelClass.cast(
+                AudioRecordingViewModel(
+                    recorder = recorder,
+                    clock = recorder,
+                    localPath = {
+                        File(context.cacheDir, "nami-audio-${UUID.randomUUID()}.m4a").absolutePath
+                    },
+                    playbackController = playbackController,
+                    mediaRegistration = registration,
+                ),
+            ),
+        )
     }
 }
 

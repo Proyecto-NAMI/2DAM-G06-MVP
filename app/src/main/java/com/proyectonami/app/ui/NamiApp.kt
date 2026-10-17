@@ -47,6 +47,7 @@ import com.proyectonami.app.core.designsystem.theme.NamiTheme
 import com.proyectonami.app.core.domain.accessibility.AccessibilityPreferencesRepository
 import com.proyectonami.app.core.domain.auth.AuthSession
 import com.proyectonami.app.core.domain.auth.PhoneAuthFailure
+import com.proyectonami.app.feature.audio.presentation.AudioRecordingViewModel
 import com.proyectonami.app.feature.auth.presentation.PhoneAuthUiState
 import com.proyectonami.app.feature.auth.presentation.PhoneAuthViewModel
 import com.proyectonami.app.feature.chat.presentation.TextConversationRoute
@@ -66,6 +67,7 @@ fun NamiApp(
     profileViewModel: ProfileViewModel? = null,
     conversationsViewModel: ConversationsViewModel? = null,
     createConversationViewModel: ((String) -> TextConversationViewModel)? = null,
+    createAudioRecordingViewModel: ((String) -> AudioRecordingViewModel)? = null,
     accessibilityPreferencesRepository: AccessibilityPreferencesRepository? = null,
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -86,6 +88,7 @@ fun NamiApp(
     var showAddContact by remember(signedInUserId) { mutableStateOf(false) }
     var showProfile by remember(signedInUserId) { mutableStateOf(false) }
     var selectedConversation by remember(signedInUserId) { mutableStateOf<TextConversationViewModel?>(null) }
+    var selectedAudioRecording by remember(signedInUserId) { mutableStateOf<AudioRecordingViewModel?>(null) }
     var showSignOutConfirmation by remember(signedInUserId) { mutableStateOf(false) }
     val requestSignOut = { showSignOutConfirmation = true }
     NamiTheme(textScale = accessibilityPreferences.textScale) {
@@ -99,7 +102,12 @@ fun NamiApp(
                 signedInUserId != null && state.isAccountReady && selectedConversation != null ->
                     TextConversationRoute(
                         viewModel = selectedConversation!!,
-                        onBack = { selectedConversation = null },
+                        onBack = {
+                            selectedAudioRecording?.onScreenExit()
+                            selectedAudioRecording = null
+                            selectedConversation = null
+                        },
+                        audioRecordingViewModel = selectedAudioRecording,
                     )
                 signedInUserId != null && state.isAccountReady && showProfile && profileViewModel != null ->
                     ProfileRoute(
@@ -116,6 +124,7 @@ fun NamiApp(
                             createConversationViewModel?.let { factory ->
                                 showAddContact = false
                                 selectedConversation = factory(conversationId)
+                                selectedAudioRecording = createAudioRecordingViewModel?.invoke(conversationId)
                             }
                         },
                     )
@@ -123,7 +132,10 @@ fun NamiApp(
                     if (conversationsViewModel != null && createConversationViewModel != null) {
                         ConversationsRoute(
                             viewModel = conversationsViewModel,
-                            onOpenConversation = { id -> selectedConversation = createConversationViewModel(id) },
+                            onOpenConversation = { id ->
+                                selectedConversation = createConversationViewModel(id)
+                                selectedAudioRecording = createAudioRecordingViewModel?.invoke(id)
+                            },
                             onSignOut = requestSignOut,
                             onAddContact = { showAddContact = true },
                             onProfile = {
@@ -155,6 +167,8 @@ fun NamiApp(
                     showSignOutConfirmation = false
                     showAddContact = false
                     showProfile = false
+                    selectedAudioRecording?.onScreenExit()
+                    selectedAudioRecording = null
                     selectedConversation = null
                     viewModel.signOut()
                 },

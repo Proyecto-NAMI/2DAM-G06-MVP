@@ -14,6 +14,10 @@ class MediaPlaybackCoordinator(
     private val mutableState = MutableStateFlow<AudioPlaybackState>(AudioPlaybackState.Idle)
     override val state: StateFlow<AudioPlaybackState> = mutableState.asStateFlow()
 
+    init {
+        player.setOnCompletionListener { mutableState.value = AudioPlaybackState.Idle }
+    }
+
     @Synchronized
     override fun play(resourceId: String) {
         if (resourceId.isBlank()) {

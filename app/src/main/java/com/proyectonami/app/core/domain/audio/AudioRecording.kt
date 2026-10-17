@@ -39,12 +39,21 @@ enum class AudioRecordingFailure {
     UNKNOWN,
 }
 
-interface AudioRecorder {
+class AudioRecorderException(
+    val reason: AudioRecordingFailure,
+    cause: Throwable? = null,
+) : Exception(cause)
+
+interface AudioRecorder : AutoCloseable {
     suspend fun start(localPath: String): Result<Unit>
 
     suspend fun stop(): Result<AudioRecordingResult>
 
     suspend fun cancel()
+
+    fun currentSizeBytes(): Long = 0L
+
+    override fun close() = Unit
 }
 
 data class AudioRecordingResult(
@@ -53,7 +62,7 @@ data class AudioRecordingResult(
     val sizeBytes: Long,
 )
 
-interface AudioClock {
+fun interface AudioClock {
     fun elapsedMillis(): Long
 }
 
@@ -75,5 +84,19 @@ data class AudioLimits(
     val maxSizeBytes: Long = DEFAULT_AUDIO_LIMIT_BYTES,
 )
 
-fun AudioRecordingResult.isEmptyOrOverLimit(limits: AudioLimits): Boolean =
-    durationMillis <= 0L || sizeBytes <= 0L || durationMillis > limits.maxDurationMillis || sizeBytes > limits.maxSizeBytes
+sealed interface AudioRecordingValidation {
+    data object Valid : AudioRecordingValidation
+
+    data object Empty : AudioRecordingValidation
+
+    data object OverLimit : AudioRecordingValidation
+}
+
+fun AudioRecordingResult.validate(limits: AudioLimits): AudioRecordingValidation =
+    when {
+        durationMillis <= 0L || sizeBytes <= 0L -> AudioRecordingValidation.Empty
+        durationMillis > limits.maxDurationMillis || sizeBytes > limits.maxSizeBytes -> AudioRecordingValidation.OverLimit
+        else -> AudioRecordingValidation.Valid
+    }
+
+fun AudioRecordingResult.isEmptyOrOverLimit(limits: AudioLimits): Boolean = validate(limits) !is AudioRecordingValidation.Valid

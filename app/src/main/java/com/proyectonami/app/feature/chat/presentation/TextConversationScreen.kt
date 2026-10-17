@@ -19,6 +19,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -29,17 +32,25 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import com.proyectonami.app.R
 import com.proyectonami.app.core.designsystem.component.NamiPrimaryButton
+import com.proyectonami.app.core.designsystem.component.NamiSecondaryButton
 import com.proyectonami.app.core.designsystem.component.NamiTextField
 import com.proyectonami.app.core.designsystem.theme.NamiSpacing
+import com.proyectonami.app.core.domain.audio.AudioRecordingResult
 import com.proyectonami.app.core.domain.messages.TextMessageSendState
 import com.proyectonami.app.core.domain.messages.TextMessagesRemoteState
+import com.proyectonami.app.feature.audio.presentation.AudioRecordingRoute
+import com.proyectonami.app.feature.audio.presentation.AudioRecordingViewModel
 
 @Composable
 fun TextConversationRoute(
     viewModel: TextConversationViewModel,
     onBack: () -> Unit,
+    audioRecordingViewModel: AudioRecordingViewModel? = null,
+    onAudioReadyToSend: (AudioRecordingResult) -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsState()
+    var showAudioRecording by rememberSaveable { mutableStateOf(false) }
+    var audioPreparedForSend by rememberSaveable { mutableStateOf(false) }
     Column(
         Modifier
             .fillMaxSize()
@@ -110,6 +121,12 @@ fun TextConversationRoute(
                     },
             )
         }
+        if (audioPreparedForSend) {
+            Text(
+                stringResource(R.string.audio_prepared_for_send),
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            )
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(NamiSpacing.Small)) {
             NamiTextField(
                 value = state.draft,
@@ -126,11 +143,32 @@ fun TextConversationRoute(
                 enabled = state.draft.isNotBlank() && state.sendState !is TextMessageSendState.Pending,
             )
         }
+        if (audioRecordingViewModel != null) {
+            NamiSecondaryButton(
+                text = stringResource(R.string.audio_recording_open),
+                icon = painterResource(R.drawable.ic_nami_mic),
+                onClick = {
+                    audioPreparedForSend = false
+                    showAudioRecording = true
+                },
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
         NamiPrimaryButton(
             text = stringResource(R.string.chat_back),
             icon = painterResource(R.drawable.ic_nami_back),
             onClick = onBack,
             modifier = Modifier.fillMaxWidth(),
+        )
+    }
+    if (showAudioRecording && audioRecordingViewModel != null) {
+        AudioRecordingRoute(
+            viewModel = audioRecordingViewModel,
+            onSend = { result ->
+                audioPreparedForSend = true
+                onAudioReadyToSend(result)
+            },
+            onDismiss = { showAudioRecording = false },
         )
     }
 }

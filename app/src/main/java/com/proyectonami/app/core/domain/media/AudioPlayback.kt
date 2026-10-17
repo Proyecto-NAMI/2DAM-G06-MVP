@@ -22,6 +22,8 @@ sealed interface AudioPlaybackState {
 enum class AudioPlaybackFailure { MISSING_RESOURCE, NOT_DECODABLE, UNKNOWN }
 
 interface AudioPlayer {
+    fun setOnCompletionListener(listener: () -> Unit) = Unit
+
     fun play(resourceId: String)
 
     fun pause()

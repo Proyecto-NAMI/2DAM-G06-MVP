@@ -1,5 +1,6 @@
 package com.proyectonami.app.feature.chat
 
+import android.Manifest
 import androidx.compose.ui.test.DeviceConfigurationOverride
 import androidx.compose.ui.test.FontScale
 import androidx.compose.ui.test.assertIsDisplayed
@@ -9,7 +10,11 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.lifecycle.SavedStateHandle
+import androidx.test.platform.app.InstrumentationRegistry
 import com.proyectonami.app.core.designsystem.theme.NamiTheme
+import com.proyectonami.app.core.domain.audio.AudioClock
+import com.proyectonami.app.core.domain.audio.AudioRecorder
+import com.proyectonami.app.core.domain.audio.AudioRecordingResult
 import com.proyectonami.app.core.domain.messages.ObserveTextMessagesUseCase
 import com.proyectonami.app.core.domain.messages.OutgoingTextMessage
 import com.proyectonami.app.core.domain.messages.SendTextMessageUseCase
@@ -17,6 +22,7 @@ import com.proyectonami.app.core.domain.messages.TextMessageFailure
 import com.proyectonami.app.core.domain.messages.TextMessageSendResult
 import com.proyectonami.app.core.domain.messages.TextMessagesRemoteState
 import com.proyectonami.app.core.domain.messages.TextMessagesRepository
+import com.proyectonami.app.feature.audio.presentation.AudioRecordingViewModel
 import com.proyectonami.app.feature.chat.presentation.TextConversationRoute
 import com.proyectonami.app.feature.chat.presentation.TextConversationViewModel
 import kotlinx.coroutines.flow.flowOf
@@ -59,6 +65,39 @@ class TextConversationScreenTest {
         assertEquals(repository.sentMessages[0].clientMessageId, repository.sentMessages[1].clientMessageId)
     }
 
+    @Test
+    fun microphoneActionOpensTheRecordingFlowInsideTheChat() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        instrumentation.uiAutomation.grantRuntimePermission(
+            instrumentation.targetContext.packageName,
+            Manifest.permission.RECORD_AUDIO,
+        )
+        val recorder = FakeAudioRecorder()
+        val audioViewModel =
+            AudioRecordingViewModel(
+                recorder = recorder,
+                clock = AudioClock { 0L },
+                localPath = { "/tmp/audio-fictitious.m4a" },
+            )
+        composeRule.setContent {
+            NamiTheme {
+                TextConversationRoute(
+                    viewModel = viewModel(FakeTextMessagesRepository()),
+                    onBack = {},
+                    audioRecordingViewModel = audioViewModel,
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Grabar nota de voz").performClick()
+        composeRule.onNodeWithText("Nota de voz").assertIsDisplayed()
+        composeRule.waitUntil { recorder.startCount == 1 }
+        composeRule.onNodeWithText("Grabando: 0 s").assertIsDisplayed()
+        composeRule.onNodeWithText("Detener grabación").assertIsDisplayed()
+        composeRule.onNodeWithText("Cerrar").performClick()
+        composeRule.onNodeWithText("Escribe un mensaje").assertIsDisplayed()
+    }
+
     private fun viewModel(repository: TextMessagesRepository) =
         TextConversationViewModel(
             conversationId = "conversation-fictitious",
@@ -80,5 +119,18 @@ class TextConversationScreenTest {
         }
 
         override fun observe(conversationId: String) = flowOf(TextMessagesRemoteState.Loaded(emptyList()))
+    }
+
+    private class FakeAudioRecorder : AudioRecorder {
+        var startCount = 0
+
+        override suspend fun start(localPath: String): Result<Unit> {
+            startCount++
+            return Result.success(Unit)
+        }
+
+        override suspend fun stop() = Result.success(AudioRecordingResult("/tmp/audio-fictitious.m4a", 1_000L, 1_000L))
+
+        override suspend fun cancel() = Unit
     }
 }
