@@ -1,23 +1,32 @@
 package com.proyectonami.app.core.media
 
 import android.media.MediaPlayer
+import com.proyectonami.app.core.domain.media.AudioPlaybackFailure
 import com.proyectonami.app.core.domain.media.AudioPlayer
+import com.proyectonami.app.core.domain.media.AudioPlayerException
 import java.io.File
 
-/** Reproductor local usado para escuchar una nota antes de enviarla. */
+/** Reproductor para archivos privados preparados por grabación o por Firebase Storage. */
 class AndroidAudioPlayer : AudioPlayer {
     private val lock = Any()
     private var mediaPlayer: MediaPlayer? = null
     private var completionListener: () -> Unit = {}
+    private var errorListener: (AudioPlaybackFailure) -> Unit = {}
 
     override fun setOnCompletionListener(listener: () -> Unit) {
         synchronized(lock) { completionListener = listener }
     }
 
-    override fun play(resourceId: String) {
+    override fun setOnErrorListener(listener: (AudioPlaybackFailure) -> Unit) {
+        synchronized(lock) { errorListener = listener }
+    }
+
+    override fun play(localPath: String) {
         synchronized(lock) {
-            val file = File(resourceId)
-            require(file.isFile && file.canRead()) { "Audio preview is unavailable" }
+            val file = File(localPath)
+            if (!file.isFile || !file.canRead()) {
+                throw AudioPlayerException(AudioPlaybackFailure.MISSING_RESOURCE)
+            }
             stopLocked()
             val player = MediaPlayer()
             try {
@@ -26,12 +35,17 @@ class AndroidAudioPlayer : AudioPlayer {
                     synchronized(lock) { stopLocked() }
                     completionListener()
                 }
+                player.setOnErrorListener { _, _, _ ->
+                    synchronized(lock) { stopLocked() }
+                    errorListener(AudioPlaybackFailure.NOT_DECODABLE)
+                    true
+                }
                 player.prepare()
                 player.start()
                 mediaPlayer = player
             } catch (error: Exception) {
                 player.release()
-                throw error
+                throw AudioPlayerException(AudioPlaybackFailure.NOT_DECODABLE, error)
             }
         }
     }
@@ -39,6 +53,13 @@ class AndroidAudioPlayer : AudioPlayer {
     override fun pause() {
         synchronized(lock) {
             mediaPlayer?.takeIf { it.isPlaying }?.pause()
+        }
+    }
+
+    override fun resume() {
+        synchronized(lock) {
+            val player = mediaPlayer ?: throw AudioPlayerException(AudioPlaybackFailure.MISSING_RESOURCE)
+            player.start()
         }
     }
 

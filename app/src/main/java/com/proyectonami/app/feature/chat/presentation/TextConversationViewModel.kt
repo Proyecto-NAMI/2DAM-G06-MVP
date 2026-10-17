@@ -3,12 +3,20 @@ package com.proyectonami.app.feature.chat.presentation
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.proyectonami.app.core.domain.media.AudioPlaybackController
+import com.proyectonami.app.core.domain.media.AudioPlaybackFailure
+import com.proyectonami.app.core.domain.media.AudioPlaybackSourceRepository
+import com.proyectonami.app.core.domain.media.AudioPlaybackSourceResult
+import com.proyectonami.app.core.domain.media.AudioPlaybackState
+import com.proyectonami.app.core.domain.messages.AudioMessageRecord
 import com.proyectonami.app.core.domain.messages.ObserveTextMessagesUseCase
 import com.proyectonami.app.core.domain.messages.SendTextMessageUseCase
 import com.proyectonami.app.core.domain.messages.TextMessageFailure
 import com.proyectonami.app.core.domain.messages.TextMessageSendState
 import com.proyectonami.app.core.domain.messages.TextMessagesRemoteState
 import com.proyectonami.app.core.domain.messages.prepareOutgoingTextMessage
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -33,6 +41,8 @@ class TextConversationViewModel(
     private val observeTextMessages: ObserveTextMessagesUseCase,
     private val sendTextMessage: SendTextMessageUseCase,
     private val savedStateHandle: SavedStateHandle = SavedStateHandle(),
+    private val audioPlaybackController: AudioPlaybackController? = null,
+    private val audioPlaybackSourceRepository: AudioPlaybackSourceRepository? = null,
 ) : ViewModel() {
     private val mutableUiState =
         MutableStateFlow(
@@ -41,6 +51,9 @@ class TextConversationViewModel(
             ),
         )
     val uiState: StateFlow<TextConversationUiState> = mutableUiState.asStateFlow()
+    private val fallbackPlaybackState = MutableStateFlow<AudioPlaybackState>(AudioPlaybackState.Idle)
+    val playbackState: StateFlow<AudioPlaybackState> = audioPlaybackController?.state ?: fallbackPlaybackState.asStateFlow()
+    private var playbackJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -95,6 +108,54 @@ class TextConversationViewModel(
                 }
             }
         }
+    }
+
+    fun toggleAudio(message: AudioMessageRecord) {
+        val controller = audioPlaybackController ?: return
+        val sourceRepository = audioPlaybackSourceRepository ?: return
+        when (controller.state.value) {
+            AudioPlaybackState.Playing(message.clientMessageId) -> {
+                controller.pause()
+                return
+            }
+            AudioPlaybackState.Paused(message.clientMessageId) -> {
+                controller.resume()
+                return
+            }
+            AudioPlaybackState.Preparing(message.clientMessageId) -> return
+            else -> Unit
+        }
+        playbackJob?.cancel()
+        controller.prepare(message.clientMessageId)
+        playbackJob =
+            viewModelScope.launch {
+                try {
+                    when (val source = sourceRepository.prepare(message)) {
+                        is AudioPlaybackSourceResult.Ready ->
+                            controller.play(message.clientMessageId, source.localPath)
+                        is AudioPlaybackSourceResult.Failed ->
+                            controller.fail(message.clientMessageId, source.reason)
+                    }
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (_: Exception) {
+                    controller.fail(message.clientMessageId, AudioPlaybackFailure.UNKNOWN)
+                }
+            }
+    }
+
+    fun onScreenExit() {
+        playbackJob?.cancel()
+        audioPlaybackController?.stop()
+    }
+
+    fun onSessionEnd() {
+        onScreenExit()
+        audioPlaybackSourceRepository?.clear()
+    }
+
+    override fun onCleared() {
+        onSessionEnd()
     }
 
     companion object {

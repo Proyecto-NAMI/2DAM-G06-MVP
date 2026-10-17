@@ -178,7 +178,7 @@ se debe usar Android Studio o el runner de CI en lugar de relajar las comprobaci
 
 - Conversaciones privadas uno a uno
 - Envío de mensajes de texto
-- Envío de notas de voz con grabación y reproducción previa
+- Envío de notas de voz con grabación, reproducción previa e historial reproducible
 - Confirmación visible del estado de envío
 - Reintentos ante errores
 

@@ -136,3 +136,16 @@ y 5 MiB, MIME `audio/mp4`, ruta determinista, fecha de servidor y estado
 `sent`. Storage aplica las mismas condiciones de participación, UUID, nombre,
 tamaño y MIME; permite reemplazar el objeto durante un reintento solo antes de
 que exista el metadato y luego lo deja inmutable.
+
+## Reproducción autorizada de notas de voz (T-35, RF-07)
+
+El historial interpreta por separado los esquemas cerrados `text` y `audio`.
+Para una nota de voz valida UUID, duración, tamaño, MIME y la ruta determinista
+antes de mostrarla. Al reproducir, la aplicación usa el SDK autenticado de
+Firebase Storage y guarda una copia efímera bajo la caché privada; no genera
+URLs públicas ni registra la ruta remota o local.
+
+Un único coordinador permite reproducir, pausar y reanudar una nota, deteniendo
+la anterior antes de iniciar otra. Los recursos ausentes, no autorizados, sin
+red o no decodificables muestran un error recuperable. Salir del chat detiene
+el reproductor y cerrar sesión también elimina la caché de reproducción.

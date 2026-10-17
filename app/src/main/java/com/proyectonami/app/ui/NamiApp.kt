@@ -103,6 +103,7 @@ fun NamiApp(
                     TextConversationRoute(
                         viewModel = selectedConversation!!,
                         onBack = {
+                            selectedConversation?.onScreenExit()
                             selectedAudioRecording?.onScreenExit()
                             selectedAudioRecording = null
                             selectedConversation = null
@@ -168,6 +169,7 @@ fun NamiApp(
                     showAddContact = false
                     showProfile = false
                     selectedAudioRecording?.onScreenExit()
+                    selectedConversation?.onSessionEnd()
                     selectedAudioRecording = null
                     selectedConversation = null
                     viewModel.signOut()

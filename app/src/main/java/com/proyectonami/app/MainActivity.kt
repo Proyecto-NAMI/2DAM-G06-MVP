@@ -15,6 +15,7 @@ import com.proyectonami.app.core.domain.contacts.AddContactUseCase
 import com.proyectonami.app.core.domain.contacts.OpenConversationUseCase
 import com.proyectonami.app.core.domain.conversations.ObserveConversationsUseCase
 import com.proyectonami.app.core.domain.media.AudioPlaybackController
+import com.proyectonami.app.core.domain.media.AudioPlaybackSourceRepository
 import com.proyectonami.app.core.domain.messages.ObserveTextMessagesUseCase
 import com.proyectonami.app.core.domain.messages.SendTextMessageUseCase
 import com.proyectonami.app.core.media.ActiveMediaSession
@@ -38,12 +39,20 @@ class MainActivity : ComponentActivity() {
     private lateinit var addContactViewModel: AddContactViewModel
     private lateinit var profileViewModel: ProfileViewModel
     private lateinit var conversationsViewModel: ConversationsViewModel
+    private var playbackCleanupRegistration: AutoCloseable? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val namiApplication = application as NamiApplication
         val repositories = namiApplication.repositoryContainer
+        playbackCleanupRegistration =
+            namiApplication.mediaSessionCoordinator.register(
+                ActiveMediaSession {
+                    namiApplication.audioPlaybackController.stop()
+                    repositories.audioPlaybackSourceRepository.clear()
+                },
+            )
         phoneAuthViewModel =
             ViewModelProvider(
                 this,
@@ -93,6 +102,8 @@ class MainActivity : ComponentActivity() {
                             senderId = { repositories.authRepository.currentUserId },
                             observeTextMessages = ObserveTextMessagesUseCase(repositories.textMessagesRepository),
                             sendTextMessage = SendTextMessageUseCase(repositories.textMessagesRepository),
+                            audioPlaybackController = namiApplication.audioPlaybackController,
+                            audioPlaybackSourceRepository = repositories.audioPlaybackSourceRepository,
                         ),
                     ).get("text-conversation-$conversationId", TextConversationViewModel::class.java)
                 },
@@ -113,6 +124,12 @@ class MainActivity : ComponentActivity() {
                 accessibilityPreferencesRepository = DataStoreAccessibilityPreferencesRepository(applicationContext),
             )
         }
+    }
+
+    override fun onDestroy() {
+        playbackCleanupRegistration?.close()
+        playbackCleanupRegistration = null
+        super.onDestroy()
     }
 }
 
@@ -173,13 +190,26 @@ private class TextConversationViewModelFactory(
     private val senderId: () -> String?,
     private val observeTextMessages: ObserveTextMessagesUseCase,
     private val sendTextMessage: SendTextMessageUseCase,
+    private val audioPlaybackController: AudioPlaybackController,
+    private val audioPlaybackSourceRepository: AudioPlaybackSourceRepository,
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(
         modelClass: Class<T>,
         extras: androidx.lifecycle.viewmodel.CreationExtras,
     ): T {
         require(modelClass.isAssignableFrom(TextConversationViewModel::class.java))
-        return checkNotNull(modelClass.cast(TextConversationViewModel(conversationId, senderId, observeTextMessages, sendTextMessage)))
+        return checkNotNull(
+            modelClass.cast(
+                TextConversationViewModel(
+                    conversationId = conversationId,
+                    senderId = senderId,
+                    observeTextMessages = observeTextMessages,
+                    sendTextMessage = sendTextMessage,
+                    audioPlaybackController = audioPlaybackController,
+                    audioPlaybackSourceRepository = audioPlaybackSourceRepository,
+                ),
+            ),
+        )
     }
 }
 

@@ -24,7 +24,7 @@ class MediaSessionCoordinator : MediaSessionController {
     override fun stopAll(): Boolean {
         val sessions =
             synchronized(this) {
-                activeSessions.toList().also { activeSessions.clear() }
+                activeSessions.toList()
             }
         var allStopped = true
         sessions.forEach { session ->

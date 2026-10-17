@@ -67,13 +67,32 @@ sealed interface TextMessageSendState {
     ) : TextMessageSendState
 }
 
+sealed interface ConversationMessageRecord {
+    val clientMessageId: String
+    val senderId: String
+    val createdAtEpochMillis: Long
+    val status: String
+}
+
 data class TextMessageRecord(
-    val clientMessageId: String,
-    val senderId: String,
+    override val clientMessageId: String,
+    override val senderId: String,
     val text: String,
-    val createdAtEpochMillis: Long,
-    val status: String,
-)
+    override val createdAtEpochMillis: Long,
+    override val status: String,
+) : ConversationMessageRecord
+
+data class AudioMessageRecord(
+    override val clientMessageId: String,
+    val conversationId: String,
+    override val senderId: String,
+    val durationMillis: Long,
+    val sizeBytes: Long,
+    val contentType: String,
+    val storagePath: String,
+    override val createdAtEpochMillis: Long,
+    override val status: String,
+) : ConversationMessageRecord
 
 fun normalizeTextDraft(raw: String): String? = raw.trim().takeIf { it.isNotEmpty() }
 
@@ -95,7 +114,7 @@ sealed interface TextMessagesRemoteState {
     data object Loading : TextMessagesRemoteState
 
     data class Loaded(
-        val messages: List<TextMessageRecord>,
+        val messages: List<ConversationMessageRecord>,
     ) : TextMessagesRemoteState
 
     data object Failed : TextMessagesRemoteState

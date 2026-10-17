@@ -472,7 +472,7 @@ repositorio; los datos de prueba son sintéticos (`Persona Ficticia`,
 | RF-04 | `ObserveConversationsUseCaseTest`, `ConversationsT19Test`, `ConversationsScreenTest` y `FirebaseEmulatorSmokeTest.conversationsAreScopedToCurrentUserAndOrderedWithUnreadCounts`. |
 | RF-05 | `TextConversationT17Test`, `SendTextMessageUseCaseTest`, `TextConversationScreenTest` y `FirebaseTextMessagesTest` (historial, borrador, vacío, reintento idempotente y reglas). |
 | RF-06 | `AudioRecordingT20T21Test`, `AudioRecordingScreenTest` y `FirebaseAudioNotesTest` (permiso, duración, límites, vista previa, subida, reintento, reglas y acciones accesibles); `FirebaseEmulatorSmokeTest.thirdPartyCannotReadConversationOrAudio`. |
-| RF-07 | `MediaPlaybackT23Test`, `MediaSessionCoordinatorTest` y `TextToSpeechT24Test` (reproducción exclusiva, pausa, error recuperable, detener sesión y motor ausente). |
+| RF-07 | `MediaPlaybackT23Test`, `MediaSessionCoordinatorTest`, `TextConversationScreenTest`, `FirebaseAudioPlaybackTest` y `TextToSpeechT24Test` (historial mixto, descarga autorizada, reproducción exclusiva, pausa/reanudación, error recuperable, detener sesión y motor ausente). |
 | RF-08 | `TextConversationScreenTest`, `FirebaseAudioNotesTest` y `SendTextMessageUseCaseTest` (pendiente, progreso, enviado, fallido, confirmación, reintento y ausencia de duplicados). |
 | RF-09 | `AccessibilityPreferencesT25Test`, `NamiComponentsTest`, `ConversationsScreenTest` y `TextToSpeechT24Test` (escala persistente, 200 % y preferencia de lectura). |
 | RF-10 | `AccountCreationScreenTest.signOutRequiresConfirmationAndCanBeCancelled`, `confirmedSignOutStopsMediaAndClearsPrivateState` y `MediaSessionCoordinatorTest`. |
@@ -619,6 +619,33 @@ Fecha: 17 de octubre de 2026. Rama: `yang_dev`. Seguimiento: #57.
 | Suite instrumentada completa en `NAMI_API_36` | 63 pruebas, 0 fallos, 0 errores y 0 omitidas |
 | `TextConversationScreenTest` | 4 pruebas; fallo, conservación, reintento con mismo UUID y éxito accesible |
 | Revisión manual del envío real desde micrófono | Pendiente |
+| Revisión por otra persona | Pendiente |
+
+# Integración productiva de T-35 (RF-07; issue #58, seguimiento de #23)
+
+Fecha: 17 de octubre de 2026. Rama: `yang_dev`.
+
+- El historial productivo distingue mensajes de texto y audio y valida el
+  esquema, UUID, duración, tamaño, MIME y ruta antes de representar una nota.
+- `FirebaseAudioPlaybackSourceRepository` descarga mediante la sesión
+  autenticada de Storage a una caché privada, sin URLs públicas ni rutas en
+  logs. La copia se elimina al cerrar sesión.
+- `AndroidAudioPlayer` y `MediaPlaybackCoordinator` ofrecen reproducir, pausar,
+  reanudar y detener; iniciar otra nota detiene la anterior.
+- Los fallos de autorización, red, ausencia o decodificación son recuperables y
+  no bloquean el envío de texto. Salir del chat o cerrar sesión detiene el audio.
+- La integración graba una nota real con `MediaRecorder`, la envía al Emulator
+  Suite, la observa en el historial, la descarga y la reproduce con
+  `MediaPlayer` desde la caché privada.
+
+| Comprobación | Resultado |
+|---|---|
+| `spotlessCheck testDebugUnitTest koverVerifyDebug assembleDebug assembleDebugAndroidTest lintDebug` | Correcto |
+| Compilación y pruebas unitarias de Functions | `npm run build` correcto; 4 pruebas compiladas y ejecutadas con `node --test`, 0 fallos y 0 omitidas |
+| `TextConversationScreenTest` en `NAMI_API_36` | 6 pruebas, 0 fallos, 0 errores y 0 omitidas |
+| `FirebaseAudioPlaybackTest` con Auth, Firestore, Functions y Storage | 1 prueba real, 0 fallos, 0 errores y 0 omitidas |
+| Suite instrumentada completa en `NAMI_API_36` | 66 pruebas, 0 fallos, 0 errores y 0 omitidas |
+| Revisión manual de reproducción en emulador/dispositivo | Pendiente |
 | Revisión por otra persona | Pendiente |
 
 # Integración productiva de T-10/T-15 (RF-10)
