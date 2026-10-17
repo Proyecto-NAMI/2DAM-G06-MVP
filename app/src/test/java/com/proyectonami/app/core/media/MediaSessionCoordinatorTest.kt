@@ -7,7 +7,7 @@ import org.junit.Test
 
 class MediaSessionCoordinatorTest {
     @Test
-    fun stopAllStopsAndRemovesEveryRegisteredSession() {
+    fun stopAllStopsEveryRegisteredSessionOnEachCleanup() {
         val coordinator = MediaSessionCoordinator()
         var firstStopCount = 0
         var secondStopCount = 0
@@ -18,8 +18,8 @@ class MediaSessionCoordinatorTest {
         assertEquals(1, firstStopCount)
         assertEquals(1, secondStopCount)
         assertTrue(coordinator.stopAll())
-        assertEquals(1, firstStopCount)
-        assertEquals(1, secondStopCount)
+        assertEquals(2, firstStopCount)
+        assertEquals(2, secondStopCount)
     }
 
     @Test
@@ -31,7 +31,8 @@ class MediaSessionCoordinatorTest {
 
         assertFalse(coordinator.stopAll())
         assertEquals(1, secondStopCount)
-        assertTrue(coordinator.stopAll())
+        assertFalse(coordinator.stopAll())
+        assertEquals(2, secondStopCount)
     }
 
     @Test

@@ -22,13 +22,21 @@ import com.proyectonami.app.core.domain.audio.AudioRecordingState
 import com.proyectonami.app.core.domain.audio.AudioUploadFailure
 import com.proyectonami.app.core.domain.audio.AudioUploadState
 import com.proyectonami.app.core.domain.audio.UploadAudioNoteUseCase
+import com.proyectonami.app.core.domain.media.AudioPlaybackFailure
+import com.proyectonami.app.core.domain.media.AudioPlaybackSourceRepository
+import com.proyectonami.app.core.domain.media.AudioPlaybackSourceResult
+import com.proyectonami.app.core.domain.media.AudioPlayer
+import com.proyectonami.app.core.domain.messages.AudioMessageRecord
+import com.proyectonami.app.core.domain.messages.ConversationMessageRecord
 import com.proyectonami.app.core.domain.messages.ObserveTextMessagesUseCase
 import com.proyectonami.app.core.domain.messages.OutgoingTextMessage
 import com.proyectonami.app.core.domain.messages.SendTextMessageUseCase
 import com.proyectonami.app.core.domain.messages.TextMessageFailure
+import com.proyectonami.app.core.domain.messages.TextMessageRecord
 import com.proyectonami.app.core.domain.messages.TextMessageSendResult
 import com.proyectonami.app.core.domain.messages.TextMessagesRemoteState
 import com.proyectonami.app.core.domain.messages.TextMessagesRepository
+import com.proyectonami.app.core.media.MediaPlaybackCoordinator
 import com.proyectonami.app.feature.audio.presentation.AudioRecordingViewModel
 import com.proyectonami.app.feature.chat.presentation.TextConversationRoute
 import com.proyectonami.app.feature.chat.presentation.TextConversationViewModel
@@ -145,17 +153,73 @@ class TextConversationScreenTest {
         assertEquals(audioRepository.uploads[0].clientMessageId, audioRepository.uploads[1].clientMessageId)
     }
 
-    private fun viewModel(repository: TextMessagesRepository) =
-        TextConversationViewModel(
-            conversationId = "conversation-fictitious",
-            senderId = { "sender-fictitious" },
-            observeTextMessages = ObserveTextMessagesUseCase(repository),
-            sendTextMessage = SendTextMessageUseCase(repository),
-            savedStateHandle = SavedStateHandle(),
-        )
+    @Test
+    fun historyDistinguishesAudioAndTheSameActionPausesAndResumes() {
+        val audio = audioMessage()
+        val player = FakeAudioPlayer()
+        val coordinator = MediaPlaybackCoordinator(player)
+        val viewModel =
+            viewModel(
+                repository =
+                    FakeTextMessagesRepository(
+                        messages =
+                            listOf(
+                                TextMessageRecord("text-id", "sender", "Hola", 1L, "sent"),
+                                audio,
+                            ),
+                    ),
+                playbackCoordinator = coordinator,
+                playbackSource = FakePlaybackSource(AudioPlaybackSourceResult.Ready("/private/audio.m4a")),
+            )
+        composeRule.setContent { NamiTheme { TextConversationRoute(viewModel, onBack = {}) } }
+
+        composeRule.onNodeWithText("Hola").assertIsDisplayed()
+        composeRule.onNodeWithText("Nota de voz").assertIsDisplayed()
+        composeRule.onNodeWithText("Duración: 2 segundos").assertIsDisplayed()
+        composeRule.onNodeWithText("Reproducir").performClick()
+        composeRule.onNodeWithText("Reproduciendo").assertIsDisplayed()
+        composeRule.onNodeWithText("Pausar").performClick()
+        composeRule.onNodeWithText("Reproducción en pausa").assertIsDisplayed()
+        composeRule.onNodeWithText("Reanudar").performClick()
+        composeRule.onNodeWithText("Reproduciendo").assertIsDisplayed()
+        assertEquals(listOf("stop", "stop", "play:/private/audio.m4a", "pause", "resume"), player.events)
+    }
+
+    @Test
+    fun unauthorizedAudioShowsARecoverableErrorWithoutBlockingText() {
+        val coordinator = MediaPlaybackCoordinator(FakeAudioPlayer())
+        val viewModel =
+            viewModel(
+                repository = FakeTextMessagesRepository(messages = listOf(audioMessage())),
+                playbackCoordinator = coordinator,
+                playbackSource = FakePlaybackSource(AudioPlaybackSourceResult.Failed(AudioPlaybackFailure.NOT_AUTHORIZED)),
+            )
+        composeRule.setContent { NamiTheme { TextConversationRoute(viewModel, onBack = {}) } }
+
+        composeRule.onNodeWithText("Reproducir").performClick()
+        composeRule.onNodeWithText("No tienes permiso para reproducir esta nota de voz.").assertIsDisplayed()
+        composeRule.onNodeWithText("Reintentar reproducción").assertIsDisplayed()
+        composeRule.onNodeWithText("Escribe un mensaje").assertIsDisplayed().performTextInput("El chat sigue disponible")
+        composeRule.onNodeWithText("Enviar").assertIsDisplayed()
+    }
+
+    private fun viewModel(
+        repository: TextMessagesRepository,
+        playbackCoordinator: MediaPlaybackCoordinator? = null,
+        playbackSource: AudioPlaybackSourceRepository? = null,
+    ) = TextConversationViewModel(
+        conversationId = "conversation-fictitious",
+        senderId = { "sender-fictitious" },
+        observeTextMessages = ObserveTextMessagesUseCase(repository),
+        sendTextMessage = SendTextMessageUseCase(repository),
+        savedStateHandle = SavedStateHandle(),
+        audioPlaybackController = playbackCoordinator,
+        audioPlaybackSourceRepository = playbackSource,
+    )
 
     private class FakeTextMessagesRepository(
         private val outcomes: List<TextMessageSendResult> = listOf(TextMessageSendResult.Sent),
+        private val messages: List<ConversationMessageRecord> = emptyList(),
     ) : TextMessagesRepository {
         val sentMessages = mutableListOf<OutgoingTextMessage>()
         private var index = 0
@@ -165,7 +229,7 @@ class TextConversationScreenTest {
             return outcomes.getOrElse(index++) { TextMessageSendResult.Sent }
         }
 
-        override fun observe(conversationId: String) = flowOf(TextMessagesRemoteState.Loaded(emptyList()))
+        override fun observe(conversationId: String) = flowOf(TextMessagesRemoteState.Loaded(messages))
     }
 
     private class FakeAudioRecorder : AudioRecorder {
@@ -201,4 +265,45 @@ class TextConversationScreenTest {
 
         override suspend fun deleteLocal(localPath: String) = Result.success(Unit)
     }
+
+    private class FakePlaybackSource(
+        private val result: AudioPlaybackSourceResult,
+    ) : AudioPlaybackSourceRepository {
+        override suspend fun prepare(message: AudioMessageRecord) = result
+
+        override fun clear() = Unit
+    }
+
+    private class FakeAudioPlayer : AudioPlayer {
+        val events = mutableListOf<String>()
+
+        override fun play(localPath: String) {
+            events += "play:$localPath"
+        }
+
+        override fun pause() {
+            events += "pause"
+        }
+
+        override fun resume() {
+            events += "resume"
+        }
+
+        override fun stop() {
+            events += "stop"
+        }
+    }
+
+    private fun audioMessage() =
+        AudioMessageRecord(
+            clientMessageId = "00000000-0000-4000-8000-000000000001",
+            conversationId = "conversation-fictitious",
+            senderId = "sender-fictitious",
+            durationMillis = 2_000L,
+            sizeBytes = 1_000L,
+            contentType = "audio/mp4",
+            storagePath = "conversations/conversation-fictitious/audio/00000000-0000-4000-8000-000000000001/note.m4a",
+            createdAtEpochMillis = 2L,
+            status = "sent",
+        )
 }

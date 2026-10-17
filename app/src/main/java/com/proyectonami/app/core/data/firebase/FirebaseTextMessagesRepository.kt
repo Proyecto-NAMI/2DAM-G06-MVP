@@ -5,6 +5,12 @@ import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
+import com.proyectonami.app.core.domain.audio.AUDIO_NOTE_CONTENT_TYPE
+import com.proyectonami.app.core.domain.audio.DEFAULT_AUDIO_LIMIT_BYTES
+import com.proyectonami.app.core.domain.audio.DEFAULT_AUDIO_LIMIT_MILLIS
+import com.proyectonami.app.core.domain.audio.audioNoteStoragePath
+import com.proyectonami.app.core.domain.messages.AudioMessageRecord
+import com.proyectonami.app.core.domain.messages.ConversationMessageRecord
 import com.proyectonami.app.core.domain.messages.OutgoingTextMessage
 import com.proyectonami.app.core.domain.messages.TextMessageFailure
 import com.proyectonami.app.core.domain.messages.TextMessageRecord
@@ -43,7 +49,7 @@ class FirebaseTextMessagesRepository(
                                 } else {
                                     trySend(
                                         TextMessagesRemoteState.Loaded(
-                                            snapshot.documents.mapNotNull { it.toTextMessageRecord() },
+                                            snapshot.documents.mapNotNull { it.toConversationMessageRecord() },
                                         ),
                                     )
                                 }
@@ -131,14 +137,55 @@ class FirebaseTextMessagesRepository(
     }
 }
 
-private fun com.google.firebase.firestore.DocumentSnapshot.toTextMessageRecord(): TextMessageRecord? {
+private fun com.google.firebase.firestore.DocumentSnapshot.toConversationMessageRecord(): ConversationMessageRecord? {
     val clientMessageId = getString("clientMessageId") ?: return null
     val senderId = getString("senderId") ?: return null
-    val text = getString("text") ?: return null
     val createdAt = getTimestamp("createdAt") ?: return null
     val status = getString("status") ?: return null
-    if (clientMessageId.isBlank() || senderId.isBlank() || text.isBlank()) return null
-    return TextMessageRecord(clientMessageId, senderId, text, createdAt.toDate().time, status)
+    if (clientMessageId.isBlank() || senderId.isBlank() || status != "sent") return null
+    return when (getString("type")) {
+        "text" -> {
+            val text = getString("text") ?: return null
+            text.takeIf { it.isNotBlank() }?.let {
+                TextMessageRecord(clientMessageId, senderId, it, createdAt.toDate().time, status)
+            }
+        }
+        "audio" -> {
+            val durationMillis = getLong("durationMillis") ?: return null
+            val sizeBytes = getLong("sizeBytes") ?: return null
+            val contentType = getString("contentType") ?: return null
+            val storagePath = getString("storagePath") ?: return null
+            if (
+                durationMillis !in 1..DEFAULT_AUDIO_LIMIT_MILLIS ||
+                sizeBytes !in 1..DEFAULT_AUDIO_LIMIT_BYTES ||
+                contentType != AUDIO_NOTE_CONTENT_TYPE ||
+                storagePath !=
+                audioNoteStoragePath(
+                    reference.parent.parent
+                        ?.id
+                        .orEmpty(),
+                    clientMessageId,
+                )
+            ) {
+                return null
+            }
+            AudioMessageRecord(
+                clientMessageId = clientMessageId,
+                conversationId =
+                    reference.parent.parent
+                        ?.id
+                        .orEmpty(),
+                senderId = senderId,
+                durationMillis = durationMillis,
+                sizeBytes = sizeBytes,
+                contentType = contentType,
+                storagePath = storagePath,
+                createdAtEpochMillis = createdAt.toDate().time,
+                status = status,
+            )
+        }
+        else -> null
+    }
 }
 
 private fun Exception?.toTextMessageFailure(): TextMessageFailure =

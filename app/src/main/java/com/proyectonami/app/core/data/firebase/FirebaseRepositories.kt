@@ -28,6 +28,7 @@ import com.proyectonami.app.core.domain.auth.PhoneVerificationChallenge
 import com.proyectonami.app.core.domain.auth.PhoneVerificationRequestResult
 import com.proyectonami.app.core.domain.contacts.ContactsRepository
 import com.proyectonami.app.core.domain.conversations.ConversationsRepository
+import com.proyectonami.app.core.domain.media.AudioPlaybackSourceRepository
 import com.proyectonami.app.core.domain.messages.TextMessagesRepository
 import com.proyectonami.app.core.domain.validation.PhoneNumberValidation
 import com.proyectonami.app.core.domain.validation.PhoneNumberValidator
@@ -417,6 +418,7 @@ class FirebaseRepositoryContainer(
     val textMessagesRepository: TextMessagesRepository,
     val audioStorageRepository: AudioStorageRepository,
     val audioNotesRepository: AudioNotesRepository,
+    val audioPlaybackSourceRepository: AudioPlaybackSourceRepository,
 ) {
     companion object {
         fun create(
@@ -438,6 +440,7 @@ class FirebaseRepositoryContainer(
                 textMessagesRepository = FirebaseTextMessagesRepository(services.firestore, services.auth),
                 audioStorageRepository = FirebaseAudioStorageRepository(services.storage),
                 audioNotesRepository = FirebaseAudioNotesRepository(services.storage, services.firestore, services.auth),
+                audioPlaybackSourceRepository = FirebaseAudioPlaybackSourceRepository(context, services.storage),
             )
         }
     }

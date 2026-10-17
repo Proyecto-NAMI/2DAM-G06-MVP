@@ -99,6 +99,26 @@
     <string name="audio_upload_failed">No se pudo enviar la nota de voz. Puedes reintentarlo o borrarla.</string>
     <string name="audio_upload_retry">Reintentar</string>
     <string name="audio_upload_delete">Borrar</string>
+    <string name="chat_text_message">%1$s</string>
+    <string name="audio_history_message">Nota de voz</string>
+    <plurals name="audio_history_duration">
+        <item quantity="one">Duración: %1$d segundo</item>
+        <item quantity="other">Duración: %1$d segundos</item>
+    </plurals>
+    <string name="audio_history_play">Reproducir</string>
+    <string name="audio_history_pause">Pausar</string>
+    <string name="audio_history_resume">Reanudar</string>
+    <string name="audio_history_retry">Reintentar reproducción</string>
+    <string name="audio_history_preparing">Preparando audio…</string>
+    <string name="audio_history_stopped">Reproducción detenida</string>
+    <string name="audio_history_preparing_status">Preparando la nota de voz…</string>
+    <string name="audio_history_playing">Reproduciendo</string>
+    <string name="audio_history_paused">Reproducción en pausa</string>
+    <string name="audio_history_missing">La nota de voz ya no está disponible. Puedes continuar usando el chat.</string>
+    <string name="audio_history_not_authorized">No tienes permiso para reproducir esta nota de voz.</string>
+    <string name="audio_history_network">No se pudo descargar la nota de voz. Comprueba la conexión e inténtalo de nuevo.</string>
+    <string name="audio_history_not_decodable">No se pudo reproducir el formato de esta nota de voz.</string>
+    <string name="audio_history_failed">No se pudo reproducir la nota de voz. Inténtalo de nuevo.</string>
 
     <!-- Entrada a conversaciones y flujo de envío (T-19, RF-05, RNF-01/RNF-02). -->
     <string name="conversations_title">Mis conversaciones</string>

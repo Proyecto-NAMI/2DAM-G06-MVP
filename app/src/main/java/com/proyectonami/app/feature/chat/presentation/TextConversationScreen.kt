@@ -17,6 +17,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -24,6 +25,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
@@ -38,6 +40,11 @@ import com.proyectonami.app.core.designsystem.theme.NamiSpacing
 import com.proyectonami.app.core.domain.audio.AudioRecordingResult
 import com.proyectonami.app.core.domain.audio.AudioUploadFailure
 import com.proyectonami.app.core.domain.audio.AudioUploadState
+import com.proyectonami.app.core.domain.media.AudioPlaybackFailure
+import com.proyectonami.app.core.domain.media.AudioPlaybackState
+import com.proyectonami.app.core.domain.messages.AudioMessageRecord
+import com.proyectonami.app.core.domain.messages.ConversationMessageRecord
+import com.proyectonami.app.core.domain.messages.TextMessageRecord
 import com.proyectonami.app.core.domain.messages.TextMessageSendState
 import com.proyectonami.app.core.domain.messages.TextMessagesRemoteState
 import com.proyectonami.app.feature.audio.presentation.AudioRecordingRoute
@@ -50,7 +57,11 @@ fun TextConversationRoute(
     audioRecordingViewModel: AudioRecordingViewModel? = null,
     onAudioReadyToSend: (AudioRecordingResult) -> Unit = {},
 ) {
+    DisposableEffect(viewModel) {
+        onDispose { viewModel.onScreenExit() }
+    }
     val state by viewModel.uiState.collectAsState()
+    val playbackState by viewModel.playbackState.collectAsState()
     val audioUploadState =
         if (audioRecordingViewModel != null) {
             val uploadState by audioRecordingViewModel.uploadState.collectAsState()
@@ -96,7 +107,11 @@ fun TextConversationRoute(
                         verticalArrangement = Arrangement.spacedBy(NamiSpacing.Small),
                     ) {
                         items(history.messages, key = { it.clientMessageId }) { message ->
-                            Text("${message.text} (${message.status})", style = MaterialTheme.typography.bodyLarge)
+                            ConversationMessage(
+                                message = message,
+                                playbackState = playbackState,
+                                onToggleAudio = viewModel::toggleAudio,
+                            )
                         }
                     }
                 }
@@ -182,6 +197,116 @@ fun TextConversationRoute(
         )
     }
 }
+
+@Composable
+private fun ConversationMessage(
+    message: ConversationMessageRecord,
+    playbackState: AudioPlaybackState,
+    onToggleAudio: (AudioMessageRecord) -> Unit,
+) {
+    when (message) {
+        is TextMessageRecord ->
+            Text(
+                stringResource(R.string.chat_text_message, message.text),
+                style = MaterialTheme.typography.bodyLarge,
+            )
+        is AudioMessageRecord ->
+            AudioMessage(
+                message = message,
+                playbackState = playbackState,
+                onToggle = { onToggleAudio(message) },
+            )
+    }
+}
+
+@Composable
+private fun AudioMessage(
+    message: AudioMessageRecord,
+    playbackState: AudioPlaybackState,
+    onToggle: () -> Unit,
+) {
+    val isCurrent = playbackState.resourceIdOrNull() == message.clientMessageId
+    val seconds = ((message.durationMillis + 999L) / 1_000L).coerceAtLeast(1L).toInt()
+    val actionText =
+        when {
+            isCurrent && playbackState is AudioPlaybackState.Preparing -> R.string.audio_history_preparing
+            isCurrent && playbackState is AudioPlaybackState.Playing -> R.string.audio_history_pause
+            isCurrent && playbackState is AudioPlaybackState.Paused -> R.string.audio_history_resume
+            isCurrent && playbackState is AudioPlaybackState.Failed -> R.string.audio_history_retry
+            else -> R.string.audio_history_play
+        }
+    val actionIcon =
+        if (isCurrent && playbackState is AudioPlaybackState.Playing) {
+            R.drawable.ic_nami_pause
+        } else {
+            R.drawable.ic_nami_play
+        }
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(NamiSpacing.Small),
+    ) {
+        Text(
+            stringResource(R.string.audio_history_message),
+            style = MaterialTheme.typography.titleMedium,
+        )
+        Text(
+            pluralStringResource(R.plurals.audio_history_duration, seconds, seconds),
+            style = MaterialTheme.typography.bodyLarge,
+        )
+        Text(
+            text = playbackStatus(playbackState, isCurrent),
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            color =
+                if (isCurrent && playbackState is AudioPlaybackState.Failed) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                },
+        )
+        NamiSecondaryButton(
+            text = stringResource(actionText),
+            icon = painterResource(actionIcon),
+            onClick = onToggle,
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !(isCurrent && playbackState is AudioPlaybackState.Preparing),
+        )
+    }
+}
+
+@Composable
+private fun playbackStatus(
+    state: AudioPlaybackState,
+    isCurrent: Boolean,
+): String =
+    if (!isCurrent) {
+        stringResource(R.string.audio_history_stopped)
+    } else {
+        when (state) {
+            AudioPlaybackState.Idle -> stringResource(R.string.audio_history_stopped)
+            is AudioPlaybackState.Preparing -> stringResource(R.string.audio_history_preparing_status)
+            is AudioPlaybackState.Playing -> stringResource(R.string.audio_history_playing)
+            is AudioPlaybackState.Paused -> stringResource(R.string.audio_history_paused)
+            is AudioPlaybackState.Failed -> stringResource(state.reason.playbackMessageResource())
+        }
+    }
+
+private fun AudioPlaybackState.resourceIdOrNull(): String? =
+    when (this) {
+        AudioPlaybackState.Idle -> null
+        is AudioPlaybackState.Preparing -> resourceId
+        is AudioPlaybackState.Playing -> resourceId
+        is AudioPlaybackState.Paused -> resourceId
+        is AudioPlaybackState.Failed -> resourceId
+    }
+
+private fun AudioPlaybackFailure.playbackMessageResource(): Int =
+    when (this) {
+        AudioPlaybackFailure.MISSING_RESOURCE -> R.string.audio_history_missing
+        AudioPlaybackFailure.NOT_AUTHORIZED -> R.string.audio_history_not_authorized
+        AudioPlaybackFailure.NETWORK -> R.string.audio_history_network
+        AudioPlaybackFailure.NOT_DECODABLE -> R.string.audio_history_not_decodable
+        AudioPlaybackFailure.UNKNOWN -> R.string.audio_history_failed
+    }
 
 @Composable
 private fun AudioUploadStatus(

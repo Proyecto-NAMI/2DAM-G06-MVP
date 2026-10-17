@@ -130,6 +130,11 @@ El MVP puede conservar un único módulo Gradle `app`. Solo se separarán módul
   guarda únicamente metadatos en Firestore; los reintentos reutilizan el mismo ID.
 - T-23 centraliza reproducción y pausa en un único coordinador multimedia; cerrar
   sesión usa el registro común para detener cualquier sesión activa.
+- T-35 conecta ese coordinador con el historial productivo, descarga cada nota
+  con el SDK autenticado de Storage a una caché privada y permite reproducción,
+  pausa y reanudación exclusivas. Salir del chat o cerrar sesión detiene el
+  reproductor; un recurso ausente, no autorizado o no decodificable deja el chat
+  operativo y ofrece reintento.
 - T-24 separa el motor TTS de la interfaz, de modo que un motor o idioma no
   disponible produce un estado explicable sin ocultar el mensaje.
 - T-25 persiste escala de texto y lectura en voz alta en DataStore y aplica la

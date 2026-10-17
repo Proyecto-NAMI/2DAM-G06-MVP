@@ -1,8 +1,10 @@
 package com.proyectonami.app.core.media
 
 import com.proyectonami.app.core.domain.media.AudioPlaybackFailure
+import com.proyectonami.app.core.domain.media.AudioPlaybackSourceResult
 import com.proyectonami.app.core.domain.media.AudioPlaybackState
 import com.proyectonami.app.core.domain.media.AudioPlayer
+import com.proyectonami.app.core.domain.media.AudioPlayerException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -15,9 +17,10 @@ class MediaPlaybackT23Test {
         coordinator.play("audio-one")
         coordinator.play("audio-two")
         coordinator.pause()
+        coordinator.resume()
 
-        assertEquals(listOf("stop", "play:audio-one", "stop", "play:audio-two", "pause"), player.events)
-        assertEquals(AudioPlaybackState.Paused("audio-two"), coordinator.state.value)
+        assertEquals(listOf("stop", "play:audio-one", "stop", "play:audio-two", "pause", "resume"), player.events)
+        assertEquals(AudioPlaybackState.Playing("audio-two"), coordinator.state.value)
     }
 
     @Test
@@ -42,6 +45,25 @@ class MediaPlaybackT23Test {
         assertTrue(coordinator.state.value is AudioPlaybackState.Idle)
     }
 
+    @Test
+    fun preparationAndDownloadResultsKeepTheLogicalResourceId() {
+        val coordinator = MediaPlaybackCoordinator(FakePlayer())
+
+        coordinator.prepare("audio-pending")
+        assertEquals(AudioPlaybackState.Preparing("audio-pending"), coordinator.state.value)
+
+        coordinator.fail("audio-pending", AudioPlaybackFailure.NOT_AUTHORIZED)
+        assertEquals(
+            AudioPlaybackState.Failed("audio-pending", AudioPlaybackFailure.NOT_AUTHORIZED),
+            coordinator.state.value,
+        )
+        assertEquals("private-cache.m4a", AudioPlaybackSourceResult.Ready("private-cache.m4a").localPath)
+        assertEquals(
+            AudioPlaybackFailure.NETWORK,
+            AudioPlaybackSourceResult.Failed(AudioPlaybackFailure.NETWORK).reason,
+        )
+    }
+
     private class FakePlayer(
         private val throwOnPlay: Boolean = false,
     ) : AudioPlayer {
@@ -52,13 +74,17 @@ class MediaPlaybackT23Test {
             completionListener = listener
         }
 
-        override fun play(resourceId: String) {
-            events += "play:$resourceId"
-            if (throwOnPlay) throw IllegalArgumentException()
+        override fun play(localPath: String) {
+            events += "play:$localPath"
+            if (throwOnPlay) throw AudioPlayerException(AudioPlaybackFailure.NOT_DECODABLE)
         }
 
         override fun pause() {
             events += "pause"
+        }
+
+        override fun resume() {
+            events += "resume"
         }
 
         override fun stop() {

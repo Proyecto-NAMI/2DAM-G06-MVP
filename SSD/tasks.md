@@ -54,7 +54,7 @@ Además del criterio específico, toda tarea debe cumplir `constitution.md`, inc
 | T-20 | RF-06 | Implementar permiso y estados de grabación | T-02 | G06-xx (por confirmar) | El grabador Android se conecta al chat: inicio con un toque, duración, parada, denegación e interrupción están probados. |
 | T-21 | RF-06 | Implementar vista previa, borrado y límite | T-20 | G06-xx (por confirmar) | Se puede escuchar, borrar o entregar la nota al envío; 120 s y 5 MiB detienen y eliminan el temporal con aviso. |
 | T-22 | RF-06, RNF-05 | Implementar subida segura y reintento de audio | T-05, T-16, T-21 | G06-xx (por confirmar) | Solo participantes acceden; fallo conserva copia temporal para reintentar o borrar. |
-| T-23 | RF-07 | Implementar reproducción con pausa | T-21, T-22 | G06-xx (por confirmar) | Solo un audio suena a la vez y un recurso ausente muestra error recuperable. |
+| T-23 | RF-07 | Implementar reproducción con pausa | T-21, T-22 | G06-xx (por confirmar) | El historial muestra audio, solo uno suena, el mismo control pausa/reanuda y los errores son recuperables. |
 | T-24 | RF-07, RF-09 | Implementar texto a voz y preferencia | T-04, T-17 | G06-xx (por confirmar) | Puede leer un mensaje, la preferencia persiste y la ausencia del motor no bloquea el chat. |
 
 ## 6. Accesibilidad, seguridad y validación
@@ -71,6 +71,7 @@ Además del criterio específico, toda tarea debe cumplir `constitution.md`, inc
 | T-32 | RF-10 | Integrar cierre seguro en conversaciones | T-10, T-15 | G06-xx (por confirmar) | La pantalla productiva confirma el cierre, limpia multimedia y evita volver a rutas privadas. |
 | T-33 | RF-06; RNF-01, RNF-09 | Integrar grabación y vista previa en el chat | T-20, T-21, T-17 | G06-xx (por confirmar) | Una pulsación inicia una grabación privada con permiso, límites, escucha, borrado y entrega al envío. |
 | T-34 | RF-06, RF-08; RNF-04, RNF-05, RNF-09 | Completar subida, reglas y reintento de notas de voz | T-16, T-22, T-33 | G06-xx (por confirmar) | El UUID, la ruta y los metadatos son idempotentes; fallo conserva el temporal, reintento no duplica y terceros quedan denegados. |
+| T-35 | RF-07 | Integrar reproducción de notas de voz con pausa y errores recuperables | T-23, T-34 | G06-xx (por confirmar) | El historial muestra audio, solo uno suena, el mismo control pausa/reanuda y los errores son recuperables. |
 
 ## 7. Matriz de trazabilidad
 
@@ -82,7 +83,7 @@ Además del criterio específico, toda tarea debe cumplir `constitution.md`, inc
 | RF-04 | T-14, T-15, T-31 |
 | RF-05 | T-16, T-17, T-19, T-31 |
 | RF-06 | T-20, T-21, T-22, T-33, T-34 |
-| RF-07 | T-23, T-24 |
+| RF-07 | T-23, T-24, T-35 |
 | RF-08 | T-18, T-34 |
 | RF-09 | T-24, T-25 |
 | RF-10 | T-10, T-32 |
