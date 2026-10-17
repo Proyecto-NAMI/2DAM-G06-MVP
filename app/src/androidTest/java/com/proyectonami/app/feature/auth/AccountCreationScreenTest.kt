@@ -1,6 +1,9 @@
 package com.proyectonami.app.feature.auth
 
 import android.app.Activity
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.DeviceConfigurationOverride
@@ -31,9 +34,13 @@ import com.proyectonami.app.core.domain.auth.PhoneCodeVerificationResult
 import com.proyectonami.app.core.domain.auth.PhoneVerificationChallenge
 import com.proyectonami.app.core.domain.auth.PhoneVerificationRequestResult
 import com.proyectonami.app.core.domain.contacts.AddContactUseCase
+import com.proyectonami.app.core.domain.conversations.ConversationsRemoteState
+import com.proyectonami.app.core.domain.conversations.ConversationsRepository
+import com.proyectonami.app.core.domain.conversations.ObserveConversationsUseCase
 import com.proyectonami.app.core.media.MediaSessionController
 import com.proyectonami.app.feature.auth.presentation.PhoneAuthViewModel
 import com.proyectonami.app.feature.contacts.presentation.AddContactViewModel
+import com.proyectonami.app.feature.conversations.presentation.ConversationsViewModel
 import com.proyectonami.app.ui.NamiApp
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -58,6 +65,8 @@ class AccountCreationScreenTest {
     private lateinit var mediaSessionController: FakeMediaSessionController
     private lateinit var viewModel: PhoneAuthViewModel
     private lateinit var addContactViewModel: AddContactViewModel
+    private lateinit var conversationsViewModel: ConversationsViewModel
+    private var useProductConversations by mutableStateOf(false)
 
     @Before
     fun setUp() {
@@ -77,6 +86,11 @@ class AccountCreationScreenTest {
             AddContactViewModel(
                 addContactUseCase = AddContactUseCase(FakeContactsRepository()),
             )
+        conversationsViewModel =
+            ConversationsViewModel(
+                ObserveConversationsUseCase(EmptyConversationsRepository),
+            )
+        useProductConversations = false
         composeRule.setContent {
             val fontScale = if (testName.methodName == "accountFormRemainsScrollableAt200PercentText") 2f else 1f
             DeviceConfigurationOverride(DeviceConfigurationOverride.FontScale(fontScale)) {
@@ -84,6 +98,13 @@ class AccountCreationScreenTest {
                     activity = activity,
                     viewModel = viewModel,
                     addContactViewModel = addContactViewModel,
+                    conversationsViewModel = conversationsViewModel.takeIf { useProductConversations },
+                    createConversationViewModel =
+                        if (useProductConversations) {
+                            { error("Esta prueba no abre una conversación") }
+                        } else {
+                            null
+                        },
                 )
             }
         }
@@ -237,7 +258,7 @@ class AccountCreationScreenTest {
         composeRule.onNodeWithText("¿Cerrar sesión?").assertIsDisplayed()
         composeRule.onNodeWithText("Seguir en NAMI").performClick()
 
-        composeRule.onNodeWithText("Cuenta creada").assertIsDisplayed()
+        composeRule.onNodeWithText("Mis conversaciones").assertIsDisplayed()
         assertEquals(0, authRepository.signOutCount)
         assertEquals(0, mediaSessionController.stopCount)
     }
@@ -260,6 +281,10 @@ class AccountCreationScreenTest {
         assertEquals(false, viewModel.uiState.value.isAccountReady)
         assertEquals(1, authRepository.signOutCount)
         assertEquals(1, mediaSessionController.stopCount)
+        assertEquals(1, mediaSessionController.recordingStopCount)
+        assertEquals(1, mediaSessionController.playbackStopCount)
+        assertEquals(1, mediaSessionController.textToSpeechStopCount)
+        composeRule.onNodeWithText("Mis conversaciones").assertDoesNotExist()
     }
 
     @Test
@@ -273,6 +298,24 @@ class AccountCreationScreenTest {
             .onNodeWithText("La sesión se cerró, pero no se pudo detener todo el audio.")
             .assertIsDisplayed()
         assertEquals(AuthSession.SignedOut, viewModel.uiState.value.session)
+    }
+
+    @Test
+    fun confirmedSignOutCannotNavigateBackToPrivateScreen() {
+        createSignedInAccount()
+        composeRule.onNodeWithText("Cerrar sesión").performClick()
+        composeRule.onNodeWithText("Sí, cerrar sesión").performClick()
+        composeRule.onNodeWithText("Crear cuenta").assertIsDisplayed()
+
+        InstrumentationRegistry
+            .getInstrumentation()
+            .uiAutomation
+            .executeShellCommand("input keyevent KEYCODE_BACK")
+            .close()
+        composeRule.waitForIdle()
+
+        assertEquals(AuthSession.SignedOut, viewModel.uiState.value.session)
+        composeRule.onNodeWithText("Mis conversaciones").assertDoesNotExist()
     }
 
     private fun fillAccountForm() {
@@ -295,6 +338,8 @@ class AccountCreationScreenTest {
             .performScrollTo()
             .performClick()
         composeRule.onNodeWithText("Cuenta creada").assertIsDisplayed()
+        composeRule.runOnIdle { useProductConversations = true }
+        composeRule.onNodeWithText("Mis conversaciones").assertIsDisplayed()
     }
 
     private fun enterCode() {
@@ -346,11 +391,21 @@ private class FakeAuthRepository : AuthRepository {
 private class FakeMediaSessionController : MediaSessionController {
     var stopCount: Int = 0
     var stopResult: Boolean = true
+    var recordingStopCount: Int = 0
+    var playbackStopCount: Int = 0
+    var textToSpeechStopCount: Int = 0
 
     override fun stopAll(): Boolean {
         stopCount++
+        recordingStopCount++
+        playbackStopCount++
+        textToSpeechStopCount++
         return stopResult
     }
+}
+
+private data object EmptyConversationsRepository : ConversationsRepository {
+    override fun observeConversations(): Flow<ConversationsRemoteState> = MutableStateFlow(ConversationsRemoteState.Loaded(emptyList()))
 }
 
 private class FakeAccountProfileRepository : AccountProfileRepository {
