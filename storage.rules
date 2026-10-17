@@ -9,12 +9,29 @@ service firebase.storage {
         ).data.participantIds;
     }
 
+    function isMessageUuid(messageId) {
+      return messageId.matches('^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$');
+    }
+
+    function isValidAudioUpload(conversationId, messageId, fileName) {
+      return isConversationParticipant(conversationId)
+        && isMessageUuid(messageId)
+        && fileName == 'note.m4a'
+        && request.resource.size > 0
+        && request.resource.size <= 5 * 1024 * 1024
+        && request.resource.contentType == 'audio/mp4';
+    }
+
     match /conversations/{conversationId}/audio/{messageId}/{fileName} {
       allow read: if isConversationParticipant(conversationId);
-      allow create: if isConversationParticipant(conversationId)
-        && request.resource.size > 0
-        && request.resource.contentType.matches('audio/.*');
-      allow update, delete: if false;
+      allow create: if isValidAudioUpload(conversationId, messageId, fileName);
+      // Puede reintentarse la ruta determinista mientras aún no exista el
+      // mensaje. Tras persistir el metadato el objeto queda inmutable.
+      allow update: if isValidAudioUpload(conversationId, messageId, fileName)
+        && !firestore.exists(
+          /databases/(default)/documents/conversations/$(conversationId)/messages/$(messageId)
+        );
+      allow delete: if false;
     }
 
     match /{allPaths=**} {

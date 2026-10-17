@@ -96,8 +96,8 @@ una sola vez. Un documento existente e idéntico devuelve éxito sin escribir;
 otro contenido con el mismo UUID devuelve `ID_CONFLICT`. Las reglas exigen
 participación, remitente autenticado, UUID coincidente, texto no vacío,
 fecha de servidor y esquema cerrado; no permiten editar ni borrar mensajes.
-El esquema de escritura actual es de texto; la subida y metadatos de mensajes
-de audio se incorporarán en T-22. El almacenamiento de audio de T-05 no cambia.
+El esquema de texto permanece separado del esquema cerrado de audio descrito a
+continuación.
 
 Las transacciones requieren red: pendiente significa espera de confirmación y
 fallido significa que el intento devolvió un error, no que pueda afirmarse que
@@ -119,3 +119,20 @@ fallo de transporte contra un puerto local no disponible y recuperación con el
 mismo UUID, sesión, autorización y reglas de escritura.
 Si faltan Auth o Firestore las pruebas se omiten; comprobar que el informe
 indica cero omisiones antes de dar por validada la integración.
+
+## Notas de voz idempotentes (T-34, RF-06/RF-08)
+
+`FirebaseAudioNotesRepository` usa un UUID estable tanto para el documento como
+para `conversations/{conversationId}/audio/{uuid}/note.m4a`. Primero reconoce un
+mensaje ya confirmado, después sube con progreso y finalmente ejecuta una
+transacción que crea el metadato y actualiza actividad/no leídos una sola vez.
+Si se pierde la confirmación, el reintento con el mismo UUID devuelve éxito sin
+duplicar. El temporal privado se conserva ante fallo y se elimina únicamente al
+confirmar el envío o al elegir «Borrar».
+
+Firestore acepta esquemas cerrados y separados para texto y audio. En audio
+exige UUID, remitente autenticado, duración entre 1 y 120000 ms, tamaño entre 1
+y 5 MiB, MIME `audio/mp4`, ruta determinista, fecha de servidor y estado
+`sent`. Storage aplica las mismas condiciones de participación, UUID, nombre,
+tamaño y MIME; permite reemplazar el objeto durante un reintento solo antes de
+que exista el metadato y luego lo deja inmutable.

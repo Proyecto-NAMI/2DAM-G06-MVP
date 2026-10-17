@@ -73,7 +73,7 @@ class FirebaseEmulatorSmokeTest {
             )
         val userId = requireNotNull(authResult.user?.uid)
         val conversationId = "conversation-$userId"
-        val messageId = "message-1"
+        val messageId = UUID.randomUUID().toString()
 
         Tasks.await(
             repositories.firestoreRepository.userDocument(userId).set(
@@ -457,10 +457,11 @@ class FirebaseEmulatorSmokeTest {
 
         val ownerId = signInAnonymously()
         val conversationId = "conversation-private-$ownerId"
+        val audioMessageId = UUID.randomUUID().toString()
         val audioReference =
             repositories.audioStorageRepository.audioReference(
                 conversationId = conversationId,
-                messageId = "message-private",
+                messageId = audioMessageId,
             )
 
         seedConversation(conversationId, "usuario-ficticio-2")

@@ -36,6 +36,8 @@ import com.proyectonami.app.core.designsystem.component.NamiSecondaryButton
 import com.proyectonami.app.core.designsystem.component.NamiTextField
 import com.proyectonami.app.core.designsystem.theme.NamiSpacing
 import com.proyectonami.app.core.domain.audio.AudioRecordingResult
+import com.proyectonami.app.core.domain.audio.AudioUploadFailure
+import com.proyectonami.app.core.domain.audio.AudioUploadState
 import com.proyectonami.app.core.domain.messages.TextMessageSendState
 import com.proyectonami.app.core.domain.messages.TextMessagesRemoteState
 import com.proyectonami.app.feature.audio.presentation.AudioRecordingRoute
@@ -49,8 +51,14 @@ fun TextConversationRoute(
     onAudioReadyToSend: (AudioRecordingResult) -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsState()
+    val audioUploadState =
+        if (audioRecordingViewModel != null) {
+            val uploadState by audioRecordingViewModel.uploadState.collectAsState()
+            uploadState
+        } else {
+            null
+        }
     var showAudioRecording by rememberSaveable { mutableStateOf(false) }
-    var audioPreparedForSend by rememberSaveable { mutableStateOf(false) }
     Column(
         Modifier
             .fillMaxSize()
@@ -121,12 +129,11 @@ fun TextConversationRoute(
                     },
             )
         }
-        if (audioPreparedForSend) {
-            Text(
-                stringResource(R.string.audio_prepared_for_send),
-                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-            )
-        }
+        AudioUploadStatus(
+            state = audioUploadState,
+            onRetry = { audioRecordingViewModel?.retryUpload() },
+            onDelete = { audioRecordingViewModel?.deletePendingUpload() },
+        )
         Row(horizontalArrangement = Arrangement.spacedBy(NamiSpacing.Small)) {
             NamiTextField(
                 value = state.draft,
@@ -148,10 +155,13 @@ fun TextConversationRoute(
                 text = stringResource(R.string.audio_recording_open),
                 icon = painterResource(R.drawable.ic_nami_mic),
                 onClick = {
-                    audioPreparedForSend = false
                     showAudioRecording = true
                 },
                 modifier = Modifier.fillMaxWidth(),
+                enabled =
+                    audioUploadState !is AudioUploadState.Pending &&
+                        audioUploadState !is AudioUploadState.Progress &&
+                        audioUploadState !is AudioUploadState.Failed,
             )
         }
         NamiPrimaryButton(
@@ -165,10 +175,71 @@ fun TextConversationRoute(
         AudioRecordingRoute(
             viewModel = audioRecordingViewModel,
             onSend = { result ->
-                audioPreparedForSend = true
+                audioRecordingViewModel.sendPreview(result)
                 onAudioReadyToSend(result)
             },
             onDismiss = { showAudioRecording = false },
         )
     }
 }
+
+@Composable
+private fun AudioUploadStatus(
+    state: AudioUploadState?,
+    onRetry: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    when (state) {
+        null -> Unit
+        AudioUploadState.Pending -> {
+            CircularProgressIndicator()
+            Text(
+                stringResource(R.string.audio_upload_pending),
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            )
+        }
+        is AudioUploadState.Progress -> {
+            CircularProgressIndicator(progress = { state.fraction })
+            Text(
+                stringResource(R.string.audio_upload_progress, (state.fraction * 100).toInt()),
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            )
+        }
+        is AudioUploadState.Sent ->
+            Text(
+                stringResource(R.string.audio_upload_sent),
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            )
+        is AudioUploadState.Failed -> {
+            Text(
+                text = stringResource(state.reason.messageResource()),
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive },
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(NamiSpacing.Small)) {
+                NamiPrimaryButton(
+                    text = stringResource(R.string.audio_upload_retry),
+                    icon = painterResource(R.drawable.ic_nami_refresh),
+                    onClick = onRetry,
+                    modifier = Modifier.weight(1f),
+                )
+                NamiSecondaryButton(
+                    text = stringResource(R.string.audio_upload_delete),
+                    icon = painterResource(R.drawable.ic_nami_delete),
+                    onClick = onDelete,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+    }
+}
+
+private fun AudioUploadFailure.messageResource(): Int =
+    when (this) {
+        AudioUploadFailure.UNAUTHENTICATED -> R.string.audio_upload_unauthenticated
+        AudioUploadFailure.NETWORK -> R.string.audio_upload_network
+        AudioUploadFailure.NOT_AUTHORIZED -> R.string.audio_upload_not_authorized
+        AudioUploadFailure.INVALID_NOTE -> R.string.audio_upload_invalid
+        AudioUploadFailure.ID_CONFLICT -> R.string.audio_upload_conflict
+        AudioUploadFailure.UNKNOWN -> R.string.audio_upload_failed
+    }

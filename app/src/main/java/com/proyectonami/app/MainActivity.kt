@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.proyectonami.app.core.data.firebase.AuthRepository
 import com.proyectonami.app.core.data.preferences.DataStoreAccessibilityPreferencesRepository
+import com.proyectonami.app.core.domain.audio.UploadAudioNoteUseCase
 import com.proyectonami.app.core.domain.auth.AccountProfileRepository
 import com.proyectonami.app.core.domain.contacts.AddContactUseCase
 import com.proyectonami.app.core.domain.contacts.OpenConversationUseCase
@@ -103,6 +104,9 @@ class MainActivity : ComponentActivity() {
                             context = applicationContext,
                             playbackController = namiApplication.audioPlaybackController,
                             mediaSessionCoordinator = namiApplication.mediaSessionCoordinator,
+                            conversationId = conversationId,
+                            senderId = { repositories.authRepository.currentUserId },
+                            uploadAudioNote = UploadAudioNoteUseCase(repositories.audioNotesRepository),
                         ),
                     ).get("audio-recording-$userId-$conversationId", AudioRecordingViewModel::class.java)
                 },
@@ -116,6 +120,9 @@ private class AudioRecordingViewModelFactory(
     private val context: Context,
     private val playbackController: AudioPlaybackController,
     private val mediaSessionCoordinator: MediaSessionCoordinator,
+    private val conversationId: String,
+    private val senderId: () -> String?,
+    private val uploadAudioNote: UploadAudioNoteUseCase,
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(
         modelClass: Class<T>,
@@ -140,6 +147,9 @@ private class AudioRecordingViewModelFactory(
                     },
                     playbackController = playbackController,
                     mediaRegistration = registration,
+                    conversationId = conversationId,
+                    senderId = senderId,
+                    uploadAudioNote = uploadAudioNote,
                 ),
             ),
         )

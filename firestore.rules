@@ -19,6 +19,44 @@ service cloud.firestore {
         ).data.participantIds;
     }
 
+    function isMessageUuid(messageId) {
+      return messageId.matches('^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$');
+    }
+
+    function isValidTextMessage(messageId) {
+      return request.resource.data.keys().hasOnly([
+          'clientMessageId', 'senderId', 'type', 'text', 'createdAt', 'status'
+        ])
+        && request.resource.data.clientMessageId == messageId
+        && request.resource.data.senderId == request.auth.uid
+        && request.resource.data.type == 'text'
+        && request.resource.data.text is string
+        && request.resource.data.text.matches('[\\s\\S]*[^\\s][\\s\\S]*')
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.status == 'sent';
+    }
+
+    function isValidAudioMessage(conversationId, messageId) {
+      return request.resource.data.keys().hasOnly([
+          'clientMessageId', 'senderId', 'type', 'durationMillis', 'sizeBytes',
+          'contentType', 'storagePath', 'createdAt', 'status'
+        ])
+        && request.resource.data.clientMessageId == messageId
+        && request.resource.data.senderId == request.auth.uid
+        && request.resource.data.type == 'audio'
+        && request.resource.data.durationMillis is int
+        && request.resource.data.durationMillis > 0
+        && request.resource.data.durationMillis <= 120000
+        && request.resource.data.sizeBytes is int
+        && request.resource.data.sizeBytes > 0
+        && request.resource.data.sizeBytes <= 5 * 1024 * 1024
+        && request.resource.data.contentType == 'audio/mp4'
+        && request.resource.data.storagePath ==
+          'conversations/' + conversationId + '/audio/' + messageId + '/note.m4a'
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.status == 'sent';
+    }
+
     match /users/{userId} {
       allow read: if isSignedIn() && request.auth.uid == userId;
       allow create: if isSignedIn()
@@ -53,17 +91,8 @@ service cloud.firestore {
       match /messages/{messageId} {
         allow read: if isConversationParticipant(conversationId);
         allow create: if isConversationParticipant(conversationId)
-          && request.resource.data.keys().hasOnly([
-            'clientMessageId', 'senderId', 'type', 'text', 'createdAt', 'status'
-          ])
-          && messageId.matches('^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
-          && request.resource.data.clientMessageId == messageId
-          && request.resource.data.senderId == request.auth.uid
-          && request.resource.data.type == 'text'
-          && request.resource.data.text is string
-          && request.resource.data.text.matches('[\\s\\S]*[^\\s][\\s\\S]*')
-          && request.resource.data.createdAt == request.time
-          && request.resource.data.status == 'sent';
+          && isMessageUuid(messageId)
+          && (isValidTextMessage(messageId) || isValidAudioMessage(conversationId, messageId));
         allow update, delete: if false;
       }
     }

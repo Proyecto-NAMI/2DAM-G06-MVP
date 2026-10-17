@@ -471,16 +471,16 @@ repositorio; los datos de prueba son sintéticos (`Persona Ficticia`,
 | RF-03 | `AddContactUseCaseTest`, `AddContactScreenTest` y `FirebaseEmulatorSmokeTest.addContactLinksKnownPhonesAndStoresUnknownOnesAsPending` (vinculación, pendiente, duplicado, fallo y reintento). |
 | RF-04 | `ObserveConversationsUseCaseTest`, `ConversationsT19Test`, `ConversationsScreenTest` y `FirebaseEmulatorSmokeTest.conversationsAreScopedToCurrentUserAndOrderedWithUnreadCounts`. |
 | RF-05 | `TextConversationT17Test`, `SendTextMessageUseCaseTest`, `TextConversationScreenTest` y `FirebaseTextMessagesTest` (historial, borrador, vacío, reintento idempotente y reglas). |
-| RF-06 | `AudioRecordingT20T21Test` y `AudioRecordingScreenTest` (permiso, duración, interrupción, vacío, límite, vista previa y acciones accesibles); `FirebaseEmulatorSmokeTest.authFirestoreAndStorageWorkWithFictitiousData` y `thirdPartyCannotReadConversationOrAudio`. |
+| RF-06 | `AudioRecordingT20T21Test`, `AudioRecordingScreenTest` y `FirebaseAudioNotesTest` (permiso, duración, límites, vista previa, subida, reintento, reglas y acciones accesibles); `FirebaseEmulatorSmokeTest.thirdPartyCannotReadConversationOrAudio`. |
 | RF-07 | `MediaPlaybackT23Test`, `MediaSessionCoordinatorTest` y `TextToSpeechT24Test` (reproducción exclusiva, pausa, error recuperable, detener sesión y motor ausente). |
-| RF-08 | `TextConversationScreenTest.sendShowsConfirmationAndRetryUsesTheSameClientId` y `SendTextMessageUseCaseTest` (pendiente, enviado, fallido, confirmación y ausencia de duplicados). |
+| RF-08 | `TextConversationScreenTest`, `FirebaseAudioNotesTest` y `SendTextMessageUseCaseTest` (pendiente, progreso, enviado, fallido, confirmación, reintento y ausencia de duplicados). |
 | RF-09 | `AccessibilityPreferencesT25Test`, `NamiComponentsTest`, `ConversationsScreenTest` y `TextToSpeechT24Test` (escala persistente, 200 % y preferencia de lectura). |
 | RF-10 | `AccountCreationScreenTest.signOutRequiresConfirmationAndCanBeCancelled`, `confirmedSignOutStopsMediaAndClearsPrivateState` y `MediaSessionCoordinatorTest`. |
 | RNF-01 | `NamiColorContrastTest`, `NamiComponentsTest` y las pruebas UI de cuenta, conversaciones y chat al 200 %; auditoría detallada en `SSD/ACCESIBILIDAD.md`. |
 | RNF-02 | `ConversationsScreenTest.contentShowsAvatarUnreadCountAndNavigatesToConversation` y `TextConversationScreenTest`; el flujo inicio → conversación → campo → enviar queda en cuatro acciones como máximo. |
 | RNF-03 | `FlowMetricsT27Test` y `SSD/RENDIMIENTO.md` fijan objetivos y límites. Los percentiles de red bajo carga quedan declarados como no medidos. |
-| RNF-04 | `SendTextMessageUseCaseTest`, `FirebaseTextMessagesTest` y `FlowMetricsT27Test` comprueban UUID de cliente, reintento y ausencia de duplicados. |
-| RNF-05 | `FirebaseEmulatorSmokeTest` y `FirebaseTextMessagesTest` cubren sesión no autenticada, terceros y reglas de perfiles, conversaciones, mensajes y audios. |
+| RNF-04 | `SendTextMessageUseCaseTest`, `FirebaseTextMessagesTest`, `FirebaseAudioNotesTest` y `FlowMetricsT27Test` comprueban UUID de cliente, reintento y ausencia de duplicados. |
+| RNF-05 | `FirebaseEmulatorSmokeTest`, `FirebaseTextMessagesTest` y `FirebaseAudioNotesTest` cubren sesión no autenticada, terceros y reglas de perfiles, conversaciones, mensajes y audios. |
 | RNF-06 | Reglas, repositorios y pruebas usan datos ficticios; la revisión de fuentes no encuentra logging de contenido, teléfonos completos ni rutas privadas. Los archivos sensibles están excluidos por `.gitignore`. |
 | RNF-07 | CI valida Android 16/API 36 en el emulador. La compatibilidad física con la versión mínima provisional (API 26) y con un segundo tamaño de dispositivo queda pendiente. |
 | RNF-08 | El trabajo `quality` de CI ejecuta `koverVerifyDebug` y termina correctamente con el mínimo del 70 % por paquete de dominio. |
@@ -593,6 +593,32 @@ Fecha: 17 de octubre de 2026. Rama: `yang_dev`.
 | `TextConversationScreenTest` en `NAMI_API_36` | 3 pruebas, 0 fallos, 0 errores y 0 omitidas |
 | `AndroidAudioRecorderTest` en `NAMI_API_36` | 1 prueba real con `MediaRecorder`: temporal privado, duración/tamaño positivos y borrado correcto |
 | Revisión manual de micrófono y reproducción en emulador/dispositivo | Pendiente |
+| Revisión por otra persona | Pendiente |
+
+# Integración productiva de T-34 (RF-06, RF-08; RNF-04, RNF-05, RNF-09)
+
+Fecha: 17 de octubre de 2026. Rama: `yang_dev`. Seguimiento: #57.
+
+- El chat entrega la vista previa a `FirebaseAudioNotesRepository`, muestra
+  pendiente/progreso/enviado y conserva el temporal con «Reintentar» y «Borrar»
+  cuando la operación falla.
+- Cada intento conserva el mismo UUID y la ruta
+  `conversations/{conversationId}/audio/{uuid}/note.m4a`. La transacción reconoce
+  un mensaje idéntico y no repite el incremento de no leídos.
+- Firestore valida un esquema cerrado de nueve campos. Storage exige participante,
+  UUID, `note.m4a`, `audio/mp4` y un máximo de 5 MiB; después de crear el metadato
+  el objeto remoto queda inmutable.
+- El éxito elimina el temporal. Una denegación o fallo lo conserva hasta reintento
+  o borrado explícito, sin registrar rutas privadas ni contenido.
+
+| Comprobación | Resultado |
+|---|---|
+| `npm test` en `functions` | 4 pruebas, 0 fallos y 0 omitidas |
+| `npm run build` en `functions` | Correcto |
+| `FirebaseAudioNotesTest` con Auth, Firestore, Functions y Storage | 4 pruebas, 0 fallos, 0 errores y 0 omitidas |
+| Suite instrumentada completa en `NAMI_API_36` | 63 pruebas, 0 fallos, 0 errores y 0 omitidas |
+| `TextConversationScreenTest` | 4 pruebas; fallo, conservación, reintento con mismo UUID y éxito accesible |
+| Revisión manual del envío real desde micrófono | Pendiente |
 | Revisión por otra persona | Pendiente |
 
 # Integración productiva de T-10/T-15 (RF-10)

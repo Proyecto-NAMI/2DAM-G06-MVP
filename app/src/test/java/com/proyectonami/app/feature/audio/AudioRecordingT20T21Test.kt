@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -58,7 +59,14 @@ class AudioRecordingT20T21Test {
                 ).invoke().take(3).toList()
             assertTrue(values == listOf(0L, 1L, 2L))
 
-            val metadata = AudioNoteMetadata("message-fictitious", "conversation-fictitious", "sender-fictitious", 1_000L, 10_000L)
+            val metadata =
+                AudioNoteMetadata(
+                    "00000000-0000-4000-8000-000000000001",
+                    "conversation-fictitious",
+                    "sender-fictitious",
+                    1_000L,
+                    10_000L,
+                )
             assertTrue(AudioRecordingFailure.values().isNotEmpty())
             assertTrue(AudioUploadFailure.values().isNotEmpty())
             assertTrue(AudioUploadState.Pending == AudioUploadState.Pending)
@@ -75,4 +83,24 @@ class AudioRecordingT20T21Test {
                 }
             assertTrue(recorder.start("/tmp/fictitious.m4a").isSuccess)
         }
+
+    @Test
+    fun audioMetadataRejectsInvalidUuidLimitsMimeAndPath() {
+        val validId = "00000000-0000-4000-8000-000000000001"
+        assertThrows(IllegalArgumentException::class.java) {
+            AudioNoteMetadata("not-a-uuid", "conversation", "sender", 1_000L, 1_000L)
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            AudioNoteMetadata(validId, "conversation", "sender", 120_001L, 1_000L)
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            AudioNoteMetadata(validId, "conversation", "sender", 1_000L, 5L * 1024L * 1024L + 1L)
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            AudioNoteMetadata(validId, "conversation", "sender", 1_000L, 1_000L, "audio/mpeg")
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            AudioNoteMetadata(validId, "conversation", "sender", 1_000L, 1_000L, storagePath = "audio/foreign.m4a")
+        }
+    }
 }
