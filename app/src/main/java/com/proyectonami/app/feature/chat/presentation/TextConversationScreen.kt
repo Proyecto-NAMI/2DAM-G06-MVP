@@ -18,9 +18,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -47,6 +49,8 @@ import com.proyectonami.app.core.domain.messages.ConversationMessageRecord
 import com.proyectonami.app.core.domain.messages.TextMessageRecord
 import com.proyectonami.app.core.domain.messages.TextMessageSendState
 import com.proyectonami.app.core.domain.messages.TextMessagesRemoteState
+import com.proyectonami.app.core.domain.tts.TextToSpeechFailure
+import com.proyectonami.app.core.domain.tts.TextToSpeechState
 import com.proyectonami.app.feature.audio.presentation.AudioRecordingRoute
 import com.proyectonami.app.feature.audio.presentation.AudioRecordingViewModel
 
@@ -56,12 +60,20 @@ fun TextConversationRoute(
     onBack: () -> Unit,
     audioRecordingViewModel: AudioRecordingViewModel? = null,
     onAudioReadyToSend: (AudioRecordingResult) -> Unit = {},
+    readMessagesAloud: Boolean = false,
+    onReadMessagesAloudChange: (Boolean) -> Unit = {},
 ) {
     DisposableEffect(viewModel) {
         onDispose { viewModel.onScreenExit() }
     }
     val state by viewModel.uiState.collectAsState()
     val playbackState by viewModel.playbackState.collectAsState()
+    val textToSpeechState by viewModel.textToSpeechState.collectAsState()
+    var previousReadMessagesAloud by remember(viewModel) { mutableStateOf(readMessagesAloud) }
+    LaunchedEffect(readMessagesAloud) {
+        if (previousReadMessagesAloud && !readMessagesAloud) viewModel.stopSpeech()
+        previousReadMessagesAloud = readMessagesAloud
+    }
     val audioUploadState =
         if (audioRecordingViewModel != null) {
             val uploadState by audioRecordingViewModel.uploadState.collectAsState()
@@ -82,6 +94,31 @@ fun TextConversationRoute(
             stringResource(R.string.chat_title),
             modifier = Modifier.semantics { heading() },
             style = MaterialTheme.typography.headlineLarge,
+        )
+        Text(
+            text =
+                stringResource(
+                    if (readMessagesAloud) {
+                        R.string.tts_preference_enabled_status
+                    } else {
+                        R.string.tts_preference_disabled_status
+                    },
+                ),
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            style = MaterialTheme.typography.bodyLarge,
+        )
+        NamiSecondaryButton(
+            text =
+                stringResource(
+                    if (readMessagesAloud) {
+                        R.string.tts_preference_disable
+                    } else {
+                        R.string.tts_preference_enable
+                    },
+                ),
+            icon = painterResource(R.drawable.ic_nami_settings),
+            onClick = { onReadMessagesAloudChange(!readMessagesAloud) },
+            modifier = Modifier.fillMaxWidth(),
         )
         when (val history = state.history) {
             TextMessagesRemoteState.Loading -> {
@@ -110,7 +147,10 @@ fun TextConversationRoute(
                             ConversationMessage(
                                 message = message,
                                 playbackState = playbackState,
+                                textToSpeechState = textToSpeechState,
+                                readMessagesAloud = readMessagesAloud,
                                 onToggleAudio = viewModel::toggleAudio,
+                                onToggleSpeech = viewModel::toggleSpeech,
                             )
                         }
                     }
@@ -202,13 +242,18 @@ fun TextConversationRoute(
 private fun ConversationMessage(
     message: ConversationMessageRecord,
     playbackState: AudioPlaybackState,
+    textToSpeechState: TextToSpeechState,
+    readMessagesAloud: Boolean,
     onToggleAudio: (AudioMessageRecord) -> Unit,
+    onToggleSpeech: (TextMessageRecord) -> Unit,
 ) {
     when (message) {
         is TextMessageRecord ->
-            Text(
-                stringResource(R.string.chat_text_message, message.text),
-                style = MaterialTheme.typography.bodyLarge,
+            TextMessage(
+                message = message,
+                textToSpeechState = textToSpeechState,
+                readMessagesAloud = readMessagesAloud,
+                onToggleSpeech = { onToggleSpeech(message) },
             )
         is AudioMessageRecord ->
             AudioMessage(
@@ -218,6 +263,76 @@ private fun ConversationMessage(
             )
     }
 }
+
+@Composable
+private fun TextMessage(
+    message: TextMessageRecord,
+    textToSpeechState: TextToSpeechState,
+    readMessagesAloud: Boolean,
+    onToggleSpeech: () -> Unit,
+) {
+    val isCurrent = textToSpeechState.resourceIdOrNull() == message.clientMessageId
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(NamiSpacing.Small),
+    ) {
+        Text(
+            stringResource(R.string.chat_text_message, message.text),
+            style = MaterialTheme.typography.bodyLarge,
+        )
+        if (readMessagesAloud) {
+            if (isCurrent) {
+                Text(
+                    text = textToSpeechStatus(textToSpeechState),
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                    color =
+                        if (textToSpeechState is TextToSpeechState.Failed) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.onSurface
+                        },
+                )
+            }
+            val isSpeaking = isCurrent && textToSpeechState is TextToSpeechState.Speaking
+            val hasFailed = isCurrent && textToSpeechState is TextToSpeechState.Failed
+            NamiSecondaryButton(
+                text =
+                    stringResource(
+                        when {
+                            isSpeaking -> R.string.tts_stop
+                            hasFailed -> R.string.tts_retry
+                            else -> R.string.tts_listen
+                        },
+                    ),
+                icon =
+                    painterResource(
+                        when {
+                            isSpeaking -> R.drawable.ic_nami_stop
+                            hasFailed -> R.drawable.ic_nami_refresh
+                            else -> R.drawable.ic_nami_play
+                        },
+                    ),
+                onClick = onToggleSpeech,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+}
+
+@Composable
+private fun textToSpeechStatus(state: TextToSpeechState): String =
+    when (state) {
+        TextToSpeechState.Idle -> stringResource(R.string.tts_stopped)
+        is TextToSpeechState.Speaking -> stringResource(R.string.tts_speaking)
+        is TextToSpeechState.Failed -> stringResource(state.reason.textToSpeechMessageResource())
+    }
+
+private fun TextToSpeechFailure.textToSpeechMessageResource(): Int =
+    when (this) {
+        TextToSpeechFailure.ENGINE_UNAVAILABLE -> R.string.tts_engine_unavailable
+        TextToSpeechFailure.LANGUAGE_UNAVAILABLE -> R.string.tts_language_unavailable
+        TextToSpeechFailure.UNKNOWN -> R.string.tts_failed
+    }
 
 @Composable
 private fun AudioMessage(
@@ -297,6 +412,13 @@ private fun AudioPlaybackState.resourceIdOrNull(): String? =
         is AudioPlaybackState.Playing -> resourceId
         is AudioPlaybackState.Paused -> resourceId
         is AudioPlaybackState.Failed -> resourceId
+    }
+
+private fun TextToSpeechState.resourceIdOrNull(): String? =
+    when (this) {
+        TextToSpeechState.Idle -> null
+        is TextToSpeechState.Speaking -> resourceId
+        is TextToSpeechState.Failed -> resourceId
     }
 
 private fun AudioPlaybackFailure.playbackMessageResource(): Int =

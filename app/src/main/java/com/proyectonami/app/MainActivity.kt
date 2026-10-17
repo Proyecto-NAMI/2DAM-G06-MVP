@@ -18,6 +18,7 @@ import com.proyectonami.app.core.domain.media.AudioPlaybackController
 import com.proyectonami.app.core.domain.media.AudioPlaybackSourceRepository
 import com.proyectonami.app.core.domain.messages.ObserveTextMessagesUseCase
 import com.proyectonami.app.core.domain.messages.SendTextMessageUseCase
+import com.proyectonami.app.core.domain.tts.TextToSpeechController
 import com.proyectonami.app.core.media.ActiveMediaSession
 import com.proyectonami.app.core.media.AndroidAudioRecorder
 import com.proyectonami.app.core.media.MediaSessionController
@@ -50,6 +51,7 @@ class MainActivity : ComponentActivity() {
             namiApplication.mediaSessionCoordinator.register(
                 ActiveMediaSession {
                     namiApplication.audioPlaybackController.stop()
+                    namiApplication.textToSpeechController.stop()
                     repositories.audioPlaybackSourceRepository.clear()
                 },
             )
@@ -104,6 +106,7 @@ class MainActivity : ComponentActivity() {
                             sendTextMessage = SendTextMessageUseCase(repositories.textMessagesRepository),
                             audioPlaybackController = namiApplication.audioPlaybackController,
                             audioPlaybackSourceRepository = repositories.audioPlaybackSourceRepository,
+                            textToSpeechController = namiApplication.textToSpeechController,
                         ),
                     ).get("text-conversation-$conversationId", TextConversationViewModel::class.java)
                 },
@@ -192,6 +195,7 @@ private class TextConversationViewModelFactory(
     private val sendTextMessage: SendTextMessageUseCase,
     private val audioPlaybackController: AudioPlaybackController,
     private val audioPlaybackSourceRepository: AudioPlaybackSourceRepository,
+    private val textToSpeechController: TextToSpeechController,
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(
         modelClass: Class<T>,
@@ -207,6 +211,7 @@ private class TextConversationViewModelFactory(
                     sendTextMessage = sendTextMessage,
                     audioPlaybackController = audioPlaybackController,
                     audioPlaybackSourceRepository = audioPlaybackSourceRepository,
+                    textToSpeechController = textToSpeechController,
                 ),
             ),
         )

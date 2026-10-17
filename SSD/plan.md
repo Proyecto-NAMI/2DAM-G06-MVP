@@ -139,6 +139,10 @@ El MVP puede conservar un único módulo Gradle `app`. Solo se separarán módul
   disponible produce un estado explicable sin ocultar el mensaje.
 - T-25 persiste escala de texto y lectura en voz alta en DataStore y aplica la
   escala mediante la tipografía compartida del tema.
+- T-36 conecta la preferencia con el historial y con un motor TTS Android de
+  ciclo de vida seguro. Cada mensaje de texto ofrece escuchar/detener cuando la
+  opción está activa; una nueva lectura detiene audio o lectura anteriores y
+  los fallos de motor o idioma dejan el texto visible.
 - Un único controlador coordina grabación y reproducción para impedir que ambas estén activas a la vez.
 - T-10 solicita confirmación antes del cierre desde un único diálogo propiedad de `NamiApp`, usado tanto por la ruta provisional como por la pantalla productiva de conversaciones. Al confirmarlo elimina las rutas privadas de chat, perfil y contactos, borra el estado de autenticación en memoria, cierra grabación, reproducción y texto a voz registrados en `MediaSessionCoordinator`, y revoca Firebase Auth. Los fallos de parada no impiden el cierre y se notifican en el acceso.
 
