@@ -117,6 +117,15 @@ El MVP puede conservar un único módulo Gradle `app`. Solo se separarán módul
   duplicar mensajes.
 - T-20/T-21 fijan el límite de las notas de voz en 120 segundos y 5 MiB; la
   grabación se detiene de forma segura al alcanzar cualquiera de los dos límites.
+  La implementación productiva usa `MediaRecorder` con AAC/MPEG-4 y solo acepta
+  temporales dentro de la caché privada de la aplicación. Una pulsación en el
+  micrófono abre el diálogo accesible y, si el permiso está concedido, inicia la
+  grabación; muestra duración y ofrece escuchar con `MediaPlayer`, borrar o
+  entregar la nota preparada al punto de extensión de envío. Salir, recrear la
+  actividad, pasarla a segundo
+  plano o cerrar sesión detiene y libera cualquier sesión activa. La subida y
+  el reintento remoto quedan fuera de T-20/T-21 y se conectarán en T-34; el plan
+  histórico los describía en T-22.
 - T-22 sube el contenido a Storage bajo `conversations/{id}/audio/{messageId}` y
   guarda únicamente metadatos en Firestore; los reintentos reutilizan el mismo ID.
 - T-23 centraliza reproducción y pausa en un único coordinador multimedia; cerrar

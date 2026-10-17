@@ -31,10 +31,26 @@ class MediaPlaybackT23Test {
         assertTrue(coordinator.state.value is AudioPlaybackState.Idle)
     }
 
+    @Test
+    fun completionReturnsPreviewPlaybackToIdle() {
+        val player = FakePlayer()
+        val coordinator = MediaPlaybackCoordinator(player)
+        coordinator.play("audio-preview")
+
+        player.complete()
+
+        assertTrue(coordinator.state.value is AudioPlaybackState.Idle)
+    }
+
     private class FakePlayer(
         private val throwOnPlay: Boolean = false,
     ) : AudioPlayer {
         val events = mutableListOf<String>()
+        private var completionListener: () -> Unit = {}
+
+        override fun setOnCompletionListener(listener: () -> Unit) {
+            completionListener = listener
+        }
 
         override fun play(resourceId: String) {
             events += "play:$resourceId"
@@ -48,5 +64,7 @@ class MediaPlaybackT23Test {
         override fun stop() {
             events += "stop"
         }
+
+        fun complete() = completionListener()
     }
 }

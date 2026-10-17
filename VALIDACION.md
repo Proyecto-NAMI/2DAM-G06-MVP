@@ -471,7 +471,7 @@ repositorio; los datos de prueba son sintéticos (`Persona Ficticia`,
 | RF-03 | `AddContactUseCaseTest`, `AddContactScreenTest` y `FirebaseEmulatorSmokeTest.addContactLinksKnownPhonesAndStoresUnknownOnesAsPending` (vinculación, pendiente, duplicado, fallo y reintento). |
 | RF-04 | `ObserveConversationsUseCaseTest`, `ConversationsT19Test`, `ConversationsScreenTest` y `FirebaseEmulatorSmokeTest.conversationsAreScopedToCurrentUserAndOrderedWithUnreadCounts`. |
 | RF-05 | `TextConversationT17Test`, `SendTextMessageUseCaseTest`, `TextConversationScreenTest` y `FirebaseTextMessagesTest` (historial, borrador, vacío, reintento idempotente y reglas). |
-| RF-06 | `AudioRecordingT20T21Test` (permiso, duración, interrupción, vacío y límite); `FirebaseEmulatorSmokeTest.authFirestoreAndStorageWorkWithFictitiousData` y `thirdPartyCannotReadConversationOrAudio`. |
+| RF-06 | `AudioRecordingT20T21Test` y `AudioRecordingScreenTest` (permiso, duración, interrupción, vacío, límite, vista previa y acciones accesibles); `FirebaseEmulatorSmokeTest.authFirestoreAndStorageWorkWithFictitiousData` y `thirdPartyCannotReadConversationOrAudio`. |
 | RF-07 | `MediaPlaybackT23Test`, `MediaSessionCoordinatorTest` y `TextToSpeechT24Test` (reproducción exclusiva, pausa, error recuperable, detener sesión y motor ausente). |
 | RF-08 | `TextConversationScreenTest.sendShowsConfirmationAndRetryUsesTheSameClientId` y `SendTextMessageUseCaseTest` (pendiente, enviado, fallido, confirmación y ausencia de duplicados). |
 | RF-09 | `AccessibilityPreferencesT25Test`, `NamiComponentsTest`, `ConversationsScreenTest` y `TextToSpeechT24Test` (escala persistente, 200 % y preferencia de lectura). |
@@ -566,6 +566,34 @@ Fecha: 17 de octubre de 2026. Rama: `yang_dev`.
 cargador `tsx` `uv_os_get_passwd returned ENOMEM`; el proyecto y CI fijan Node
 22. Para no presentar un falso positivo, en local se compiló la misma prueba
 TypeScript y se ejecutó directamente con `node --test`, con resultado verde.
+
+# Integración productiva de T-20/T-21 en el chat (RF-06; RNF-01, RNF-09)
+
+Fecha: 17 de octubre de 2026. Rama: `yang_dev`.
+
+- `AndroidAudioRecorder` usa `MediaRecorder` con AAC/MPEG-4, crea el temporal
+  únicamente en la caché privada y libera o elimina recursos al cancelar,
+  interrumpir, superar límites, salir del chat o cerrar sesión.
+- `MainActivity` crea `AudioRecordingViewModel` por usuario y conversación. Una
+  pulsación en «Grabar nota de voz» abre el diálogo e inicia la grabación si el
+  permiso ya está concedido; la denegación temporal o permanente se explica y
+  siempre permite continuar escribiendo.
+- Una nota válida ofrece «Escuchar», «Borrar» y «Enviar». La reproducción previa
+  usa `MediaPlayer`; «Enviar» entrega el resultado local al punto de extensión
+  del chat sin ejecutar la subida ni el reintento remoto reservados para T-34.
+- El límite se mantiene en 120 segundos y 5 MiB. Vacío, exceso e interrupción
+  eliminan el archivo y muestran una acción recuperable.
+- Todos los textos están en recursos, los botones reutilizan los controles de
+  al menos 48 dp y los cambios de estado se anuncian como regiones vivas.
+
+| Comprobación | Resultado |
+|---|---|
+| `spotlessCheck testDebugUnitTest koverVerifyDebug assembleDebug assembleDebugAndroidTest lintDebug` | Correcto; lint sin errores y sin advertencias nuevas tras retirar `EmptySuperCall` |
+| `AudioRecordingScreenTest` en `NAMI_API_36` | 5 pruebas, 0 fallos, 0 errores y 0 omitidas |
+| `TextConversationScreenTest` en `NAMI_API_36` | 3 pruebas, 0 fallos, 0 errores y 0 omitidas |
+| `AndroidAudioRecorderTest` en `NAMI_API_36` | 1 prueba real con `MediaRecorder`: temporal privado, duración/tamaño positivos y borrado correcto |
+| Revisión manual de micrófono y reproducción en emulador/dispositivo | Pendiente |
+| Revisión por otra persona | Pendiente |
 
 # Integración productiva de T-10/T-15 (RF-10)
 

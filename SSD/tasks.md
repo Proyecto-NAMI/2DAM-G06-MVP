@@ -51,8 +51,8 @@ Además del criterio específico, toda tarea debe cumplir `constitution.md`, inc
 
 | ID | Requisito | Tarea | Depende de | Responsable | Hecho cuando... |
 |---|---|---|---|---|---|
-| T-20 | RF-06 | Implementar permiso y estados de grabación | T-02 | G06-xx (por confirmar) | Inicio con un toque, duración, parada, denegación e interrupción están probados. |
-| T-21 | RF-06 | Implementar vista previa, borrado y límite | T-20 | G06-xx (por confirmar) | Se puede escuchar o borrar antes de enviar y el límite acordado detiene con aviso. |
+| T-20 | RF-06 | Implementar permiso y estados de grabación | T-02 | G06-xx (por confirmar) | El grabador Android se conecta al chat: inicio con un toque, duración, parada, denegación e interrupción están probados. |
+| T-21 | RF-06 | Implementar vista previa, borrado y límite | T-20 | G06-xx (por confirmar) | Se puede escuchar, borrar o entregar la nota al envío; 120 s y 5 MiB detienen y eliminan el temporal con aviso. |
 | T-22 | RF-06, RNF-05 | Implementar subida segura y reintento de audio | T-05, T-16, T-21 | G06-xx (por confirmar) | Solo participantes acceden; fallo conserva copia temporal para reintentar o borrar. |
 | T-23 | RF-07 | Implementar reproducción con pausa | T-21, T-22 | G06-xx (por confirmar) | Solo un audio suena a la vez y un recurso ausente muestra error recuperable. |
 | T-24 | RF-07, RF-09 | Implementar texto a voz y preferencia | T-04, T-17 | G06-xx (por confirmar) | Puede leer un mensaje, la preferencia persiste y la ausencia del motor no bloquea el chat. |

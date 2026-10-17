@@ -7,10 +7,12 @@ import com.proyectonami.app.core.domain.audio.AudioRecorder
 import com.proyectonami.app.core.domain.audio.AudioRecordingFailure
 import com.proyectonami.app.core.domain.audio.AudioRecordingResult
 import com.proyectonami.app.core.domain.audio.AudioRecordingState
+import com.proyectonami.app.core.domain.audio.AudioRecordingValidation
 import com.proyectonami.app.core.domain.audio.AudioUploadFailure
 import com.proyectonami.app.core.domain.audio.AudioUploadState
 import com.proyectonami.app.core.domain.audio.ObserveRecordingDurationUseCase
 import com.proyectonami.app.core.domain.audio.isEmptyOrOverLimit
+import com.proyectonami.app.core.domain.audio.validate
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
@@ -26,6 +28,9 @@ class AudioRecordingT20T21Test {
         assertTrue(AudioRecordingResult("/tmp/fictitious.m4a", 121_000L, 10L).isEmptyOrOverLimit(limits))
         assertTrue(AudioRecordingResult("/tmp/fictitious.m4a", 1_000L, 6L * 1024L * 1024L).isEmptyOrOverLimit(limits))
         assertFalse(AudioRecordingResult("/tmp/fictitious.m4a", 1_000L, 10_000L).isEmptyOrOverLimit(limits))
+        assertTrue(AudioRecordingResult("/tmp/fictitious.m4a", 0L, 1L).validate(limits) is AudioRecordingValidation.Empty)
+        assertTrue(AudioRecordingResult("/tmp/fictitious.m4a", 121_000L, 1L).validate(limits) is AudioRecordingValidation.OverLimit)
+        assertTrue(AudioRecordingResult("/tmp/fictitious.m4a", 1_000L, 1L).validate(limits) is AudioRecordingValidation.Valid)
     }
 
     @Test
