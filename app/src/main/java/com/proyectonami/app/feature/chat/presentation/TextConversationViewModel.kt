@@ -12,9 +12,12 @@ import com.proyectonami.app.core.domain.messages.AudioMessageRecord
 import com.proyectonami.app.core.domain.messages.ObserveTextMessagesUseCase
 import com.proyectonami.app.core.domain.messages.SendTextMessageUseCase
 import com.proyectonami.app.core.domain.messages.TextMessageFailure
+import com.proyectonami.app.core.domain.messages.TextMessageRecord
 import com.proyectonami.app.core.domain.messages.TextMessageSendState
 import com.proyectonami.app.core.domain.messages.TextMessagesRemoteState
 import com.proyectonami.app.core.domain.messages.prepareOutgoingTextMessage
+import com.proyectonami.app.core.domain.tts.TextToSpeechController
+import com.proyectonami.app.core.domain.tts.TextToSpeechState
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -43,6 +46,7 @@ class TextConversationViewModel(
     private val savedStateHandle: SavedStateHandle = SavedStateHandle(),
     private val audioPlaybackController: AudioPlaybackController? = null,
     private val audioPlaybackSourceRepository: AudioPlaybackSourceRepository? = null,
+    private val textToSpeechController: TextToSpeechController? = null,
 ) : ViewModel() {
     private val mutableUiState =
         MutableStateFlow(
@@ -53,6 +57,9 @@ class TextConversationViewModel(
     val uiState: StateFlow<TextConversationUiState> = mutableUiState.asStateFlow()
     private val fallbackPlaybackState = MutableStateFlow<AudioPlaybackState>(AudioPlaybackState.Idle)
     val playbackState: StateFlow<AudioPlaybackState> = audioPlaybackController?.state ?: fallbackPlaybackState.asStateFlow()
+    private val fallbackTextToSpeechState = MutableStateFlow<TextToSpeechState>(TextToSpeechState.Idle)
+    val textToSpeechState: StateFlow<TextToSpeechState> =
+        textToSpeechController?.state ?: fallbackTextToSpeechState.asStateFlow()
     private var playbackJob: Job? = null
 
     init {
@@ -126,6 +133,7 @@ class TextConversationViewModel(
             else -> Unit
         }
         playbackJob?.cancel()
+        textToSpeechController?.stop()
         controller.prepare(message.clientMessageId)
         playbackJob =
             viewModelScope.launch {
@@ -144,9 +152,23 @@ class TextConversationViewModel(
             }
     }
 
+    fun toggleSpeech(message: TextMessageRecord) {
+        val controller = textToSpeechController ?: return
+        if (controller.state.value == TextToSpeechState.Speaking(message.clientMessageId)) {
+            controller.stop()
+        } else {
+            controller.speak(message.clientMessageId, message.text)
+        }
+    }
+
+    fun stopSpeech() {
+        textToSpeechController?.stop()
+    }
+
     fun onScreenExit() {
         playbackJob?.cancel()
         audioPlaybackController?.stop()
+        textToSpeechController?.stop()
     }
 
     fun onSessionEnd() {

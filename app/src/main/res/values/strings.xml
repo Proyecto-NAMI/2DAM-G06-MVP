@@ -119,6 +119,18 @@
     <string name="audio_history_network">No se pudo descargar la nota de voz. Comprueba la conexión e inténtalo de nuevo.</string>
     <string name="audio_history_not_decodable">No se pudo reproducir el formato de esta nota de voz.</string>
     <string name="audio_history_failed">No se pudo reproducir la nota de voz. Inténtalo de nuevo.</string>
+    <string name="tts_preference_enabled_status">Lectura en voz alta activada</string>
+    <string name="tts_preference_disabled_status">Lectura en voz alta desactivada</string>
+    <string name="tts_preference_enable">Activar lectura en voz alta</string>
+    <string name="tts_preference_disable">Desactivar lectura en voz alta</string>
+    <string name="tts_listen">Escuchar</string>
+    <string name="tts_stop">Detener lectura</string>
+    <string name="tts_retry">Reintentar lectura</string>
+    <string name="tts_stopped">Lectura detenida</string>
+    <string name="tts_speaking">Leyendo mensaje</string>
+    <string name="tts_engine_unavailable">La lectura en voz alta no está disponible en este dispositivo. El mensaje sigue visible.</string>
+    <string name="tts_language_unavailable">La voz en español no está disponible. El mensaje sigue visible.</string>
+    <string name="tts_failed">No se pudo leer el mensaje. El texto sigue disponible.</string>
 
     <!-- Entrada a conversaciones y flujo de envío (T-19, RF-05, RNF-01/RNF-02). -->
     <string name="conversations_title">Mis conversaciones</string>

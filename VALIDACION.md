@@ -472,9 +472,9 @@ repositorio; los datos de prueba son sintéticos (`Persona Ficticia`,
 | RF-04 | `ObserveConversationsUseCaseTest`, `ConversationsT19Test`, `ConversationsScreenTest` y `FirebaseEmulatorSmokeTest.conversationsAreScopedToCurrentUserAndOrderedWithUnreadCounts`. |
 | RF-05 | `TextConversationT17Test`, `SendTextMessageUseCaseTest`, `TextConversationScreenTest` y `FirebaseTextMessagesTest` (historial, borrador, vacío, reintento idempotente y reglas). |
 | RF-06 | `AudioRecordingT20T21Test`, `AudioRecordingScreenTest` y `FirebaseAudioNotesTest` (permiso, duración, límites, vista previa, subida, reintento, reglas y acciones accesibles); `FirebaseEmulatorSmokeTest.thirdPartyCannotReadConversationOrAudio`. |
-| RF-07 | `MediaPlaybackT23Test`, `MediaSessionCoordinatorTest`, `TextConversationScreenTest`, `FirebaseAudioPlaybackTest` y `TextToSpeechT24Test` (historial mixto, descarga autorizada, reproducción exclusiva, pausa/reanudación, error recuperable, detener sesión y motor ausente). |
+| RF-07 | `MediaPlaybackT23Test`, `MediaSessionCoordinatorTest`, `TextConversationScreenTest`, `FirebaseAudioPlaybackTest` y `TextToSpeechT24Test` (historial mixto, descarga autorizada, reproducción exclusiva, pausa/reanudación, lectura TTS, error recuperable, interrupción y detener sesión). |
 | RF-08 | `TextConversationScreenTest`, `FirebaseAudioNotesTest` y `SendTextMessageUseCaseTest` (pendiente, progreso, enviado, fallido, confirmación, reintento y ausencia de duplicados). |
-| RF-09 | `AccessibilityPreferencesT25Test`, `NamiComponentsTest`, `ConversationsScreenTest` y `TextToSpeechT24Test` (escala persistente, 200 % y preferencia de lectura). |
+| RF-09 | `AccessibilityPreferencesT25Test`, `AccessibilityPreferencesPersistenceTest`, `NamiComponentsTest`, `ConversationsScreenTest`, `TextConversationScreenTest` y `TextToSpeechT24Test` (escala persistente, 200 %, preferencia de lectura y estados anunciables). |
 | RF-10 | `AccountCreationScreenTest.signOutRequiresConfirmationAndCanBeCancelled`, `confirmedSignOutStopsMediaAndClearsPrivateState` y `MediaSessionCoordinatorTest`. |
 | RNF-01 | `NamiColorContrastTest`, `NamiComponentsTest` y las pruebas UI de cuenta, conversaciones y chat al 200 %; auditoría detallada en `SSD/ACCESIBILIDAD.md`. |
 | RNF-02 | `ConversationsScreenTest.contentShowsAvatarUnreadCountAndNavigatesToConversation` y `TextConversationScreenTest`; el flujo inicio → conversación → campo → enviar queda en cuatro acciones como máximo. |
@@ -646,6 +646,31 @@ Fecha: 17 de octubre de 2026. Rama: `yang_dev`.
 | `FirebaseAudioPlaybackTest` con Auth, Firestore, Functions y Storage | 1 prueba real, 0 fallos, 0 errores y 0 omitidas |
 | Suite instrumentada completa en `NAMI_API_36` | 66 pruebas, 0 fallos, 0 errores y 0 omitidas |
 | Revisión manual de reproducción en emulador/dispositivo | Pendiente |
+| Revisión por otra persona | Pendiente |
+
+# Integración productiva de T-36 (RF-07, RF-09; RNF-01; issue #59)
+
+Fecha: 17 de octubre de 2026. Rama: `yang_dev`. Seguimiento: #24.
+
+- `AndroidTextToSpeechEngine` inicializa el motor del sistema, comprueba la voz
+  española, notifica fin/error y libera `TextToSpeech` de forma idempotente.
+- La preferencia `readMessagesAloud` se puede activar en el chat y sigue
+  persistida en DataStore al recrear el repositorio.
+- Cada texto conserva su contenido visible y ofrece «Escuchar», «Detener
+  lectura» o «Reintentar lectura» según el estado; los cambios se anuncian como
+  región viva y los botones mantienen el objetivo táctil de 56 dp.
+- Una lectura nueva detiene audio y lectura anteriores. Reproducir audio, salir
+  del chat o cerrar sesión detiene TTS.
+- Motor o idioma ausentes producen un mensaje recuperable sin ocultar el texto.
+
+| Comprobación | Resultado |
+|---|---|
+| `spotlessCheck testDebugUnitTest koverVerifyDebug assembleDebug assembleDebugAndroidTest lintDebug` | Correcto; 108 pruebas JVM, 0 fallos, 0 errores y 0 omitidas |
+| `TextToSpeechT24Test` | 4 pruebas: lectura/detención, motor ausente, idioma ausente, finalización, interrupción y liberación |
+| `TextConversationScreenTest` en `NAMI_API_36` | 9 pruebas, 0 fallos, 0 errores y 0 omitidas |
+| `AccessibilityPreferencesPersistenceTest` en `NAMI_API_36` | 1 prueba, 0 fallos, 0 errores y 0 omitidas |
+| Suite instrumentada completa con Emulator Suite en `NAMI_API_36` | 70 pruebas, 0 fallos, 0 errores y 0 omitidas |
+| Revisión manual con TTS del sistema | Pendiente |
 | Revisión por otra persona | Pendiente |
 
 # Integración productiva de T-10/T-15 (RF-10)

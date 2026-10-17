@@ -1,6 +1,7 @@
 package com.proyectonami.app.feature.chat
 
 import android.Manifest
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.DeviceConfigurationOverride
 import androidx.compose.ui.test.FontScale
 import androidx.compose.ui.test.assertIsDisplayed
@@ -36,7 +37,10 @@ import com.proyectonami.app.core.domain.messages.TextMessageRecord
 import com.proyectonami.app.core.domain.messages.TextMessageSendResult
 import com.proyectonami.app.core.domain.messages.TextMessagesRemoteState
 import com.proyectonami.app.core.domain.messages.TextMessagesRepository
+import com.proyectonami.app.core.domain.tts.TextToSpeechEngine
+import com.proyectonami.app.core.domain.tts.TextToSpeechFailure
 import com.proyectonami.app.core.media.MediaPlaybackCoordinator
+import com.proyectonami.app.core.media.TextToSpeechCoordinator
 import com.proyectonami.app.feature.audio.presentation.AudioRecordingViewModel
 import com.proyectonami.app.feature.chat.presentation.TextConversationRoute
 import com.proyectonami.app.feature.chat.presentation.TextConversationViewModel
@@ -203,10 +207,93 @@ class TextConversationScreenTest {
         composeRule.onNodeWithText("Enviar").assertIsDisplayed()
     }
 
+    @Test
+    fun persistedPreferenceShowsListenAndTheSameActionStopsReading() {
+        val preference = mutableStateOf(false)
+        val engine = FakeTextToSpeechEngine(Result.success(Unit))
+        val viewModel =
+            viewModel(
+                repository = FakeTextMessagesRepository(messages = listOf(textMessage())),
+                textToSpeechCoordinator = TextToSpeechCoordinator(engine),
+            )
+        composeRule.setContent {
+            NamiTheme {
+                TextConversationRoute(
+                    viewModel = viewModel,
+                    onBack = {},
+                    readMessagesAloud = preference.value,
+                    onReadMessagesAloudChange = { preference.value = it },
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Activar lectura en voz alta").performClick()
+        composeRule.onNodeWithText("Lectura en voz alta activada").assertIsDisplayed()
+        composeRule.onNodeWithText("Escuchar").performClick()
+        composeRule.onNodeWithText("Leyendo mensaje").assertIsDisplayed()
+        composeRule.onNodeWithText("Detener lectura").performClick()
+        composeRule.onNodeWithText("Escuchar").assertIsDisplayed()
+        assertEquals(listOf("stop", "Hola:es-ES", "stop"), engine.events)
+    }
+
+    @Test
+    fun unavailableSpeechEngineKeepsTheMessageVisibleAndOffersRetry() {
+        val engine = FakeTextToSpeechEngine(Result.failure(IllegalStateException("unavailable")))
+        val viewModel =
+            viewModel(
+                repository = FakeTextMessagesRepository(messages = listOf(textMessage())),
+                textToSpeechCoordinator = TextToSpeechCoordinator(engine),
+            )
+        composeRule.setContent {
+            NamiTheme {
+                TextConversationRoute(
+                    viewModel = viewModel,
+                    onBack = {},
+                    readMessagesAloud = true,
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Escuchar").performClick()
+        composeRule.onNodeWithText("Hola").assertIsDisplayed()
+        composeRule
+            .onNodeWithText("La lectura en voz alta no está disponible en este dispositivo. El mensaje sigue visible.")
+            .assertIsDisplayed()
+        composeRule.onNodeWithText("Reintentar lectura").assertIsDisplayed()
+    }
+
+    @Test
+    fun startingAudioStopsAnActiveTextReading() {
+        val engine = FakeTextToSpeechEngine(Result.success(Unit))
+        val player = FakeAudioPlayer()
+        val viewModel =
+            viewModel(
+                repository = FakeTextMessagesRepository(messages = listOf(textMessage(), audioMessage())),
+                playbackCoordinator = MediaPlaybackCoordinator(player),
+                playbackSource = FakePlaybackSource(AudioPlaybackSourceResult.Ready("/private/audio.m4a")),
+                textToSpeechCoordinator = TextToSpeechCoordinator(engine),
+            )
+        composeRule.setContent {
+            NamiTheme {
+                TextConversationRoute(
+                    viewModel = viewModel,
+                    onBack = {},
+                    readMessagesAloud = true,
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Escuchar").performClick()
+        composeRule.onNodeWithText("Reproducir").performClick()
+        composeRule.onNodeWithText("Reproduciendo").assertIsDisplayed()
+        assertEquals(listOf("stop", "Hola:es-ES", "stop"), engine.events)
+    }
+
     private fun viewModel(
         repository: TextMessagesRepository,
         playbackCoordinator: MediaPlaybackCoordinator? = null,
         playbackSource: AudioPlaybackSourceRepository? = null,
+        textToSpeechCoordinator: TextToSpeechCoordinator? = null,
     ) = TextConversationViewModel(
         conversationId = "conversation-fictitious",
         senderId = { "sender-fictitious" },
@@ -215,6 +302,7 @@ class TextConversationScreenTest {
         savedStateHandle = SavedStateHandle(),
         audioPlaybackController = playbackCoordinator,
         audioPlaybackSourceRepository = playbackSource,
+        textToSpeechController = textToSpeechCoordinator,
     )
 
     private class FakeTextMessagesRepository(
@@ -293,6 +381,32 @@ class TextConversationScreenTest {
             events += "stop"
         }
     }
+
+    private class FakeTextToSpeechEngine(
+        private val result: Result<Unit>,
+    ) : TextToSpeechEngine {
+        val events = mutableListOf<String>()
+
+        override fun setOnCompletionListener(listener: () -> Unit) = Unit
+
+        override fun setOnErrorListener(listener: (TextToSpeechFailure) -> Unit) = Unit
+
+        override fun speak(
+            text: String,
+            languageTag: String,
+        ): Result<Unit> {
+            events += "$text:$languageTag"
+            return result
+        }
+
+        override fun stop() {
+            events += "stop"
+        }
+
+        override fun close() = Unit
+    }
+
+    private fun textMessage() = TextMessageRecord("text-id", "sender", "Hola", 1L, "sent")
 
     private fun audioMessage() =
         AudioMessageRecord(

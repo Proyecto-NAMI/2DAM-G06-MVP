@@ -25,6 +25,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
@@ -58,6 +59,7 @@ import com.proyectonami.app.feature.conversations.presentation.ConversationsRout
 import com.proyectonami.app.feature.conversations.presentation.ConversationsViewModel
 import com.proyectonami.app.feature.profile.presentation.ProfileRoute
 import com.proyectonami.app.feature.profile.presentation.ProfileViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun NamiApp(
@@ -83,6 +85,7 @@ fun NamiApp(
                 .AccessibilityPreferences(),
     )
     val signedInUserId = (state.session as? AuthSession.SignedIn)?.userId
+    val accessibilityScope = rememberCoroutineScope()
     // El alta de contactos se abre desde el estado «Cuenta creada» hasta que T-15
     // construya la pantalla principal. Al cambiar de sesión se vuelve a la raíz.
     var showAddContact by remember(signedInUserId) { mutableStateOf(false) }
@@ -109,6 +112,12 @@ fun NamiApp(
                             selectedConversation = null
                         },
                         audioRecordingViewModel = selectedAudioRecording,
+                        readMessagesAloud = accessibilityPreferences.readMessagesAloud,
+                        onReadMessagesAloudChange = { enabled ->
+                            accessibilityPreferencesRepository?.let { repository ->
+                                accessibilityScope.launch { repository.setReadMessagesAloud(enabled) }
+                            }
+                        },
                     )
                 signedInUserId != null && state.isAccountReady && showProfile && profileViewModel != null ->
                     ProfileRoute(
