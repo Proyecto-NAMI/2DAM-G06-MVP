@@ -5,6 +5,7 @@ import {
   MAX_LOOKUPS_PER_MINUTE,
   callerQuotaDocumentId,
   contactDocumentId,
+  conversationDocumentId,
   consumeLookupQuota,
   isPhoneE164,
   normalizePersonName,
@@ -29,6 +30,8 @@ test("uses stable non-reversible identifiers", () => {
   assert.equal(contactDocumentId("+15555550100"), contactDocumentId("+15555550100"));
   assert.notEqual(contactDocumentId("+15555550100"), "+15555550100");
   assert.notEqual(callerQuotaDocumentId("uid-a"), "uid-a");
+  assert.equal(conversationDocumentId("uid-a", "uid-b"), conversationDocumentId("uid-b", "uid-a"));
+  assert.notEqual(conversationDocumentId("uid-a", "uid-b"), conversationDocumentId("uid-a", "uid-c"));
 });
 
 test("enforces per-minute and per-day lookup quotas", () => {

@@ -10,6 +10,7 @@ import com.proyectonami.app.core.data.firebase.AuthRepository
 import com.proyectonami.app.core.data.preferences.DataStoreAccessibilityPreferencesRepository
 import com.proyectonami.app.core.domain.auth.AccountProfileRepository
 import com.proyectonami.app.core.domain.contacts.AddContactUseCase
+import com.proyectonami.app.core.domain.contacts.OpenConversationUseCase
 import com.proyectonami.app.core.domain.conversations.ObserveConversationsUseCase
 import com.proyectonami.app.core.domain.messages.ObserveTextMessagesUseCase
 import com.proyectonami.app.core.domain.messages.SendTextMessageUseCase
@@ -50,6 +51,7 @@ class MainActivity : ComponentActivity() {
                     // verificado, App Check en producción y cuota por UID, y decide en
                     // el servidor si el contacto queda vinculado o pendiente.
                     addContactUseCase = AddContactUseCase(repositories.contactsRepository),
+                    openConversationUseCase = OpenConversationUseCase(repositories.contactsRepository),
                 ),
             )[AddContactViewModel::class.java]
         profileViewModel =
@@ -142,6 +144,7 @@ private class ProfileViewModelFactory(
 
 private class AddContactViewModelFactory(
     private val addContactUseCase: AddContactUseCase,
+    private val openConversationUseCase: OpenConversationUseCase,
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(
         modelClass: Class<T>,
@@ -150,7 +153,7 @@ private class AddContactViewModelFactory(
         require(modelClass.isAssignableFrom(AddContactViewModel::class.java))
         return checkNotNull(
             modelClass.cast(
-                AddContactViewModel(addContactUseCase),
+                AddContactViewModel(addContactUseCase, openConversationUseCase),
             ),
         )
     }

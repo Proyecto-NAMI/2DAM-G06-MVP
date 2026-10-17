@@ -67,6 +67,7 @@ Además del criterio específico, toda tarea debe cumplir `constitution.md`, inc
 | T-28 | RNF-01, RNF-02 | Auditar accesibilidad y tareas | T-13, T-19, T-23, T-25 | G06-xx (por confirmar) | Se prueban TalkBack, 200 %, dos pantallas y perfiles representativos; se corrigen fallos críticos. |
 | T-29 | Todos | Revisar trazabilidad y regresión | T-26, T-27, T-28 | Todo el equipo | Cada RF/RNF tiene prueba o evidencia, no está activo lo excluido y pasa la suite. |
 | T-30 | Todos | Preparar piloto y entrega | T-29 | Todo el equipo | APK, guía, datos ficticios, limitaciones y evidencias están listos y revisados. |
+| T-31 | RF-03, RF-04, RF-05; RNF-04, RNF-05 | Crear y abrir una conversación desde un contacto vinculado | T-11 a T-17 | G06-xx (por confirmar) | Una operación autenticada crea o recupera una única conversación para un contacto `linked`; `pending` y terceros quedan denegados y el flujo funciona desde Emulator Suite vacío. |
 
 ## 7. Matriz de trazabilidad
 
@@ -74,15 +75,15 @@ Además del criterio específico, toda tarea debe cumplir `constitution.md`, inc
 |---|---|
 | RF-01 | T-06, T-07, T-08 |
 | RF-02 | T-09 |
-| RF-03 | T-11, T-12, T-13 |
-| RF-04 | T-14, T-15 |
-| RF-05 | T-16, T-17, T-19 |
+| RF-03 | T-11, T-12, T-13, T-31 |
+| RF-04 | T-14, T-15, T-31 |
+| RF-05 | T-16, T-17, T-19, T-31 |
 | RF-06 | T-20, T-21, T-22 |
 | RF-07 | T-23, T-24 |
 | RF-08 | T-18 |
 | RF-09 | T-24, T-25 |
 | RF-10 | T-10 |
 | RNF-01/RNF-02 | T-04, T-19, T-25, T-28 |
-| RNF-03/RNF-04/RNF-09 | T-16, T-18, T-27 |
-| RNF-05/RNF-06 | T-11, T-22, T-26 |
+| RNF-03/RNF-04/RNF-09 | T-16, T-18, T-27, T-31 |
+| RNF-05/RNF-06 | T-11, T-22, T-26, T-31 |
 | RNF-07/RNF-08 | T-02, T-03, T-29 |

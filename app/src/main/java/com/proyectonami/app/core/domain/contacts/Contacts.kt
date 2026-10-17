@@ -59,6 +59,18 @@ sealed interface ContactSaveResult {
     data object LookupUnavailable : ContactSaveResult
 }
 
+sealed interface ConversationOpenResult {
+    data class Opened(
+        val conversationId: String,
+    ) : ConversationOpenResult
+
+    data object ContactPending : ConversationOpenResult
+
+    data object NotAuthorized : ConversationOpenResult
+
+    data object Failed : ConversationOpenResult
+}
+
 sealed interface AddContactResult {
     data class Added(
         val contact: Contact,
@@ -85,6 +97,8 @@ interface ContactsRepository {
     fun observeContacts(): Flow<ContactsRemoteState>
 
     suspend fun addContact(contact: ContactDraft): ContactSaveResult
+
+    suspend fun openConversation(contactId: String): ConversationOpenResult = ConversationOpenResult.Failed
 }
 
 class AddContactUseCase(
@@ -120,6 +134,23 @@ class AddContactUseCase(
             throw cancellation
         } catch (_: Exception) {
             AddContactResult.Failed
+        }
+    }
+}
+
+class OpenConversationUseCase(
+    private val contactsRepository: ContactsRepository,
+) {
+    suspend operator fun invoke(contact: Contact): ConversationOpenResult {
+        if (contact.status != ContactStatus.LINKED || contact.linkedUserId.isNullOrBlank()) {
+            return ConversationOpenResult.ContactPending
+        }
+        return try {
+            contactsRepository.openConversation(contact.id)
+        } catch (cancellation: CancellationException) {
+            throw cancellation
+        } catch (_: Exception) {
+            ConversationOpenResult.Failed
         }
     }
 }

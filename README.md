@@ -172,6 +172,7 @@ se debe usar Android Studio o el runner de CI en lugar de relajar las comprobaci
 - Validación de nombre y teléfono
 - Prevención de duplicados
 - Vinculación con cuentas existentes mediante la función `addContact`: el servidor comprueba el teléfono con App Check y cuota por UID, y el cliente nunca escribe contactos
+- Creación idempotente de conversación mediante `openConversation`, limitada a contactos propios vinculados y sin escrituras directas del cliente
 
 ### Mensajería
 

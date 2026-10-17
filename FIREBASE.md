@@ -37,7 +37,7 @@ No se debe usar un identificador de proyecto real con los emuladores. La clase `
    .\gradlew.bat connectedDebugAndroidTest
    ```
 
-La prueba `FirebaseEmulatorSmokeTest` usa exclusivamente cuentas efímeras y datos ficticios. Además de Auth, Firestore y Storage, verifica la callable `addContact`: pending, duplicado, cuota y rechazo de escrituras directas desde cliente. El código SMS de prueba se obtiene en memoria desde `http://<host>:9099/emulator/v1/projects/demo-nami/verificationCodes`; no se registra ni persiste. El Emulator Suite no envía SMS reales. Si falta cualquiera de los emuladores requeridos, las pruebas se omiten.
+La prueba `FirebaseEmulatorSmokeTest` usa exclusivamente cuentas efímeras y datos ficticios. Además de Auth, Firestore y Storage, verifica las callables `addContact` y `openConversation`: pending, duplicado, cuota, creación idempotente de una conversación vinculada, envío de texto y rechazo de escrituras directas desde cliente. El código SMS de prueba se obtiene en memoria desde `http://<host>:9099/emulator/v1/projects/demo-nami/verificationCodes`; no se registra ni persiste. El Emulator Suite no envía SMS reales. Si falta cualquiera de los emuladores requeridos, las pruebas se omiten.
 
 CI arranca `auth`, `firestore`, `storage` y `functions`, ejecuta `npm test` dentro de `functions` (cuota, E.164, normalización e identificadores) y comprueba después que ninguna prueba instrumentada se haya omitido: si el Emulator Suite no levanta todos los emuladores necesarios, el trabajo falla en vez de dar por buena una suite vacía.
 
@@ -70,6 +70,10 @@ CI arranca `auth`, `firestore`, `storage` y `functions`, ejecuta `npm test` dent
   duplicados. El emulador desactiva App Check únicamente dentro del proceso local;
   el cliente release usa Play Integrity.
 - Conversaciones, mensajes y audios exigen pertenecer a `participantIds`.
+- Los clientes no pueden crear conversaciones directamente. `openConversation`
+  valida un contacto propio `linked`, crea o recupera en transacción el ID estable
+  de la pareja y devuelve solo ese identificador. Un contacto `pending` o un ID
+  ajeno se rechaza antes de escribir.
 - Storage acepta únicamente contenido con tipo `audio/*` en la ruta de una conversación autorizada.
 - No se registran teléfonos, tokens, mensajes ni rutas de audio.
 - Los valores del ejemplo son ficticios y no conceden acceso a recursos reales.

@@ -29,6 +29,12 @@ export function contactDocumentId(phoneE164: string): string {
   return createHash("sha256").update(phoneE164, "utf8").digest("hex");
 }
 
+export function conversationDocumentId(firstUid: string, secondUid: string): string {
+  return createHash("sha256")
+    .update([firstUid, secondUid].sort().join("\u0000"), "utf8")
+    .digest("hex");
+}
+
 export function callerQuotaDocumentId(uid: string): string {
   return createHash("sha256").update(uid, "utf8").digest("hex");
 }

@@ -533,3 +533,36 @@ revisiones.
 - Verificacion local de artefactos: `git diff --check` pasa, el PDF se renderizo a PNG y se revisaron las paginas 1, 4 y 5; el APK se pudo resumir con `Get-FileHash`.
 - Regresion local de Functions: `npm ci` pasa; `npm test` queda bloqueado en este entorno por `uv_os_get_passwd returned ENOMEM` con Node 24. La regresion completa se delega al workflow de CI, que usa Node 22.
 - Siguen siendo pasos externos la comprobacion de acceso docente, la auditoria TalkBack en dispositivo/emulador y la segunda revision humana.
+
+# Validación de T-31 (RF-03, RF-04, RF-05; RNF-04, RNF-05)
+
+Fecha: 17 de octubre de 2026. Rama: `yang_dev`.
+
+- La callable autenticada `openConversation` sólo acepta un documento de contacto
+  `linked` perteneciente al UID llamante. El ID SHA-256 de la pareja ordenada y
+  una transacción garantizan una sola conversación 1:1 por pareja.
+- La conversación nace con los dos participantes, sus datos visibles,
+  `unreadCountByUser` a cero y `lastActivityAt`; el cliente abre inmediatamente
+  el chat desde un contacto vinculado y explica por qué uno pendiente no puede
+  abrirse.
+- Las reglas deniegan toda creación directa desde clientes. La integración
+  comprueba además que una tercera cuenta no puede reutilizar el contacto ni
+  crear, leer o modificar la conversación.
+- `seedConversationForTests` sustituye la siembra directa de fixtures antiguos y
+  rechaza cualquier ejecución fuera de Firebase Emulator Suite.
+
+| Comprobación | Resultado |
+|---|---|
+| `npm run build` | Correcto |
+| Pruebas unitarias de Functions compiladas y ejecutadas con `node --test` | 4 pruebas, 0 fallos |
+| `spotlessCheck testDebugUnitTest koverVerifyDebug lintDebug assembleDebug assembleDebugAndroidTest` | Correcto |
+| Suite instrumentada completa con Auth, Firestore, Functions y Storage en Android 16/API 36 | Correcta, 0 fallos |
+| `FirebaseEmulatorSmokeTest` tras ampliar seguridad | 9 pruebas, 0 fallos, 0 errores y 0 omitidas |
+| Flujo desde Emulator Suite vacío | Correcto: dos cuentas ficticias, vínculo, apertura idempotente y envío de texto ficticio |
+| Revisión manual exploratoria | Pendiente |
+| Revisión por otra persona | Pendiente |
+
+`npm test` no arranca con el Node 24 instalado localmente por el error del
+cargador `tsx` `uv_os_get_passwd returned ENOMEM`; el proyecto y CI fijan Node
+22. Para no presentar un falso positivo, en local se compiló la misma prueba
+TypeScript y se ejecutó directamente con `node --test`, con resultado verde.

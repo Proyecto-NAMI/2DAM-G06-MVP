@@ -6,6 +6,7 @@ import com.proyectonami.app.core.domain.contacts.ContactSaveResult
 import com.proyectonami.app.core.domain.contacts.ContactStatus
 import com.proyectonami.app.core.domain.contacts.ContactsRemoteState
 import com.proyectonami.app.core.domain.contacts.ContactsRepository
+import com.proyectonami.app.core.domain.contacts.ConversationOpenResult
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
@@ -36,6 +37,9 @@ class FakeContactsRepository : ContactsRepository {
     val stored: List<Contact>
         get() = contactsByPhone.values.toList()
 
+    var openAttempts: Int = 0
+        private set
+
     override fun observeContacts(): Flow<ContactsRemoteState> = flowOf(ContactsRemoteState.Loaded(stored))
 
     override suspend fun addContact(contact: ContactDraft): ContactSaveResult {
@@ -63,6 +67,16 @@ class FakeContactsRepository : ContactsRepository {
             )
         contactsByPhone[contact.phoneE164] = saved
         return ContactSaveResult.Added(saved)
+    }
+
+    override suspend fun openConversation(contactId: String): ConversationOpenResult {
+        openAttempts++
+        val contact = stored.firstOrNull { it.id == contactId } ?: return ConversationOpenResult.Failed
+        return if (contact.status == ContactStatus.LINKED && contact.linkedUserId != null) {
+            ConversationOpenResult.Opened("conversation_${contact.id}")
+        } else {
+            ConversationOpenResult.ContactPending
+        }
     }
 
     /** Simula que ese teléfono ya estaba guardado antes de la prueba. */
