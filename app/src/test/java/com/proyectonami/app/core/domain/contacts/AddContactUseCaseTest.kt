@@ -90,6 +90,51 @@ class AddContactUseCaseTest {
             assertEquals(0, repository.addCalls)
         }
 
+    @Test
+    fun opensOnlyLinkedContactsAndReturnsStableConversation() =
+        runBlocking {
+            val repository = FakeContactsRepository()
+            val useCase = OpenConversationUseCase(repository)
+            val linked =
+                Contact(
+                    id = "contact-linked",
+                    displayName = "Persona",
+                    surname = "Ficticia",
+                    phoneE164 = "+15555550100",
+                    linkedUserId = "uid-ficticio",
+                    status = ContactStatus.LINKED,
+                )
+
+            assertEquals(
+                ConversationOpenResult.Opened("conversation-fictitious"),
+                useCase(linked),
+            )
+            assertEquals(1, repository.openCalls)
+
+            assertEquals(
+                ConversationOpenResult.ContactPending,
+                useCase(linked.copy(status = ContactStatus.PENDING, linkedUserId = null)),
+            )
+            assertEquals(1, repository.openCalls)
+        }
+
+    @Test
+    fun mapsConversationOpenExceptionToRecoverableFailure() =
+        runBlocking {
+            val repository = FakeContactsRepository().apply { failOpenWithException = true }
+            val linked =
+                Contact(
+                    id = "contact-linked",
+                    displayName = "Persona",
+                    surname = "Ficticia",
+                    phoneE164 = "+15555550100",
+                    linkedUserId = "uid-ficticio",
+                    status = ContactStatus.LINKED,
+                )
+
+            assertEquals(ConversationOpenResult.Failed, OpenConversationUseCase(repository)(linked))
+        }
+
     private class FakeContactsRepository(
         private val status: ContactStatus = ContactStatus.PENDING,
     ) : ContactsRepository {
@@ -97,6 +142,8 @@ class AddContactUseCaseTest {
         var addCalls = 0
         var nextFailure: ContactSaveResult? = null
         var failWithException = false
+        var failOpenWithException = false
+        var openCalls = 0
 
         override fun observeContacts(): Flow<ContactsRemoteState> = flowOf(ContactsRemoteState.Loaded(contacts.values.toList()))
 
@@ -117,6 +164,12 @@ class AddContactUseCaseTest {
                 )
             contacts[contact.phoneE164] = saved
             return ContactSaveResult.Added(saved)
+        }
+
+        override suspend fun openConversation(contactId: String): ConversationOpenResult {
+            openCalls++
+            if (failOpenWithException) error("backend unavailable")
+            return ConversationOpenResult.Opened("conversation-fictitious")
         }
     }
 }

@@ -22,7 +22,10 @@ import com.proyectonami.app.core.domain.auth.PhoneAuthFailure
 import com.proyectonami.app.core.domain.contacts.ContactDraft
 import com.proyectonami.app.core.domain.contacts.ContactSaveResult
 import com.proyectonami.app.core.domain.contacts.ContactStatus
+import com.proyectonami.app.core.domain.contacts.ConversationOpenResult
 import com.proyectonami.app.core.domain.conversations.ConversationsRemoteState
+import com.proyectonami.app.core.domain.messages.OutgoingTextMessage
+import com.proyectonami.app.core.domain.messages.TextMessageSendResult
 import com.proyectonami.app.core.media.MediaSessionCoordinator
 import com.proyectonami.app.feature.auth.presentation.PhoneAuthViewModel
 import kotlinx.coroutines.flow.first
@@ -41,7 +44,6 @@ import java.net.HttpURLConnection
 import java.net.InetSocketAddress
 import java.net.Socket
 import java.net.URL
-import java.util.Date
 import java.util.UUID
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
@@ -83,13 +85,7 @@ class FirebaseEmulatorSmokeTest {
             TIMEOUT_SECONDS,
             TimeUnit.SECONDS,
         )
-        Tasks.await(
-            repositories.firestoreRepository.conversationDocument(conversationId).set(
-                mapOf("participantIds" to listOf(userId, "usuario-ficticio-2")),
-            ),
-            TIMEOUT_SECONDS,
-            TimeUnit.SECONDS,
-        )
+        seedConversation(conversationId, "usuario-ficticio-2")
 
         val metadata =
             StorageMetadata
@@ -266,32 +262,14 @@ class FirebaseEmulatorSmokeTest {
 
             val unrelatedUserId = signInAnonymously()
             val unrelatedConversationId = "conversation-unrelated-$unrelatedUserId"
-            Tasks.await(
-                repositories.firestoreRepository.conversationDocument(unrelatedConversationId).set(
-                    conversationData(unrelatedUserId, "uid-ficticio-2", unreadCount = 7, activityMillis = 300L),
-                ),
-                TIMEOUT_SECONDS,
-                TimeUnit.SECONDS,
-            )
+            seedConversation(unrelatedConversationId, "uid-ficticio-2", currentUnreadCount = 7, activityMillis = 300L)
 
             repositories.authRepository.signOut()
             val currentUserId = signInAnonymously()
             val olderConversationId = "conversation-older-$currentUserId"
             val newerConversationId = "conversation-newer-$currentUserId"
-            Tasks.await(
-                repositories.firestoreRepository.conversationDocument(olderConversationId).set(
-                    conversationData(currentUserId, "uid-contact-old", unreadCount = 2, activityMillis = 100L),
-                ),
-                TIMEOUT_SECONDS,
-                TimeUnit.SECONDS,
-            )
-            Tasks.await(
-                repositories.firestoreRepository.conversationDocument(newerConversationId).set(
-                    conversationData(currentUserId, "uid-contact-new", unreadCount = 4, activityMillis = 300L),
-                ),
-                TIMEOUT_SECONDS,
-                TimeUnit.SECONDS,
-            )
+            seedConversation(olderConversationId, "uid-contact-old", currentUnreadCount = 2, activityMillis = 100L)
+            seedConversation(newerConversationId, "uid-contact-new", currentUnreadCount = 4, activityMillis = 300L)
 
             val state =
                 withTimeout(TIMEOUT_SECONDS * 1_000) {
@@ -374,6 +352,32 @@ class FirebaseEmulatorSmokeTest {
             assertEquals(ContactStatus.LINKED, linkedContact.status)
             assertEquals(knownUserId, linkedContact.linkedUserId)
 
+            val opened = repositories.contactsRepository.openConversation(linkedContact.id)
+            assertTrue("Se esperaba abrir la conversación: $opened", opened is ConversationOpenResult.Opened)
+            val conversationId = (opened as ConversationOpenResult.Opened).conversationId
+            assertEquals(opened, repositories.contactsRepository.openConversation(linkedContact.id))
+
+            val conversation =
+                Tasks.await(
+                    repositories.firestoreRepository.conversationDocument(conversationId).get(Source.SERVER),
+                    TIMEOUT_SECONDS,
+                    TimeUnit.SECONDS,
+                )
+            assertEquals(setOf(ownerUserId, knownUserId), (conversation.get("participantIds") as List<*>).toSet())
+            assertEquals(0L, conversation.getLong("unreadCountByUser.$ownerUserId"))
+            assertEquals(0L, conversation.getLong("unreadCountByUser.$knownUserId"))
+
+            val outgoing = OutgoingTextMessage.create(conversationId, ownerUserId, "Hola, persona ficticia")
+            assertEquals(TextMessageSendResult.Sent, repositories.textMessagesRepository.send(outgoing))
+            assertTrue(
+                Tasks
+                    .await(
+                        repositories.firestoreRepository.messageDocument(conversationId, outgoing.clientMessageId).get(Source.SERVER),
+                        TIMEOUT_SECONDS,
+                        TimeUnit.SECONDS,
+                    ).exists(),
+            )
+
             val duplicate =
                 repositories.contactsRepository.addContact(
                     ContactDraft("Otro", "Nombre", knownPhoneNumber),
@@ -388,6 +392,10 @@ class FirebaseEmulatorSmokeTest {
             assertTrue("Se esperaba un contacto pendiente: $pending", pending is ContactSaveResult.Added)
             assertEquals(ContactStatus.PENDING, (pending as ContactSaveResult.Added).contact.status)
             assertNull(pending.contact.linkedUserId)
+            assertEquals(
+                ConversationOpenResult.ContactPending,
+                repositories.contactsRepository.openConversation(pending.contact.id),
+            )
 
             val storedContacts =
                 Tasks.await(
@@ -401,6 +409,20 @@ class FirebaseEmulatorSmokeTest {
 
             repositories.authRepository.signOut()
             signInAnonymously()
+
+            assertEquals(
+                ConversationOpenResult.ContactPending,
+                repositories.contactsRepository.openConversation(linkedContact.id),
+            )
+            assertPermissionDenied {
+                Tasks.await(
+                    repositories.firestoreRepository.conversationDocument("forged-${UUID.randomUUID()}").set(
+                        mapOf("participantIds" to listOf(repositories.authRepository.currentUserId, knownUserId)),
+                    ),
+                    TIMEOUT_SECONDS,
+                    TimeUnit.SECONDS,
+                )
+            }
 
             assertPermissionDenied {
                 Tasks.await(
@@ -441,13 +463,7 @@ class FirebaseEmulatorSmokeTest {
                 messageId = "message-private",
             )
 
-        Tasks.await(
-            repositories.firestoreRepository.conversationDocument(conversationId).set(
-                mapOf("participantIds" to listOf(ownerId, "usuario-ficticio-2")),
-            ),
-            TIMEOUT_SECONDS,
-            TimeUnit.SECONDS,
-        )
+        seedConversation(conversationId, "usuario-ficticio-2")
         val messageId = UUID.randomUUID().toString()
         Tasks.await(
             repositories.firestoreRepository.messageDocument(conversationId, messageId).set(
@@ -480,6 +496,15 @@ class FirebaseEmulatorSmokeTest {
                 repositories.firestoreRepository
                     .conversationDocument(conversationId)
                     .get(Source.SERVER),
+                TIMEOUT_SECONDS,
+                TimeUnit.SECONDS,
+            )
+        }
+        assertPermissionDenied {
+            Tasks.await(
+                repositories.firestoreRepository
+                    .conversationDocument(conversationId)
+                    .update("lastActivityAt", FieldValue.serverTimestamp()),
                 TIMEOUT_SECONDS,
                 TimeUnit.SECONDS,
             )
@@ -570,27 +595,27 @@ class FirebaseEmulatorSmokeTest {
         return phoneNumber.dropLast(1) + nextDigit
     }
 
-    private fun conversationData(
-        currentUserId: String,
+    private fun seedConversation(
+        conversationId: String,
         otherUserId: String,
-        unreadCount: Long,
-        activityMillis: Long,
-    ): Map<String, Any> =
-        mapOf(
-            "participantIds" to listOf(currentUserId, otherUserId),
-            "participantDetails" to
+        currentUnreadCount: Long = 0,
+        otherUnreadCount: Long = 0,
+        activityMillis: Long = System.currentTimeMillis(),
+    ) {
+        Tasks.await(
+            services.functions.getHttpsCallable("seedConversationForTests").call(
                 mapOf(
-                    currentUserId to mapOf("displayName" to "Usuario", "surname" to "Ficticio"),
-                    otherUserId to
-                        mapOf(
-                            "displayName" to "Persona $otherUserId",
-                            "surname" to otherUserId,
-                            "avatarPath" to "avatars/ficticio.png",
-                        ),
+                    "conversationId" to conversationId,
+                    "otherUserId" to otherUserId,
+                    "currentUnreadCount" to currentUnreadCount,
+                    "otherUnreadCount" to otherUnreadCount,
+                    "activityMillis" to activityMillis,
                 ),
-            "unreadCountByUser" to mapOf(currentUserId to unreadCount),
-            "lastActivityAt" to com.google.firebase.Timestamp(Date(activityMillis)),
+            ),
+            TIMEOUT_SECONDS,
+            TimeUnit.SECONDS,
         )
+    }
 
     private fun getVerificationCode(phoneNumber: String): String {
         val url =

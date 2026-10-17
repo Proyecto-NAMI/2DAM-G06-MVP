@@ -26,6 +26,7 @@ import com.proyectonami.app.core.designsystem.theme.NamiTheme
 import com.proyectonami.app.core.domain.contacts.AddContactUseCase
 import com.proyectonami.app.core.domain.contacts.Contact
 import com.proyectonami.app.core.domain.contacts.ContactStatus
+import com.proyectonami.app.core.domain.contacts.OpenConversationUseCase
 import com.proyectonami.app.feature.contacts.presentation.AddContactRoute
 import com.proyectonami.app.feature.contacts.presentation.AddContactUiState
 import com.proyectonami.app.feature.contacts.presentation.AddContactViewModel
@@ -58,12 +59,14 @@ class AddContactScreenTest {
     private lateinit var repository: FakeContactsRepository
     private lateinit var viewModel: AddContactViewModel
     private var backPresses: Int = 0
+    private var openedConversationId: String? = null
 
     @Before
     fun setUp() {
         repository = FakeContactsRepository()
-        viewModel = AddContactViewModel(AddContactUseCase(repository))
+        viewModel = AddContactViewModel(AddContactUseCase(repository), OpenConversationUseCase(repository))
         backPresses = 0
+        openedConversationId = null
         composeRule.setContent {
             val fontScale = if (testName.methodName == "formRemainsScrollableAt200PercentText") 2f else 1f
             DeviceConfigurationOverride(DeviceConfigurationOverride.FontScale(fontScale)) {
@@ -72,6 +75,7 @@ class AddContactScreenTest {
                         AddContactRoute(
                             viewModel = viewModel,
                             onBack = { backPresses++ },
+                            onOpenConversation = { openedConversationId = it },
                         )
                     }
                 }
@@ -91,6 +95,11 @@ class AddContactScreenTest {
             .onNodeWithText("Carlos Prueba se ha guardado en tus contactos.")
             .performScrollTo()
             .assertIsDisplayed()
+        composeRule
+            .onNodeWithText("Este contacto todavía no tiene una cuenta NAMI vinculada. Podrás abrir la conversación cuando se vincule.")
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeRule.onNodeWithText("Abrir conversación").assertDoesNotExist()
 
         val saved = repository.stored.single()
         assertEquals(ContactStatus.PENDING, saved.status)
@@ -116,6 +125,11 @@ class AddContactScreenTest {
         val saved = repository.stored.single()
         assertEquals(ContactStatus.LINKED, saved.status)
         assertEquals(FakeContactsRepository.LINKED_USER_ID, saved.linkedUserId)
+
+        composeRule.onNodeWithText("Abrir conversación").performScrollTo().performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) { openedConversationId != null }
+        assertEquals("conversation_${saved.id}", openedConversationId)
+        assertEquals(1, repository.openAttempts)
     }
 
     @Test

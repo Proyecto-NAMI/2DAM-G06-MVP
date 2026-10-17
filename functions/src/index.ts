@@ -6,6 +6,7 @@ import {
   callerQuotaDocumentId,
   consumeLookupQuota,
   contactDocumentId,
+  conversationDocumentId,
   isPhoneE164,
   normalizePersonName,
   type LookupQuota,
@@ -90,6 +91,132 @@ export const addContact = onCall(
       };
     });
     return outcome;
+  },
+);
+
+export const openConversation = onCall(
+  {
+    enforceAppCheck: process.env.FUNCTIONS_EMULATOR !== "true",
+    maxInstances: 10,
+  },
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new HttpsError("unauthenticated", "Debes iniciar sesión.");
+
+    const contactId = (request.data as { contactId?: unknown } | undefined)?.contactId;
+    if (typeof contactId !== "string" || !/^[0-9a-f]{64}$/.test(contactId)) {
+      throw new HttpsError("invalid-argument", "El contacto no es válido.");
+    }
+
+    const contactSnapshot = await contactsPath(uid).doc(contactId).get();
+    const contact = contactSnapshot.data();
+    const linkedUserId = contact?.linkedUserId;
+    if (!contactSnapshot.exists || contact?.status !== "linked" || typeof linkedUserId !== "string" || linkedUserId === uid) {
+      throw new HttpsError("failed-precondition", "El contacto todavía no puede abrir una conversación.");
+    }
+
+    const [ownerProfile, linkedProfile] = await Promise.all([
+      firestore.collection("users").doc(uid).get(),
+      firestore.collection("users").doc(linkedUserId).get(),
+    ]);
+    if (!ownerProfile.exists || !linkedProfile.exists) {
+      throw new HttpsError("failed-precondition", "Falta el perfil de uno de los participantes.");
+    }
+
+    const owner = ownerProfile.data();
+    const linked = linkedProfile.data();
+    const ownerDisplayName = normalizePersonName(owner?.displayName);
+    const ownerSurname = normalizePersonName(owner?.surname);
+    const contactDisplayName = normalizePersonName(contact?.displayName);
+    const contactSurname = normalizePersonName(contact?.surname);
+    if (!ownerDisplayName || !ownerSurname || !contactDisplayName || !contactSurname) {
+      throw new HttpsError("data-loss", "Los perfiles de la conversación no son válidos.");
+    }
+
+    const conversationId = conversationDocumentId(uid, linkedUserId);
+    const conversationRef = firestore.collection("conversations").doc(conversationId);
+    await firestore.runTransaction(async (transaction) => {
+      const existing = await transaction.get(conversationRef);
+      if (existing.exists) {
+        const participants = existing.data()?.participantIds;
+        if (!Array.isArray(participants) || participants.length !== 2 || !participants.includes(uid) || !participants.includes(linkedUserId)) {
+          throw new HttpsError("already-exists", "El identificador de conversación está ocupado.");
+        }
+        return;
+      }
+
+      const participantIds = [uid, linkedUserId].sort();
+      transaction.create(conversationRef, {
+        participantIds,
+        participantDetails: {
+          [uid]: {
+            displayName: ownerDisplayName,
+            surname: ownerSurname,
+            avatarPath: typeof owner?.avatarPath === "string" ? owner.avatarPath : null,
+          },
+          [linkedUserId]: {
+            displayName: contactDisplayName,
+            surname: contactSurname,
+            avatarPath: typeof linked?.avatarPath === "string" ? linked.avatarPath : null,
+          },
+        },
+        unreadCountByUser: {
+          [uid]: 0,
+          [linkedUserId]: 0,
+        },
+        lastActivityAt: FieldValue.serverTimestamp(),
+      });
+    });
+
+    return { conversationId };
+  },
+);
+
+// Utilidad exclusiva de Emulator Suite para preparar estados que no forman
+// parte del flujo bajo prueba. En producción siempre rechaza la llamada.
+export const seedConversationForTests = onCall(
+  { enforceAppCheck: false, maxInstances: 1 },
+  async (request) => {
+    if (process.env.FUNCTIONS_EMULATOR !== "true") {
+      throw new HttpsError("failed-precondition", "Solo disponible en Emulator Suite.");
+    }
+    const uid = request.auth?.uid;
+    if (!uid) throw new HttpsError("unauthenticated", "Debes iniciar sesión.");
+    const input = request.data as {
+      conversationId?: unknown;
+      otherUserId?: unknown;
+      currentUnreadCount?: unknown;
+      otherUnreadCount?: unknown;
+      activityMillis?: unknown;
+    } | undefined;
+    if (
+      typeof input?.conversationId !== "string" ||
+      !/^[A-Za-z0-9_-]{1,128}$/.test(input.conversationId) ||
+      typeof input.otherUserId !== "string" ||
+      input.otherUserId.length < 1 ||
+      input.otherUserId.includes("/")
+    ) {
+      throw new HttpsError("invalid-argument", "Los datos de prueba no son válidos.");
+    }
+    const currentUnreadCount =
+      typeof input.currentUnreadCount === "number" && input.currentUnreadCount >= 0 ? input.currentUnreadCount : 0;
+    const otherUnreadCount =
+      typeof input.otherUnreadCount === "number" && input.otherUnreadCount >= 0 ? input.otherUnreadCount : 0;
+    const activity = typeof input.activityMillis === "number" ? new Date(input.activityMillis) : new Date();
+    await firestore.collection("conversations").doc(input.conversationId).set({
+      participantIds: [uid, input.otherUserId],
+      participantDetails: {
+        [uid]: { displayName: "Usuario", surname: "Ficticio", avatarPath: null },
+        [input.otherUserId]: {
+          displayName: `Persona ${input.otherUserId}`,
+          surname: input.otherUserId,
+          avatarPath: "avatars/ficticio.png",
+        },
+      },
+      unreadCountByUser: { [uid]: currentUnreadCount, [input.otherUserId]: otherUnreadCount },
+      lastActivityAt: activity,
+    });
+    return { conversationId: input.conversationId };
   },
 );
 

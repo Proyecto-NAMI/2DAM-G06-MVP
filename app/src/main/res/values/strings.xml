@@ -99,6 +99,10 @@
     <string name="contact_add_success_description">%1$s se ha guardado en tus contactos.</string>
     <string name="contact_add_another">Añadir otro contacto</string>
     <string name="contact_add_back">Volver</string>
+    <string name="contact_conversation_open">Abrir conversación</string>
+    <string name="contact_conversation_opening">Abriendo conversación…</string>
+    <string name="contact_conversation_pending">Este contacto todavía no tiene una cuenta NAMI vinculada. Podrás abrir la conversación cuando se vincule.</string>
+    <string name="contact_conversation_failed">No se pudo abrir la conversación. Comprueba la conexión e inténtalo de nuevo.</string>
 
     <!-- Errores de autenticación telefónica (T-07, RF-01, RNF-05). -->
     <string name="auth_phone_invalid_phone_number">El teléfono no parece correcto. Revísalo e inténtalo de nuevo.</string>

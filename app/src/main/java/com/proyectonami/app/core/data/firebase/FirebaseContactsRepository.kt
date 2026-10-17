@@ -11,6 +11,7 @@ import com.proyectonami.app.core.domain.contacts.ContactSaveResult
 import com.proyectonami.app.core.domain.contacts.ContactStatus
 import com.proyectonami.app.core.domain.contacts.ContactsRemoteState
 import com.proyectonami.app.core.domain.contacts.ContactsRepository
+import com.proyectonami.app.core.domain.contacts.ConversationOpenResult
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -81,6 +82,26 @@ class FirebaseContactsRepository(
                 }
         }
     }
+
+    override suspend fun openConversation(contactId: String): ConversationOpenResult {
+        if (auth.currentUser == null) return ConversationOpenResult.NotAuthorized
+        return suspendCancellableCoroutine { continuation ->
+            functions
+                .getHttpsCallable("openConversation")
+                .call(mapOf("contactId" to contactId))
+                .addOnCompleteListener { task ->
+                    if (continuation.isActive) {
+                        val result =
+                            if (task.isSuccessful) {
+                                task.result?.data.toConversationOpenResult() ?: ConversationOpenResult.Failed
+                            } else {
+                                task.exception.toConversationOpenFailure()
+                            }
+                        continuation.resume(result)
+                    }
+                }
+        }
+    }
 }
 
 private fun DocumentSnapshot.toContact(): Contact? {
@@ -135,4 +156,21 @@ private fun Throwable?.toContactSaveFailure(): ContactSaveResult =
         -> ContactSaveResult.LookupUnavailable
 
         else -> ContactSaveResult.Failed
+    }
+
+private fun Any?.toConversationOpenResult(): ConversationOpenResult? {
+    val response = this as? Map<*, *> ?: return null
+    val conversationId = response["conversationId"] as? String ?: return null
+    if (conversationId.isBlank() || '/' in conversationId) return null
+    return ConversationOpenResult.Opened(conversationId)
+}
+
+private fun Throwable?.toConversationOpenFailure(): ConversationOpenResult =
+    when ((this as? FirebaseFunctionsException)?.code) {
+        FirebaseFunctionsException.Code.UNAUTHENTICATED,
+        FirebaseFunctionsException.Code.PERMISSION_DENIED,
+        -> ConversationOpenResult.NotAuthorized
+
+        FirebaseFunctionsException.Code.FAILED_PRECONDITION -> ConversationOpenResult.ContactPending
+        else -> ConversationOpenResult.Failed
     }

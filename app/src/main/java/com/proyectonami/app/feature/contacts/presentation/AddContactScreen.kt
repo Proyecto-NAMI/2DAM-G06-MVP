@@ -22,6 +22,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -59,8 +60,15 @@ import com.proyectonami.app.ui.phoneNumberErrorMessage
 fun AddContactRoute(
     viewModel: AddContactViewModel,
     onBack: () -> Unit,
+    onOpenConversation: (String) -> Unit,
 ) {
     val state by viewModel.uiState.collectAsState()
+    LaunchedEffect(state.openedConversationId) {
+        state.openedConversationId?.let { conversationId ->
+            onOpenConversation(conversationId)
+            viewModel.consumeOpenedConversation()
+        }
+    }
     AddContactScreen(
         state = state,
         onNameChange = viewModel::updateName,
@@ -68,6 +76,7 @@ fun AddContactRoute(
         onPhoneNumberChange = viewModel::updatePhoneNumber,
         onSubmit = viewModel::saveContact,
         onAddAnother = viewModel::addAnotherContact,
+        onOpenConversation = viewModel::openConversation,
         onBack = onBack,
     )
 }
@@ -89,6 +98,7 @@ fun AddContactScreen(
     onPhoneNumberChange: (String) -> Unit,
     onSubmit: () -> Unit,
     onAddAnother: () -> Unit,
+    onOpenConversation: (Contact) -> Unit,
     onBack: () -> Unit,
 ) {
     Column(
@@ -110,11 +120,14 @@ fun AddContactScreen(
                 onSurnameChange = onSurnameChange,
                 onPhoneNumberChange = onPhoneNumberChange,
                 onSubmit = onSubmit,
+                onOpenConversation = onOpenConversation,
             )
         } else {
             ContactAddedConfirmation(
                 contact = addedContact,
+                state = state,
                 onAddAnother = onAddAnother,
+                onOpenConversation = onOpenConversation,
                 onBack = onBack,
             )
         }
@@ -152,6 +165,7 @@ private fun ContactForm(
     onSurnameChange: (String) -> Unit,
     onPhoneNumberChange: (String) -> Unit,
     onSubmit: () -> Unit,
+    onOpenConversation: (Contact) -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
     val submit = {
@@ -208,6 +222,9 @@ private fun ContactForm(
             color = MaterialTheme.colorScheme.error,
             style = MaterialTheme.typography.bodyLarge,
         )
+        if (existing.status == ContactStatus.LINKED) {
+            ConversationOpenControls(state, existing, onOpenConversation)
+        }
     }
     if (state.lookupUnavailable) {
         Text(
@@ -257,7 +274,9 @@ private fun ContactForm(
 @Composable
 private fun ContactAddedConfirmation(
     contact: Contact,
+    state: AddContactUiState,
     onAddAnother: () -> Unit,
+    onOpenConversation: (Contact) -> Unit,
     onBack: () -> Unit,
 ) {
     Text(
@@ -268,6 +287,15 @@ private fun ContactAddedConfirmation(
                 .semantics { heading() },
         style = MaterialTheme.typography.headlineMedium,
     )
+    if (contact.status == ContactStatus.LINKED) {
+        ConversationOpenControls(state, contact, onOpenConversation)
+    } else {
+        Text(
+            text = stringResource(R.string.contact_conversation_pending),
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            style = MaterialTheme.typography.bodyLarge,
+        )
+    }
     Text(
         text =
             stringResource(
@@ -294,6 +322,43 @@ private fun ContactAddedConfirmation(
     )
 }
 
+@Composable
+private fun ConversationOpenControls(
+    state: AddContactUiState,
+    contact: Contact,
+    onOpenConversation: (Contact) -> Unit,
+) {
+    if (state.conversationPending) {
+        Text(
+            text = stringResource(R.string.contact_conversation_pending),
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive },
+            color = MaterialTheme.colorScheme.error,
+            style = MaterialTheme.typography.bodyLarge,
+        )
+    } else if (state.conversationOpenFailed) {
+        Text(
+            text = stringResource(R.string.contact_conversation_failed),
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive },
+            color = MaterialTheme.colorScheme.error,
+            style = MaterialTheme.typography.bodyLarge,
+        )
+    }
+    NamiPrimaryButton(
+        text =
+            stringResource(
+                if (state.isOpeningConversation) {
+                    R.string.contact_conversation_opening
+                } else {
+                    R.string.contact_conversation_open
+                },
+            ),
+        icon = painterResource(R.drawable.ic_nami_arrow_forward),
+        onClick = { onOpenConversation(contact) },
+        modifier = Modifier.fillMaxWidth(),
+        enabled = !state.isOpeningConversation,
+    )
+}
+
 /** Nombre completo tal como se muestra en la confirmación y en el aviso de duplicado. */
 private fun Contact.fullName(): String = listOf(displayName, surname).filter { it.isNotBlank() }.joinToString(" ")
 
@@ -309,6 +374,7 @@ private fun AddContactScreenPreview() {
                 onPhoneNumberChange = {},
                 onSubmit = {},
                 onAddAnother = {},
+                onOpenConversation = {},
                 onBack = {},
             )
         }
@@ -341,6 +407,7 @@ private fun AddContactScreenDuplicatePreview() {
                 onPhoneNumberChange = {},
                 onSubmit = {},
                 onAddAnother = {},
+                onOpenConversation = {},
                 onBack = {},
             )
         }
@@ -370,6 +437,7 @@ private fun AddContactScreenLinkedPreview() {
                 onPhoneNumberChange = {},
                 onSubmit = {},
                 onAddAnother = {},
+                onOpenConversation = {},
                 onBack = {},
             )
         }

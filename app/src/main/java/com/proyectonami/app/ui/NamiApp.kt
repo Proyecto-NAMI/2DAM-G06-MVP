@@ -110,6 +110,12 @@ fun NamiApp(
                     AddContactRoute(
                         viewModel = addContactViewModel,
                         onBack = { showAddContact = false },
+                        onOpenConversation = { conversationId ->
+                            createConversationViewModel?.let { factory ->
+                                showAddContact = false
+                                selectedConversation = factory(conversationId)
+                            }
+                        },
                     )
                 signedInUserId != null && state.isAccountReady ->
                     if (conversationsViewModel != null && createConversationViewModel != null) {

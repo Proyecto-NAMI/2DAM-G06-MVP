@@ -5,7 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.proyectonami.app.core.domain.contacts.AddContactResult
 import com.proyectonami.app.core.domain.contacts.AddContactUseCase
 import com.proyectonami.app.core.domain.contacts.Contact
+import com.proyectonami.app.core.domain.contacts.ConversationOpenResult
 import com.proyectonami.app.core.domain.contacts.NewContact
+import com.proyectonami.app.core.domain.contacts.OpenConversationUseCase
 import com.proyectonami.app.core.domain.validation.PersonNameError
 import com.proyectonami.app.core.domain.validation.PersonNameValidation
 import com.proyectonami.app.core.domain.validation.PersonNameValidator
@@ -43,6 +45,10 @@ data class AddContactUiState(
      */
     val lookupUnavailable: Boolean = false,
     val saveFailed: Boolean = false,
+    val isOpeningConversation: Boolean = false,
+    val conversationOpenFailed: Boolean = false,
+    val conversationPending: Boolean = false,
+    val openedConversationId: String? = null,
 ) {
     /** Los campos siguen editables hasta que el contacto se guarda. */
     val isFormEnabled: Boolean
@@ -158,6 +164,7 @@ fun AddContactUiState.afterAddResult(result: AddContactResult): AddContactUiStat
  */
 class AddContactViewModel(
     private val addContactUseCase: AddContactUseCase,
+    private val openConversationUseCase: OpenConversationUseCase? = null,
 ) : ViewModel() {
     private val mutableUiState = MutableStateFlow(AddContactUiState())
     val uiState: StateFlow<AddContactUiState> = mutableUiState.asStateFlow()
@@ -234,6 +241,50 @@ class AddContactViewModel(
     /** Deja el formulario listo para añadir otro contacto después de guardar uno. */
     fun addAnotherContact() {
         mutableUiState.value = AddContactUiState()
+    }
+
+    fun openConversation(contact: Contact) {
+        val useCase = openConversationUseCase ?: return
+        if (mutableUiState.value.isOpeningConversation) return
+        mutableUiState.update {
+            it.copy(
+                isOpeningConversation = true,
+                conversationOpenFailed = false,
+                conversationPending = false,
+                openedConversationId = null,
+            )
+        }
+        viewModelScope.launch {
+            when (val result = useCase(contact)) {
+                is ConversationOpenResult.Opened ->
+                    mutableUiState.update {
+                        it.copy(
+                            isOpeningConversation = false,
+                            openedConversationId = result.conversationId,
+                        )
+                    }
+                ConversationOpenResult.ContactPending ->
+                    mutableUiState.update {
+                        it.copy(
+                            isOpeningConversation = false,
+                            conversationPending = true,
+                        )
+                    }
+                ConversationOpenResult.NotAuthorized,
+                ConversationOpenResult.Failed,
+                ->
+                    mutableUiState.update {
+                        it.copy(
+                            isOpeningConversation = false,
+                            conversationOpenFailed = true,
+                        )
+                    }
+            }
+        }
+    }
+
+    fun consumeOpenedConversation() {
+        mutableUiState.update { it.copy(openedConversationId = null) }
     }
 
     private fun saveValidatedContact(validation: ContactFormValidation.Valid) {

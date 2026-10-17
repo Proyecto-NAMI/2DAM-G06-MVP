@@ -50,7 +50,7 @@ class FirebaseTextMessagesTest {
     @Before
     fun setUp() {
         assumeTrue(environment.useEmulators)
-        for (port in listOf(environment.authEmulatorPort, environment.firestoreEmulatorPort)) {
+        for (port in listOf(environment.authEmulatorPort, environment.firestoreEmulatorPort, environment.functionsEmulatorPort)) {
             assumeTrue(
                 "Firebase Auth/Firestore Emulator no está en ejecución",
                 runCatching {
@@ -65,10 +65,12 @@ class FirebaseTextMessagesTest {
 
     private fun seedConversation() {
         await(
-            conversation().set(
+            services.functions.getHttpsCallable("seedConversationForTests").call(
                 mapOf(
-                    "participantIds" to listOf(senderId, RECIPIENT_ID),
-                    "unreadCountByUser" to mapOf(senderId to 2L, RECIPIENT_ID to 3L),
+                    "conversationId" to conversationId,
+                    "otherUserId" to RECIPIENT_ID,
+                    "currentUnreadCount" to 2,
+                    "otherUnreadCount" to 3,
                 ),
             ),
         )
