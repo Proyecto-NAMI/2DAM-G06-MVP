@@ -126,7 +126,7 @@ El MVP puede conservar un único módulo Gradle `app`. Solo se separarán módul
 - T-25 persiste escala de texto y lectura en voz alta en DataStore y aplica la
   escala mediante la tipografía compartida del tema.
 - Un único controlador coordina grabación y reproducción para impedir que ambas estén activas a la vez.
-- T-10 solicita confirmación antes del cierre; al confirmarlo borra el estado de autenticación en memoria, cierra los recursos de audio registrados en `MediaSessionCoordinator` y revoca Firebase Auth. Cada grabador o reproductor deberá registrar su sesión activa para que el coordinador pueda detenerla; los fallos de parada no impiden el cierre y se notifican en el acceso.
+- T-10 solicita confirmación antes del cierre desde un único diálogo propiedad de `NamiApp`, usado tanto por la ruta provisional como por la pantalla productiva de conversaciones. Al confirmarlo elimina las rutas privadas de chat, perfil y contactos, borra el estado de autenticación en memoria, cierra grabación, reproducción y texto a voz registrados en `MediaSessionCoordinator`, y revoca Firebase Auth. Los fallos de parada no impiden el cierre y se notifican en el acceso.
 
 ## 4. Modelo de datos propuesto
 

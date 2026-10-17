@@ -86,6 +86,8 @@ fun NamiApp(
     var showAddContact by remember(signedInUserId) { mutableStateOf(false) }
     var showProfile by remember(signedInUserId) { mutableStateOf(false) }
     var selectedConversation by remember(signedInUserId) { mutableStateOf<TextConversationViewModel?>(null) }
+    var showSignOutConfirmation by remember(signedInUserId) { mutableStateOf(false) }
+    val requestSignOut = { showSignOutConfirmation = true }
     NamiTheme(textScale = accessibilityPreferences.textScale) {
         Surface(
             modifier = Modifier.fillMaxSize(),
@@ -122,7 +124,7 @@ fun NamiApp(
                         ConversationsRoute(
                             viewModel = conversationsViewModel,
                             onOpenConversation = { id -> selectedConversation = createConversationViewModel(id) },
-                            onSignOut = viewModel::signOut,
+                            onSignOut = requestSignOut,
                             onAddContact = { showAddContact = true },
                             onProfile = {
                                 profileViewModel?.load()
@@ -131,7 +133,7 @@ fun NamiApp(
                         )
                     } else {
                         AccountReadyScreen(
-                            onSignOut = viewModel::signOut,
+                            onSignOut = requestSignOut,
                             onAddContact = { showAddContact = true },
                             onProfile = {
                                 profileViewModel?.load()
@@ -146,6 +148,18 @@ fun NamiApp(
                         viewModel = viewModel,
                     )
             }
+        }
+        if (signedInUserId != null && showSignOutConfirmation) {
+            SignOutConfirmationDialog(
+                onConfirm = {
+                    showSignOutConfirmation = false
+                    showAddContact = false
+                    showProfile = false
+                    selectedConversation = null
+                    viewModel.signOut()
+                },
+                onCancel = { showSignOutConfirmation = false },
+            )
         }
     }
 }
@@ -379,7 +393,6 @@ private fun AccountReadyScreen(
     onAddContact: () -> Unit,
     onProfile: () -> Unit,
 ) {
-    var showSignOutConfirmation by remember { mutableStateOf(false) }
     Column(
         modifier =
             Modifier
@@ -418,42 +431,42 @@ private fun AccountReadyScreen(
         NamiPrimaryButton(
             text = stringResource(R.string.logout_request),
             icon = painterResource(R.drawable.ic_nami_logout),
-            onClick = { showSignOutConfirmation = true },
+            onClick = onSignOut,
             modifier = Modifier.fillMaxWidth(),
         )
     }
-    if (showSignOutConfirmation) {
-        AlertDialog(
-            onDismissRequest = { showSignOutConfirmation = false },
-            title = {
-                Text(
-                    text = stringResource(R.string.logout_confirmation_title),
-                    style = MaterialTheme.typography.headlineSmall,
-                )
-            },
-            text = {
-                Text(
-                    text = stringResource(R.string.logout_confirmation_message),
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showSignOutConfirmation = false
-                        onSignOut()
-                    },
-                ) {
-                    Text(stringResource(R.string.logout_confirm))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showSignOutConfirmation = false }) {
-                    Text(stringResource(R.string.logout_cancel))
-                }
-            },
-        )
-    }
+}
+
+@Composable
+private fun SignOutConfirmationDialog(
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onCancel,
+        title = {
+            Text(
+                text = stringResource(R.string.logout_confirmation_title),
+                style = MaterialTheme.typography.headlineSmall,
+            )
+        },
+        text = {
+            Text(
+                text = stringResource(R.string.logout_confirmation_message),
+                style = MaterialTheme.typography.bodyLarge,
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(stringResource(R.string.logout_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onCancel) {
+                Text(stringResource(R.string.logout_cancel))
+            }
+        },
+    )
 }
 
 private fun PhoneAuthFailure.messageResource(): Int =

@@ -566,3 +566,27 @@ Fecha: 17 de octubre de 2026. Rama: `yang_dev`.
 cargador `tsx` `uv_os_get_passwd returned ENOMEM`; el proyecto y CI fijan Node
 22. Para no presentar un falso positivo, en local se compiló la misma prueba
 TypeScript y se ejecutó directamente con `node --test`, con resultado verde.
+
+# Integración productiva de T-10/T-15 (RF-10)
+
+Fecha: 17 de octubre de 2026. Rama: `yang_dev`.
+
+- `NamiApp` mantiene una única confirmación de cierre para la pantalla
+  provisional y la pantalla productiva de conversaciones; ninguna pantalla
+  llama ya directamente a `PhoneAuthViewModel.signOut()` desde el botón.
+- Cancelar conserva la sesión y `Mis conversaciones`. Confirmar elimina las
+  rutas privadas de chat, perfil y contactos antes de detener multimedia y
+  revocar Firebase Auth.
+- La limpieza cubre grabación, reproducción y texto a voz a través del
+  `MediaSessionController`. Un resultado parcial se anuncia en el acceso sin
+  restaurar la sesión.
+- La prueba de retorno envía `KEYCODE_BACK` después del cierre y confirma que la
+  sesión continúa revocada y la pantalla privada no reaparece.
+
+| Comprobación | Resultado |
+|---|---|
+| `spotlessCheck testDebugUnitTest koverVerifyDebug assembleDebug assembleDebugAndroidTest` | Correcto |
+| `AccountCreationScreenTest` en Android 16/API 36 | 11 pruebas, 0 fallos, 0 errores y 0 omitidas |
+| `ConversationsScreenTest` en Android 16/API 36 | 4 pruebas, 0 fallos, 0 errores y 0 omitidas |
+| Revisión manual en emulador | Pendiente |
+| Revisión por otra persona | Pendiente |

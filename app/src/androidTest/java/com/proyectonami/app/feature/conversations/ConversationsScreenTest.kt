@@ -30,6 +30,7 @@ class ConversationsScreenTest {
     @Test
     fun contentShowsAvatarUnreadCountAndNavigatesToConversation() {
         var openedConversation: String? = null
+        var signOutRequests = 0
         val viewModel = viewModel(ConversationsRemoteState.Loaded(listOf(summary(avatarPath = "avatars/fictitious.png"))))
 
         composeRule.setContent {
@@ -39,7 +40,7 @@ class ConversationsScreenTest {
                     onOpenConversation = { openedConversation = it },
                     onAddContact = {},
                     onProfile = {},
-                    onSignOut = {},
+                    onSignOut = { signOutRequests++ },
                 )
             }
         }
@@ -53,6 +54,8 @@ class ConversationsScreenTest {
             .assertHeightIsAtLeast(48.dp)
             .performClick()
         assertEquals("conversation-fictitious", openedConversation)
+        composeRule.onNodeWithText("Cerrar sesión").performClick()
+        assertEquals(1, signOutRequests)
     }
 
     @Test
