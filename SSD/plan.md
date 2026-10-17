@@ -124,7 +124,7 @@ El MVP puede conservar un único módulo Gradle `app`. Solo se separarán módul
   entregar la nota preparada al punto de extensión de envío. Salir, recrear la
   actividad, pasarla a segundo
   plano o cerrar sesión detiene y libera cualquier sesión activa. La subida y
-  el reintento remoto quedan fuera de T-20/T-21 y se conectarán en T-34; el plan
+  el reintento remoto quedan fuera de T-20/T-21 y se conectan en T-34; el plan
   histórico los describía en T-22.
 - T-22 sube el contenido a Storage bajo `conversations/{id}/audio/{messageId}` y
   guarda únicamente metadatos en Firestore; los reintentos reutilizan el mismo ID.
@@ -202,16 +202,21 @@ el índice compuesto de `participantIds` y `lastActivityAt` está declarado en
 
 ### `conversations/{conversationId}/messages/{messageId}`
 
+El esquema es cerrado y depende de `type`:
+
 ```text
-clientMessageId: string
-senderId: string
-type: "text" | "audio"
-text: string?
-audioPath: string?
-audioDurationMs: number?
-createdAt: timestamp
-status: "sent"
+Texto: clientMessageId, senderId, type: "text", text, createdAt, status: "sent"
+Audio: clientMessageId, senderId, type: "audio", durationMillis, sizeBytes,
+       contentType: "audio/mp4", storagePath, createdAt, status: "sent"
 ```
+
+Para audio, `clientMessageId` es un UUID y `storagePath` debe ser exactamente
+`conversations/{conversationId}/audio/{clientMessageId}/note.m4a`. Firestore y
+Storage limitan la duración a 120 segundos, el tamaño a 5 MiB y el acceso a los
+dos participantes. La transacción reutiliza el UUID: un reintento idéntico
+devuelve éxito sin crear otro mensaje ni volver a incrementar no leídos. El
+objeto puede reescribirse durante un reintento solo mientras no exista el
+metadato; después queda inmutable.
 
 ### Preferencias locales
 
@@ -221,7 +226,10 @@ textToSpeechEnabled: boolean
 soundConfirmationEnabled: boolean
 ```
 
-El audio no se almacenará en Firestore. Las reglas de Firestore y Storage comprobarán que `request.auth.uid` pertenece a `participantIds`. La búsqueda por teléfono deberá impedir que se enumere el directorio.
+El binario de audio no se almacenará en Firestore, solo sus metadatos. Las reglas
+de Firestore y Storage comprueban que `request.auth.uid` pertenece a
+`participantIds`. La búsqueda por teléfono deberá impedir que se enumere el
+directorio.
 
 ## 5. Relación con Figma
 

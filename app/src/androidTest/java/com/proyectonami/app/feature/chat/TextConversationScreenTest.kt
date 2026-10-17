@@ -6,6 +6,7 @@ import androidx.compose.ui.test.FontScale
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
@@ -13,8 +14,14 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.test.platform.app.InstrumentationRegistry
 import com.proyectonami.app.core.designsystem.theme.NamiTheme
 import com.proyectonami.app.core.domain.audio.AudioClock
+import com.proyectonami.app.core.domain.audio.AudioNoteMetadata
+import com.proyectonami.app.core.domain.audio.AudioNotesRepository
 import com.proyectonami.app.core.domain.audio.AudioRecorder
 import com.proyectonami.app.core.domain.audio.AudioRecordingResult
+import com.proyectonami.app.core.domain.audio.AudioRecordingState
+import com.proyectonami.app.core.domain.audio.AudioUploadFailure
+import com.proyectonami.app.core.domain.audio.AudioUploadState
+import com.proyectonami.app.core.domain.audio.UploadAudioNoteUseCase
 import com.proyectonami.app.core.domain.messages.ObserveTextMessagesUseCase
 import com.proyectonami.app.core.domain.messages.OutgoingTextMessage
 import com.proyectonami.app.core.domain.messages.SendTextMessageUseCase
@@ -25,6 +32,7 @@ import com.proyectonami.app.core.domain.messages.TextMessagesRepository
 import com.proyectonami.app.feature.audio.presentation.AudioRecordingViewModel
 import com.proyectonami.app.feature.chat.presentation.TextConversationRoute
 import com.proyectonami.app.feature.chat.presentation.TextConversationViewModel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -98,6 +106,45 @@ class TextConversationScreenTest {
         composeRule.onNodeWithText("Escribe un mensaje").assertIsDisplayed()
     }
 
+    @Test
+    fun failedAudioUploadCanRetryWithTheSameUuid() {
+        val recorder = FakeAudioRecorder()
+        val audioRepository = FakeAudioNotesRepository()
+        val audioViewModel =
+            AudioRecordingViewModel(
+                recorder = recorder,
+                clock = AudioClock { 1_000L },
+                localPath = { "/tmp/audio-fictitious.m4a" },
+                conversationId = "conversation-fictitious",
+                senderId = { "sender-fictitious" },
+                uploadAudioNote = UploadAudioNoteUseCase(audioRepository),
+            )
+        audioViewModel.start()
+        composeRule.waitUntil { audioViewModel.state.value is AudioRecordingState.Recording }
+        audioViewModel.stop()
+        composeRule.waitUntil { audioViewModel.state.value is AudioRecordingState.Preview }
+        composeRule.setContent {
+            NamiTheme {
+                TextConversationRoute(
+                    viewModel = viewModel(FakeTextMessagesRepository()),
+                    onBack = {},
+                    audioRecordingViewModel = audioViewModel,
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Grabar nota de voz").performClick()
+        composeRule.onAllNodesWithText("Enviar")[1].performClick()
+        composeRule
+            .onNodeWithText("No se pudo enviar la nota de voz. El archivo se conserva para reintentarlo o borrarlo.")
+            .assertIsDisplayed()
+        composeRule.onNodeWithText("Borrar").assertIsDisplayed()
+        composeRule.onNodeWithText("Reintentar").assertIsDisplayed().performClick()
+        composeRule.onNodeWithText("Nota de voz enviada").assertIsDisplayed()
+        assertEquals(2, audioRepository.uploads.size)
+        assertEquals(audioRepository.uploads[0].clientMessageId, audioRepository.uploads[1].clientMessageId)
+    }
+
     private fun viewModel(repository: TextMessagesRepository) =
         TextConversationViewModel(
             conversationId = "conversation-fictitious",
@@ -132,5 +179,26 @@ class TextConversationScreenTest {
         override suspend fun stop() = Result.success(AudioRecordingResult("/tmp/audio-fictitious.m4a", 1_000L, 1_000L))
 
         override suspend fun cancel() = Unit
+    }
+
+    private class FakeAudioNotesRepository : AudioNotesRepository {
+        val uploads = mutableListOf<AudioNoteMetadata>()
+
+        override fun upload(
+            metadata: AudioNoteMetadata,
+            localPath: String,
+        ): Flow<AudioUploadState> =
+            kotlinx.coroutines.flow.flow {
+                uploads += metadata
+                emit(AudioUploadState.Pending)
+                emit(AudioUploadState.Progress(0.5f))
+                if (uploads.size == 1) {
+                    emit(AudioUploadState.Failed(metadata, AudioUploadFailure.NETWORK))
+                } else {
+                    emit(AudioUploadState.Sent(metadata))
+                }
+            }
+
+        override suspend fun deleteLocal(localPath: String) = Result.success(Unit)
     }
 }

@@ -1,6 +1,14 @@
 package com.proyectonami.app.core.domain.audio
 
 import kotlinx.coroutines.flow.Flow
+import java.util.UUID
+
+const val AUDIO_NOTE_CONTENT_TYPE = "audio/mp4"
+
+fun audioNoteStoragePath(
+    conversationId: String,
+    clientMessageId: String,
+): String = "conversations/$conversationId/audio/$clientMessageId/note.m4a"
 
 data class AudioNoteMetadata(
     val clientMessageId: String,
@@ -8,8 +16,19 @@ data class AudioNoteMetadata(
     val senderId: String,
     val durationMillis: Long,
     val sizeBytes: Long,
-    val contentType: String = "audio/mp4",
-)
+    val contentType: String = AUDIO_NOTE_CONTENT_TYPE,
+    val storagePath: String = audioNoteStoragePath(conversationId, clientMessageId),
+) {
+    init {
+        require(UUID.fromString(clientMessageId).toString() == clientMessageId) { "Invalid message UUID" }
+        require(conversationId.isNotBlank() && '/' !in conversationId) { "Invalid conversation ID" }
+        require(senderId.isNotBlank() && '/' !in senderId) { "Invalid sender ID" }
+        require(durationMillis in 1..DEFAULT_AUDIO_LIMIT_MILLIS) { "Invalid audio duration" }
+        require(sizeBytes in 1..DEFAULT_AUDIO_LIMIT_BYTES) { "Invalid audio size" }
+        require(contentType == AUDIO_NOTE_CONTENT_TYPE) { "Invalid audio content type" }
+        require(storagePath == audioNoteStoragePath(conversationId, clientMessageId)) { "Invalid audio storage path" }
+    }
+}
 
 sealed interface AudioUploadState {
     data object Pending : AudioUploadState
@@ -28,7 +47,14 @@ sealed interface AudioUploadState {
     ) : AudioUploadState
 }
 
-enum class AudioUploadFailure { NETWORK, NOT_AUTHORIZED, INVALID_NOTE, UNKNOWN }
+enum class AudioUploadFailure {
+    UNAUTHENTICATED,
+    NETWORK,
+    NOT_AUTHORIZED,
+    INVALID_NOTE,
+    ID_CONFLICT,
+    UNKNOWN,
+}
 
 interface AudioNotesRepository {
     fun upload(

@@ -88,6 +88,17 @@
     <string name="audio_preview_delete">Borrar</string>
     <string name="audio_preview_send">Enviar</string>
     <string name="audio_prepared_for_send">Nota de voz preparada para el envío.</string>
+    <string name="audio_upload_pending">Preparando la nota de voz para enviarla…</string>
+    <string name="audio_upload_progress">Enviando nota de voz: %1$d%%</string>
+    <string name="audio_upload_sent">Nota de voz enviada</string>
+    <string name="audio_upload_network">No se pudo enviar la nota de voz. El archivo se conserva para reintentarlo o borrarlo.</string>
+    <string name="audio_upload_unauthenticated">La sesión ha terminado. La nota no se ha enviado.</string>
+    <string name="audio_upload_not_authorized">No tienes permiso para enviar audio en esta conversación.</string>
+    <string name="audio_upload_invalid">La nota de voz no es válida. Puedes borrarla y grabar otra.</string>
+    <string name="audio_upload_conflict">No se pudo reutilizar el identificador de esta nota. Bórrala y graba otra.</string>
+    <string name="audio_upload_failed">No se pudo enviar la nota de voz. Puedes reintentarlo o borrarla.</string>
+    <string name="audio_upload_retry">Reintentar</string>
+    <string name="audio_upload_delete">Borrar</string>
 
     <!-- Entrada a conversaciones y flujo de envío (T-19, RF-05, RNF-01/RNF-02). -->
     <string name="conversations_title">Mis conversaciones</string>
