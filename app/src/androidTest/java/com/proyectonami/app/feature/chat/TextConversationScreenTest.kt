@@ -48,6 +48,7 @@ import com.proyectonami.app.core.media.TextToSpeechCoordinator
 import com.proyectonami.app.feature.audio.presentation.AudioRecordingViewModel
 import com.proyectonami.app.feature.chat.presentation.TextConversationRoute
 import com.proyectonami.app.feature.chat.presentation.TextConversationViewModel
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import org.junit.Assert.assertEquals
@@ -107,6 +108,17 @@ class TextConversationScreenTest {
         composeRule.onNodeWithText("Mensaje enviado").assertIsDisplayed()
         assertEquals(2, repository.sentMessages.size)
         assertEquals(repository.sentMessages[0].clientMessageId, repository.sentMessages[1].clientMessageId)
+    }
+
+    @Test
+    fun recreationRestoresTheUnsentDraftFromSavedState() {
+        val savedState = SavedStateHandle()
+        val initial = viewModel(FakeTextMessagesRepository(), savedStateHandle = savedState)
+        initial.updateDraft("Borrador ficticio conservado")
+
+        val recreated = viewModel(FakeTextMessagesRepository(), savedStateHandle = savedState)
+
+        assertEquals("Borrador ficticio conservado", recreated.uiState.value.draft)
     }
 
     @Test
@@ -177,6 +189,37 @@ class TextConversationScreenTest {
         composeRule.onNodeWithText("Borrar").assertIsDisplayed()
         composeRule.onNodeWithText("Reintentar").assertIsDisplayed().performClick()
         composeRule.onNodeWithText("Nota de voz enviada").assertIsDisplayed()
+        assertEquals(2, audioRepository.uploads.size)
+        assertEquals(audioRepository.uploads[0].clientMessageId, audioRepository.uploads[1].clientMessageId)
+    }
+
+    @Test
+    fun leavingDuringAudioUploadKeepsARecoverableRetryWithTheSameUuid() {
+        val recorder = FakeAudioRecorder()
+        val audioRepository = InterruptibleAudioNotesRepository()
+        val audioViewModel =
+            AudioRecordingViewModel(
+                recorder = recorder,
+                clock = AudioClock { 1_000L },
+                localPath = { "/tmp/audio-fictitious.m4a" },
+                conversationId = "conversation-fictitious",
+                senderId = { "sender-fictitious" },
+                uploadAudioNote = UploadAudioNoteUseCase(audioRepository),
+            )
+        audioViewModel.start()
+        composeRule.waitUntil { audioViewModel.state.value is AudioRecordingState.Recording }
+        audioViewModel.stop()
+        composeRule.waitUntil { audioViewModel.state.value is AudioRecordingState.Preview }
+        val preview = requireNotNull(audioViewModel.prepareToSend())
+
+        audioViewModel.sendPreview(preview)
+        composeRule.waitUntil { audioViewModel.uploadState.value is AudioUploadState.Progress }
+        audioViewModel.onScreenExit()
+        audioRepository.finishInterruptedAttempt.complete(Unit)
+        composeRule.waitUntil { audioViewModel.uploadState.value is AudioUploadState.Failed }
+
+        audioViewModel.retryUpload()
+        composeRule.waitUntil { audioViewModel.uploadState.value is AudioUploadState.Sent }
         assertEquals(2, audioRepository.uploads.size)
         assertEquals(audioRepository.uploads[0].clientMessageId, audioRepository.uploads[1].clientMessageId)
     }
@@ -314,12 +357,13 @@ class TextConversationScreenTest {
         playbackCoordinator: MediaPlaybackCoordinator? = null,
         playbackSource: AudioPlaybackSourceRepository? = null,
         textToSpeechCoordinator: TextToSpeechCoordinator? = null,
+        savedStateHandle: SavedStateHandle = SavedStateHandle(),
     ) = TextConversationViewModel(
         conversationId = "conversation-fictitious",
         senderId = { "sender-fictitious" },
         observeTextMessages = ObserveTextMessagesUseCase(repository),
         sendTextMessage = SendTextMessageUseCase(repository),
-        savedStateHandle = SavedStateHandle(),
+        savedStateHandle = savedStateHandle,
         audioPlaybackController = playbackCoordinator,
         audioPlaybackSourceRepository = playbackSource,
         textToSpeechController = textToSpeechCoordinator,
@@ -365,6 +409,29 @@ class TextConversationScreenTest {
                 emit(AudioUploadState.Pending)
                 emit(AudioUploadState.Progress(0.5f))
                 if (uploads.size == 1) {
+                    emit(AudioUploadState.Failed(metadata, AudioUploadFailure.NETWORK))
+                } else {
+                    emit(AudioUploadState.Sent(metadata))
+                }
+            }
+
+        override suspend fun deleteLocal(localPath: String) = Result.success(Unit)
+    }
+
+    private class InterruptibleAudioNotesRepository : AudioNotesRepository {
+        val uploads = mutableListOf<AudioNoteMetadata>()
+        val finishInterruptedAttempt = CompletableDeferred<Unit>()
+
+        override fun upload(
+            metadata: AudioNoteMetadata,
+            localPath: String,
+        ): Flow<AudioUploadState> =
+            kotlinx.coroutines.flow.flow {
+                uploads += metadata
+                emit(AudioUploadState.Pending)
+                emit(AudioUploadState.Progress(0.5f))
+                if (uploads.size == 1) {
+                    finishInterruptedAttempt.await()
                     emit(AudioUploadState.Failed(metadata, AudioUploadFailure.NETWORK))
                 } else {
                     emit(AudioUploadState.Sent(metadata))
