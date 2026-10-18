@@ -4,7 +4,9 @@
 **Fecha:** 8 de octubre de 2026  
 **Estado:** propuesta para revisión del equipo
 
-> Estado T-30: preparado para piloto y entrega. El acceso docente, la auditoria manual con TalkBack y la segunda revision se declaran como pasos externos en `VALIDACION.md`.
+> Estado T-40: candidato técnico preparado para revisión. El acceso docente,
+> la auditoría manual con TalkBack, el dispositivo físico y la segunda revisión
+> deben registrarse antes de declarar cerrada la entrega.
 
 ## 1. Decisiones técnicas
 
@@ -26,6 +28,13 @@ Test Framework en Android 14 o superior para detectar automáticamente etiquetas
 roles y objetivos táctiles antes de cada interacción. No añade código al APK ni
 sustituye la escucha manual con TalkBack; la dependencia existe solo en
 `androidTest`.
+
+T-40 fija Node 22 explícitamente en los dos trabajos de CI y añade un recorrido
+instrumentado que parte de una Emulator Suite vacía. Ese recorrido usa los
+repositorios y callables productivos para crear dos cuentas, vincular el
+contacto, crear la conversación, enviar texto y audio, descargar el audio y
+denegar el acceso a una tercera cuenta. Las siembras quedan limitadas a fixtures
+de pruebas especializadas y no acreditan el flujo principal.
 
 Las versiones se fijan en el catálogo de versiones de Gradle. T-02 establece `minSdk 26`, `targetSdk 36` y `compileSdk 37`; la compatibilidad mínima deberá validarse en los dispositivos del piloto antes de cerrar RNF-07.
 
