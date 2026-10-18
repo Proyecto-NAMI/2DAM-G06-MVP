@@ -147,6 +147,17 @@ El MVP puede conservar un único módulo Gradle `app`. Solo se separarán módul
   Su ViewModel persiste en DataStore las opciones normal (100 %), grande (150 %)
   y máxima (200 %), además de lectura en voz alta; el tema compartido observa
   los cambios y los aplica inmediatamente sin recrear datos privados.
+- T-38 convierte los objetivos de rendimiento y recuperación en evidencia
+  reproducible. Mide 20 ejecuciones tras tres calentamientos, calcula p95 por
+  *nearest rank* y hace fallar la prueba si carga de contenido alcanza 2 s o la
+  confirmación de envío alcanza 3 s. La integración fuerza pérdida y recuperación
+  de red en los repositorios productivos de texto y audio, ejecuta reintentos
+  concurrentes con el mismo UUID y consulta Firestore desde servidor para detectar
+  duplicados o incrementos repetidos. La conversación seleccionada se guarda al
+  recrear la actividad y el borrador permanece en `SavedStateHandle`; salir durante
+  una subida conserva una operación reintentable. CI adjunta el JSON de muestras
+  sin contenido privado. La repetición en hardware físico y la revisión humana
+  permanecen como pasos explícitos antes de cerrar la definición de hecho.
 - Un único controlador coordina grabación y reproducción para impedir que ambas estén activas a la vez.
 - T-10 solicita confirmación antes del cierre desde un único diálogo propiedad de `NamiApp`, usado tanto por la ruta provisional como por la pantalla productiva de conversaciones. Al confirmarlo elimina las rutas privadas de chat, perfil y contactos, borra el estado de autenticación en memoria, cierra grabación, reproducción y texto a voz registrados en `MediaSessionCoordinator`, y revoca Firebase Auth. Los fallos de parada no impiden el cierre y se notifican en el acceso.
 

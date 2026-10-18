@@ -25,6 +25,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
@@ -91,8 +92,9 @@ fun NamiApp(
     var showAddContact by remember(signedInUserId) { mutableStateOf(false) }
     var showProfile by remember(signedInUserId) { mutableStateOf(false) }
     var showSettings by remember(signedInUserId) { mutableStateOf(false) }
-    var selectedConversation by remember(signedInUserId) { mutableStateOf<TextConversationViewModel?>(null) }
-    var selectedAudioRecording by remember(signedInUserId) { mutableStateOf<AudioRecordingViewModel?>(null) }
+    var selectedConversationId by rememberSaveable(signedInUserId) { mutableStateOf<String?>(null) }
+    val selectedConversation = selectedConversationId?.let { createConversationViewModel?.invoke(it) }
+    val selectedAudioRecording = selectedConversationId?.let { createAudioRecordingViewModel?.invoke(it) }
     var showSignOutConfirmation by remember(signedInUserId) { mutableStateOf(false) }
     val requestSignOut = { showSignOutConfirmation = true }
     NamiTheme(textScale = accessibilityPreferences.textScale) {
@@ -105,12 +107,11 @@ fun NamiApp(
                     LoadingScreen()
                 signedInUserId != null && state.isAccountReady && selectedConversation != null ->
                     TextConversationRoute(
-                        viewModel = selectedConversation!!,
+                        viewModel = selectedConversation,
                         onBack = {
-                            selectedConversation?.onScreenExit()
+                            selectedConversation.onScreenExit()
                             selectedAudioRecording?.onScreenExit()
-                            selectedAudioRecording = null
-                            selectedConversation = null
+                            selectedConversationId = null
                         },
                         audioRecordingViewModel = selectedAudioRecording,
                         readMessagesAloud = accessibilityPreferences.readMessagesAloud,
@@ -127,10 +128,9 @@ fun NamiApp(
                         viewModel = addContactViewModel,
                         onBack = { showAddContact = false },
                         onOpenConversation = { conversationId ->
-                            createConversationViewModel?.let { factory ->
+                            if (createConversationViewModel != null) {
                                 showAddContact = false
-                                selectedConversation = factory(conversationId)
-                                selectedAudioRecording = createAudioRecordingViewModel?.invoke(conversationId)
+                                selectedConversationId = conversationId
                             }
                         },
                     )
@@ -144,8 +144,7 @@ fun NamiApp(
                         ConversationsRoute(
                             viewModel = conversationsViewModel,
                             onOpenConversation = { id ->
-                                selectedConversation = createConversationViewModel(id)
-                                selectedAudioRecording = createAudioRecordingViewModel?.invoke(id)
+                                selectedConversationId = id
                             },
                             onSignOut = requestSignOut,
                             onAddContact = { showAddContact = true },
@@ -183,8 +182,7 @@ fun NamiApp(
                     showSettings = false
                     selectedAudioRecording?.onScreenExit()
                     selectedConversation?.onSessionEnd()
-                    selectedAudioRecording = null
-                    selectedConversation = null
+                    selectedConversationId = null
                     viewModel.signOut()
                 },
                 onCancel = { showSignOutConfirmation = false },

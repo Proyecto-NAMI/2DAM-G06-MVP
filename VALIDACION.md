@@ -478,13 +478,13 @@ repositorio; los datos de prueba son sintéticos (`Persona Ficticia`,
 | RF-10 | `AccountCreationScreenTest.signOutRequiresConfirmationAndCanBeCancelled`, `confirmedSignOutStopsMediaAndClearsPrivateState` y `MediaSessionCoordinatorTest`. |
 | RNF-01 | `NamiColorContrastTest`, `NamiComponentsTest` y las pruebas UI de cuenta, conversaciones y chat al 200 %; auditoría detallada en `SSD/ACCESIBILIDAD.md`. |
 | RNF-02 | `ConversationsScreenTest.contentShowsAvatarUnreadCountAndNavigatesToConversation` y `TextConversationScreenTest`; el flujo inicio → conversación → campo → enviar queda en cuatro acciones como máximo. |
-| RNF-03 | `FlowMetricsT27Test` y `SSD/RENDIMIENTO.md` fijan objetivos y límites. Los percentiles de red bajo carga quedan declarados como no medidos. |
-| RNF-04 | `SendTextMessageUseCaseTest`, `FirebaseTextMessagesTest`, `FirebaseAudioNotesTest` y `FlowMetricsT27Test` comprueban UUID de cliente, reintento y ausencia de duplicados. |
+| RNF-03 | `FlowMetricsT27Test`, `FirebasePerformanceRecoveryTest` y `SSD/RENDIMIENTO.md` calculan p95 sobre 20 muestras productivas: 11 ms para contenido y 30 ms para confirmación en el AVD local. |
+| RNF-04 | `SendTextMessageUseCaseTest`, `FirebaseTextMessagesTest`, `FirebaseAudioNotesTest`, `FlowMetricsT27Test` y `FirebasePerformanceRecoveryTest` comprueban UUID de cliente, reintento secuencial/concurrente y ausencia de duplicados. |
 | RNF-05 | `FirebaseEmulatorSmokeTest`, `FirebaseTextMessagesTest` y `FirebaseAudioNotesTest` cubren sesión no autenticada, terceros y reglas de perfiles, conversaciones, mensajes y audios. |
 | RNF-06 | Reglas, repositorios y pruebas usan datos ficticios; la revisión de fuentes no encuentra logging de contenido, teléfonos completos ni rutas privadas. Los archivos sensibles están excluidos por `.gitignore`. |
 | RNF-07 | CI valida Android 16/API 36 en el emulador. La compatibilidad física con la versión mínima provisional (API 26) y con un segundo tamaño de dispositivo queda pendiente. |
 | RNF-08 | El trabajo `quality` de CI ejecuta `koverVerifyDebug` y termina correctamente con el mínimo del 70 % por paquete de dominio. |
-| RNF-09 | `TextConversationT17Test`, `AudioRecordingT20T21Test`, `FlowMetricsT27Test` y los ViewModel mantienen borrador/audio en estado seguro durante fallos e interrupciones. La recreación física de pantalla queda como revisión manual. |
+| RNF-09 | `TextConversationT17Test`, `AudioRecordingT20T21Test`, `FlowMetricsT27Test`, `TextConversationScreenTest` y `FirebasePerformanceRecoveryTest` mantienen borrador/audio en estado seguro durante recreación, salida, fallo y reintento. |
 
 ## Criterios de aceptación revisados
 
@@ -520,8 +520,9 @@ cámara, llamada y vídeo de Figma siguen siendo exploraciones visuales, tal com
 declara `SSD/spec.md` §3; no se han conectado a ninguna acción.
 
 Quedan abiertas las limitaciones ya declaradas en la especificación: prueba
-física con TalkBack por otra persona, validación de red bajo carga/percentiles,
-audio en hardware real, compatibilidad con API 26 y revisión humana formal.
+física con TalkBack por otra persona, repetición de las métricas y del corte de
+red en hardware real, audio en hardware real, compatibilidad con API 26 y
+revisión humana formal.
 La definición de hecho no se marca completa hasta que el equipo registre esas
 revisiones.
 
@@ -721,3 +722,42 @@ Fecha: 17 de octubre de 2026. Rama: `yang_dev`.
 | `ConversationsScreenTest` en Android 16/API 36 | 4 pruebas, 0 fallos, 0 errores y 0 omitidas |
 | Revisión manual en emulador | Pendiente |
 | Revisión por otra persona | Pendiente |
+
+# Integración productiva de T-38 (RNF-03, RNF-04, RNF-09; issue #61)
+
+Fecha: 18 de octubre de 2026. Rama: `yang_dev`. Seguimiento: #27.
+
+- `FlowPerformanceSummary` exige al menos 20 muestras, calcula p95 mediante
+  *nearest rank* y aplica literalmente los límites menores de 2 s y 3 s.
+- `FirebasePerformanceRecoveryTest` recorre los repositorios productivos de
+  conversaciones, texto y audio contra Auth, Firestore, Functions y Storage.
+  Tras tres calentamientos mide 20 cargas y 20 envíos, y deja el detalle en un
+  JSON privado que CI adjunta al informe instrumentado.
+- Un endpoint local inalcanzable simula la pérdida de conexión. Tras recuperar
+  el emulador, el texto se reintenta cuatro veces de forma concurrente con el
+  mismo UUID y el audio conserva su temporal hasta confirmar el mismo UUID.
+  Firestore termina con dos mensajes y dos incrementos de no leídos, sin copias
+  adicionales.
+- La conversación elegida usa estado guardable durante recreación; el borrador
+  reside en `SavedStateHandle`. Una salida durante subida conserva un fallo
+  reintentable y la siguiente operación reutiliza el UUID.
+- Los datos son sintéticos y el log solo publica los dos p95; no contiene texto,
+  teléfono ni rutas privadas.
+
+| Comprobación | Resultado |
+|---|---|
+| `spotlessCheck testDebugUnitTest koverVerifyDebug lintDebug assembleDebug assembleDebugAndroidTest` | Correcto; 110 pruebas JVM, 0 fallos, 0 errores y 0 omitidas; cobertura y lint en verde |
+| Functions: `npm run build` y prueba TypeScript compilada con `node --test` | Correcto; 4 pruebas, 0 fallos y 0 omitidas. `npm test` no arranca localmente con Node 24 por `uv_os_get_passwd returned ENOMEM`; CI usa Node 22 |
+| `FirebasePerformanceRecoveryTest` en `NAMI_API_36`, Android 16/API 36 | 2 pruebas, 0 fallos, 0 errores y 0 omitidas |
+| Contenido inicial, 20 muestras + 3 calentamientos | mín. 8 ms; media 9,45 ms; p95 11 ms; máx. 15 ms; objetivo < 2.000 ms, correcto |
+| Confirmación de envío, 20 muestras + 3 calentamientos | mín. 23 ms; media 25,90 ms; p95 30 ms; máx. 31 ms; objetivo < 3.000 ms, correcto |
+| Pérdida/recuperación de texto y audio | Correcto; temporal conservado y mismo UUID al reintentar |
+| Reintentos concurrentes | Correcto; sin mensajes ni contadores duplicados |
+| Recreación de borrador y salida durante subida con fakes | Correcto en `TextConversationScreenTest` |
+| Suite instrumentada completa con Emulator Suite | 78 pruebas, 0 fallos, 0 errores y 0 omitidas |
+| Ejecución en dispositivo físico y modo avión real | Pendiente; instrucciones en `SSD/RENDIMIENTO.md` |
+| Revisión por otra persona | Pendiente |
+
+Esta evidencia satisface la ejecución automatizada en un emulador y un tamaño
+representativo. No sustituye el paso pendiente en hardware físico ni permite
+marcar todavía como completa la revisión humana de la definición de hecho.

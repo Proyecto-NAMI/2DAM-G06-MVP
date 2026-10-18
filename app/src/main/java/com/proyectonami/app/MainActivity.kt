@@ -7,6 +7,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.createSavedStateHandle
 import com.proyectonami.app.core.data.firebase.AuthRepository
 import com.proyectonami.app.core.data.preferences.DataStoreAccessibilityPreferencesRepository
 import com.proyectonami.app.core.domain.audio.UploadAudioNoteUseCase
@@ -230,6 +231,7 @@ private class TextConversationViewModelFactory(
                     senderId = senderId,
                     observeTextMessages = observeTextMessages,
                     sendTextMessage = sendTextMessage,
+                    savedStateHandle = extras.createSavedStateHandle(),
                     audioPlaybackController = audioPlaybackController,
                     audioPlaybackSourceRepository = audioPlaybackSourceRepository,
                     textToSpeechController = textToSpeechController,
