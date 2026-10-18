@@ -132,6 +132,23 @@
     <string name="tts_language_unavailable">La voz en español no está disponible. El mensaje sigue visible.</string>
     <string name="tts_failed">No se pudo leer el mensaje. El texto sigue disponible.</string>
 
+    <!-- Ajustes de accesibilidad (T-37, RF-09, RNF-01). -->
+    <string name="settings_entry">Ajustes</string>
+    <string name="settings_title">Ajustes</string>
+    <string name="settings_description">Adapta NAMI para leer y escuchar los mensajes con más comodidad.</string>
+    <string name="settings_text_size_title">Tamaño de texto</string>
+    <string name="settings_text_size_current">Tamaño actual: %1$s</string>
+    <string name="settings_text_size_normal">Normal · 100 %</string>
+    <string name="settings_text_size_large">Grande · 150 %</string>
+    <string name="settings_text_size_maximum">Máximo · 200 %</string>
+    <string name="settings_option_selected">Seleccionado</string>
+    <string name="settings_option_not_selected">No seleccionado</string>
+    <string name="settings_state_enabled">Activada</string>
+    <string name="settings_state_disabled">Desactivada</string>
+    <string name="settings_read_aloud_title">Leer mensajes en voz alta</string>
+    <string name="settings_read_aloud_description">Cuando esté activado, los mensajes de texto mostrarán la acción «Escuchar».</string>
+    <string name="settings_back">Volver a conversaciones</string>
+
     <!-- Entrada a conversaciones y flujo de envío (T-19, RF-05, RNF-01/RNF-02). -->
     <string name="conversations_title">Mis conversaciones</string>
     <string name="conversations_loading">Cargando conversaciones…</string>

@@ -10,6 +10,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.dp
 import com.proyectonami.app.core.designsystem.theme.NamiTheme
 import com.proyectonami.app.core.domain.conversations.ConversationSummary
@@ -31,6 +32,7 @@ class ConversationsScreenTest {
     fun contentShowsAvatarUnreadCountAndNavigatesToConversation() {
         var openedConversation: String? = null
         var signOutRequests = 0
+        var settingsRequests = 0
         val viewModel = viewModel(ConversationsRemoteState.Loaded(listOf(summary(avatarPath = "avatars/fictitious.png"))))
 
         composeRule.setContent {
@@ -40,6 +42,7 @@ class ConversationsScreenTest {
                     onOpenConversation = { openedConversation = it },
                     onAddContact = {},
                     onProfile = {},
+                    onSettings = { settingsRequests++ },
                     onSignOut = { signOutRequests++ },
                 )
             }
@@ -54,7 +57,9 @@ class ConversationsScreenTest {
             .assertHeightIsAtLeast(48.dp)
             .performClick()
         assertEquals("conversation-fictitious", openedConversation)
-        composeRule.onNodeWithText("Cerrar sesión").performClick()
+        composeRule.onNodeWithText("Ajustes").performScrollTo().performClick()
+        assertEquals(1, settingsRequests)
+        composeRule.onNodeWithText("Cerrar sesión").performScrollTo().performClick()
         assertEquals(1, signOutRequests)
     }
 
@@ -89,6 +94,7 @@ class ConversationsScreenTest {
                         onOpenConversation = {},
                         onAddContact = {},
                         onProfile = {},
+                        onSettings = {},
                         onSignOut = {},
                     )
                 }

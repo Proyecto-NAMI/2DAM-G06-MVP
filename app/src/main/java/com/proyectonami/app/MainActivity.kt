@@ -31,6 +31,7 @@ import com.proyectonami.app.feature.conversations.presentation.ConversationsView
 import com.proyectonami.app.feature.profile.domain.LoadProfileUseCase
 import com.proyectonami.app.feature.profile.domain.UpdateProfileUseCase
 import com.proyectonami.app.feature.profile.presentation.ProfileViewModel
+import com.proyectonami.app.feature.settings.presentation.SettingsViewModel
 import com.proyectonami.app.ui.NamiApp
 import java.io.File
 import java.util.UUID
@@ -40,6 +41,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var addContactViewModel: AddContactViewModel
     private lateinit var profileViewModel: ProfileViewModel
     private lateinit var conversationsViewModel: ConversationsViewModel
+    private lateinit var settingsViewModel: SettingsViewModel
     private var playbackCleanupRegistration: AutoCloseable? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -89,6 +91,12 @@ class MainActivity : ComponentActivity() {
                 this,
                 ConversationsViewModelFactory(ObserveConversationsUseCase(repositories.conversationsRepository)),
             )[ConversationsViewModel::class.java]
+        val accessibilityPreferencesRepository = DataStoreAccessibilityPreferencesRepository(applicationContext)
+        settingsViewModel =
+            ViewModelProvider(
+                this,
+                SettingsViewModelFactory(accessibilityPreferencesRepository),
+            )[SettingsViewModel::class.java]
         setContent {
             NamiApp(
                 activity = this,
@@ -124,7 +132,8 @@ class MainActivity : ComponentActivity() {
                         ),
                     ).get("audio-recording-$userId-$conversationId", AudioRecordingViewModel::class.java)
                 },
-                accessibilityPreferencesRepository = DataStoreAccessibilityPreferencesRepository(applicationContext),
+                accessibilityPreferencesRepository = accessibilityPreferencesRepository,
+                settingsViewModel = settingsViewModel,
             )
         }
     }
@@ -133,6 +142,18 @@ class MainActivity : ComponentActivity() {
         playbackCleanupRegistration?.close()
         playbackCleanupRegistration = null
         super.onDestroy()
+    }
+}
+
+private class SettingsViewModelFactory(
+    private val repository: com.proyectonami.app.core.domain.accessibility.AccessibilityPreferencesRepository,
+) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(
+        modelClass: Class<T>,
+        extras: androidx.lifecycle.viewmodel.CreationExtras,
+    ): T {
+        require(modelClass.isAssignableFrom(SettingsViewModel::class.java))
+        return checkNotNull(modelClass.cast(SettingsViewModel(repository)))
     }
 }
 

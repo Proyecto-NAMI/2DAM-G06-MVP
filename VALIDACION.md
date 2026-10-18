@@ -474,7 +474,7 @@ repositorio; los datos de prueba son sintéticos (`Persona Ficticia`,
 | RF-06 | `AudioRecordingT20T21Test`, `AudioRecordingScreenTest` y `FirebaseAudioNotesTest` (permiso, duración, límites, vista previa, subida, reintento, reglas y acciones accesibles); `FirebaseEmulatorSmokeTest.thirdPartyCannotReadConversationOrAudio`. |
 | RF-07 | `MediaPlaybackT23Test`, `MediaSessionCoordinatorTest`, `TextConversationScreenTest`, `FirebaseAudioPlaybackTest` y `TextToSpeechT24Test` (historial mixto, descarga autorizada, reproducción exclusiva, pausa/reanudación, lectura TTS, error recuperable, interrupción y detener sesión). |
 | RF-08 | `TextConversationScreenTest`, `FirebaseAudioNotesTest` y `SendTextMessageUseCaseTest` (pendiente, progreso, enviado, fallido, confirmación, reintento y ausencia de duplicados). |
-| RF-09 | `AccessibilityPreferencesT25Test`, `AccessibilityPreferencesPersistenceTest`, `NamiComponentsTest`, `ConversationsScreenTest`, `TextConversationScreenTest` y `TextToSpeechT24Test` (escala persistente, 200 %, preferencia de lectura y estados anunciables). |
+| RF-09 | `AccessibilityPreferencesT25Test`, `AccessibilityPreferencesPersistenceTest`, `SettingsViewModelTest`, `SettingsScreenTest`, `NamiComponentsTest`, `ConversationsScreenTest`, `TextConversationScreenTest` y `TextToSpeechT24Test` (ajustes productivos, escala persistente, 200 %, preferencia de lectura y estados anunciables). |
 | RF-10 | `AccountCreationScreenTest.signOutRequiresConfirmationAndCanBeCancelled`, `confirmedSignOutStopsMediaAndClearsPrivateState` y `MediaSessionCoordinatorTest`. |
 | RNF-01 | `NamiColorContrastTest`, `NamiComponentsTest` y las pruebas UI de cuenta, conversaciones y chat al 200 %; auditoría detallada en `SSD/ACCESIBILIDAD.md`. |
 | RNF-02 | `ConversationsScreenTest.contentShowsAvatarUnreadCountAndNavigatesToConversation` y `TextConversationScreenTest`; el flujo inicio → conversación → campo → enviar queda en cuatro acciones como máximo. |
@@ -654,7 +654,7 @@ Fecha: 17 de octubre de 2026. Rama: `yang_dev`. Seguimiento: #24.
 
 - `AndroidTextToSpeechEngine` inicializa el motor del sistema, comprueba la voz
   española, notifica fin/error y libera `TextToSpeech` de forma idempotente.
-- La preferencia `readMessagesAloud` se puede activar en el chat y sigue
+- La preferencia `readMessagesAloud` controla las acciones del chat y sigue
   persistida en DataStore al recrear el repositorio.
 - Cada texto conserva su contenido visible y ofrece «Escuchar», «Detener
   lectura» o «Reintentar lectura» según el estado; los cambios se anuncian como
@@ -671,6 +671,31 @@ Fecha: 17 de octubre de 2026. Rama: `yang_dev`. Seguimiento: #24.
 | `AccessibilityPreferencesPersistenceTest` en `NAMI_API_36` | 1 prueba, 0 fallos, 0 errores y 0 omitidas |
 | Suite instrumentada completa con Emulator Suite en `NAMI_API_36` | 70 pruebas, 0 fallos, 0 errores y 0 omitidas |
 | Revisión manual con TTS del sistema | Pendiente |
+| Revisión por otra persona | Pendiente |
+
+# Integración productiva de T-37 (RF-09; RNF-01; issue #60)
+
+Fecha: 18 de octubre de 2026. Rama: `yang_dev`. Seguimiento: #25.
+
+- La pantalla principal ofrece una entrada visible a «Ajustes» y mantiene sus
+  acciones en una lista desplazable para no recortarlas con texto ampliado.
+- `SettingsViewModel` conecta la interfaz con DataStore y ofrece tamaño normal
+  (100 %), grande (150 %) y máximo (200 %), además de la lectura en voz alta.
+- El `NamiTheme` compartido observa la misma preferencia, por lo que la escala
+  cambia inmediatamente y se conserva al reiniciar la aplicación.
+- Cada opción expone etiqueta, selección/estado y acción; la pantalla es
+  desplazable y se prueba a 320 dp y 411 dp con escala máxima.
+- El control provisional del chat se retira: Ajustes es la única fuente de
+  modificación y el chat se limita a respetar la preferencia persistida.
+
+| Comprobación | Resultado |
+|---|---|
+| `spotlessCheck testDebugUnitTest koverVerifyDebug assembleDebug assembleDebugAndroidTest lintDebug` | Correcto; 109 pruebas JVM, 0 fallos, 0 errores y 0 omitidas |
+| `SettingsViewModelTest` | 1 prueba, cambio de ambas preferencias y recreación con valores conservados |
+| `SettingsScreenTest` en `NAMI_API_36` | 3 pruebas, controles semánticos y anchos de 320/411 dp al 200 % |
+| `AccessibilityPreferencesPersistenceTest` | Preferencias de escala y lectura persistidas tras recrear el repositorio |
+| Suite instrumentada completa con Emulator Suite en `NAMI_API_36` | 73 pruebas, 0 fallos, 0 errores y 0 omitidas |
+| Auditoría manual con TalkBack | Pendiente |
 | Revisión por otra persona | Pendiente |
 
 # Integración productiva de T-10/T-15 (RF-10)

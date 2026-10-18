@@ -73,6 +73,7 @@ Además del criterio específico, toda tarea debe cumplir `constitution.md`, inc
 | T-34 | RF-06, RF-08; RNF-04, RNF-05, RNF-09 | Completar subida, reglas y reintento de notas de voz | T-16, T-22, T-33 | G06-xx (por confirmar) | El UUID, la ruta y los metadatos son idempotentes; fallo conserva el temporal, reintento no duplica y terceros quedan denegados. |
 | T-35 | RF-07 | Integrar reproducción de notas de voz con pausa y errores recuperables | T-23, T-34 | G06-xx (por confirmar) | El historial muestra audio, solo uno suena, el mismo control pausa/reanuda y los errores son recuperables. |
 | T-36 | RF-07, RF-09; RNF-01 | Integrar texto a voz real y la preferencia de lectura | T-24, T-25 | G06-xx (por confirmar) | El historial usa el motor TTS del sistema, respeta la preferencia persistente, coordina multimedia y conserva visible el texto ante errores. |
+| T-37 | RF-09; RNF-01 | Crear la pantalla de ajustes de accesibilidad | T-25, T-36 | G06-xx (por confirmar) | Inicio abre Ajustes; tamaño 100/150/200 % y lectura en voz alta se aplican al instante, persisten y son accesibles en 320/411 dp. |
 
 ## 7. Matriz de trazabilidad
 
@@ -86,9 +87,9 @@ Además del criterio específico, toda tarea debe cumplir `constitution.md`, inc
 | RF-06 | T-20, T-21, T-22, T-33, T-34 |
 | RF-07 | T-23, T-24, T-35, T-36 |
 | RF-08 | T-18, T-34 |
-| RF-09 | T-24, T-25, T-36 |
+| RF-09 | T-24, T-25, T-36, T-37 |
 | RF-10 | T-10, T-32 |
-| RNF-01/RNF-02 | T-04, T-19, T-25, T-28, T-36 |
+| RNF-01/RNF-02 | T-04, T-19, T-25, T-28, T-36, T-37 |
 | RNF-03/RNF-04/RNF-09 | T-16, T-18, T-27, T-31, T-33, T-34 |
 | RNF-05/RNF-06 | T-11, T-22, T-26, T-31, T-34 |
 | RNF-07/RNF-08 | T-02, T-03, T-29 |

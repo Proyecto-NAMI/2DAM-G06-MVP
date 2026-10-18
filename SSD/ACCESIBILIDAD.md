@@ -16,8 +16,8 @@ La auditoría usa únicamente contenido sintético (`Persona Ficticia`,
 | Riesgo | Evidencia | Resultado |
 |---|---|---|
 | Tamaño táctil | `NamiComponentsTest` y `ConversationsScreenTest` (`assertHeightIsAtLeast(48.dp)`) | Correcto |
-| Texto al 200 % | Componentes a 320/411 dp, cuenta, contactos, chat y conversaciones | Correcto en tests instrumentados |
-| Etiquetas y TalkBack | `NamiTextField` expone `label`/`error`; títulos son `heading`; estados usan `liveRegion`; avatar y no leídos tienen descripción | Correcto |
+| Texto al 200 % | Componentes a 320/411 dp, cuenta, contactos, chat, conversaciones y `SettingsScreenTest` en ambos anchos | Correcto en tests instrumentados |
+| Etiquetas y TalkBack | `NamiTextField` expone `label`/`error`; títulos son `heading`; estados usan `liveRegion`; avatar, no leídos y opciones de ajustes exponen nombre y estado | Correcto |
 | Foco y envío | `TextConversationScreenTest` valida campo, botón deshabilitado vacío, confirmación y reintento | Correcto |
 | Flujo principal | Inicio → conversación → campo → enviar, como máximo cuatro acciones | Correcto por navegación y test de envío |
 
