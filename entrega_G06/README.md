@@ -16,7 +16,7 @@ Get-FileHash .\NAMI-debug.apk -Algorithm SHA256
 
 Para reproducir el APK desde un clon limpio, sigue [`../README.md`](../README.md) y ejecuta `.\gradlew.bat assembleDebug`. Los datos de prueba usan Firebase Emulator Suite; no se debe conectar el APK debug a un proyecto real.
 
-El APK corresponde al candidato técnico validado por T-40. Antes de publicar en
-Moodle, la persona responsable debe sustituir los marcadores pendientes del
-manifiesto por el commit y la PR definitivos, confirmar el acceso docente y
-registrar TalkBack, dispositivo físico/API 26 y revisión independiente.
+El APK corresponde al candidato técnico validado por T-40 y el manifiesto
+identifica su commit técnico y la PR. Antes de publicar en Moodle, la persona
+responsable debe confirmar el acceso docente y registrar TalkBack, dispositivo
+físico/API 26 y revisión independiente.
