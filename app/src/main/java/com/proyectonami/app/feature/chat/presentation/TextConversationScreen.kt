@@ -18,11 +18,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -61,7 +59,6 @@ fun TextConversationRoute(
     audioRecordingViewModel: AudioRecordingViewModel? = null,
     onAudioReadyToSend: (AudioRecordingResult) -> Unit = {},
     readMessagesAloud: Boolean = false,
-    onReadMessagesAloudChange: (Boolean) -> Unit = {},
 ) {
     DisposableEffect(viewModel) {
         onDispose { viewModel.onScreenExit() }
@@ -69,11 +66,6 @@ fun TextConversationRoute(
     val state by viewModel.uiState.collectAsState()
     val playbackState by viewModel.playbackState.collectAsState()
     val textToSpeechState by viewModel.textToSpeechState.collectAsState()
-    var previousReadMessagesAloud by remember(viewModel) { mutableStateOf(readMessagesAloud) }
-    LaunchedEffect(readMessagesAloud) {
-        if (previousReadMessagesAloud && !readMessagesAloud) viewModel.stopSpeech()
-        previousReadMessagesAloud = readMessagesAloud
-    }
     val audioUploadState =
         if (audioRecordingViewModel != null) {
             val uploadState by audioRecordingViewModel.uploadState.collectAsState()
@@ -94,31 +86,6 @@ fun TextConversationRoute(
             stringResource(R.string.chat_title),
             modifier = Modifier.semantics { heading() },
             style = MaterialTheme.typography.headlineLarge,
-        )
-        Text(
-            text =
-                stringResource(
-                    if (readMessagesAloud) {
-                        R.string.tts_preference_enabled_status
-                    } else {
-                        R.string.tts_preference_disabled_status
-                    },
-                ),
-            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-            style = MaterialTheme.typography.bodyLarge,
-        )
-        NamiSecondaryButton(
-            text =
-                stringResource(
-                    if (readMessagesAloud) {
-                        R.string.tts_preference_disable
-                    } else {
-                        R.string.tts_preference_enable
-                    },
-                ),
-            icon = painterResource(R.drawable.ic_nami_settings),
-            onClick = { onReadMessagesAloudChange(!readMessagesAloud) },
-            modifier = Modifier.fillMaxWidth(),
         )
         when (val history = state.history) {
             TextMessagesRemoteState.Loading -> {

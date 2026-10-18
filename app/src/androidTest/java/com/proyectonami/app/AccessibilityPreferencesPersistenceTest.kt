@@ -6,6 +6,7 @@ import com.proyectonami.app.core.data.preferences.DataStoreAccessibilityPreferen
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -15,18 +16,26 @@ class AccessibilityPreferencesPersistenceTest {
     private val context = ApplicationProvider.getApplicationContext<NamiApplication>()
 
     @After
-    fun resetPreference() =
+    fun resetPreference() {
         runBlocking {
-            DataStoreAccessibilityPreferencesRepository(context).setReadMessagesAloud(false)
+            val repository = DataStoreAccessibilityPreferencesRepository(context)
+            repository.setTextScale(1f)
+            repository.setReadMessagesAloud(false)
         }
+    }
 
     @Test
-    fun readAloudPreferenceSurvivesRepositoryRecreation() =
+    fun accessibilityPreferencesSurviveRepositoryRecreation() =
         runBlocking {
-            DataStoreAccessibilityPreferencesRepository(context).setReadMessagesAloud(true)
+            DataStoreAccessibilityPreferencesRepository(context).apply {
+                setTextScale(2f)
+                setReadMessagesAloud(true)
+            }
 
             val recreatedRepository = DataStoreAccessibilityPreferencesRepository(context)
+            val persisted = recreatedRepository.preferences.first()
 
-            assertTrue(recreatedRepository.preferences.first().readMessagesAloud)
+            assertEquals(2f, persisted.textScale)
+            assertTrue(persisted.readMessagesAloud)
         }
 }

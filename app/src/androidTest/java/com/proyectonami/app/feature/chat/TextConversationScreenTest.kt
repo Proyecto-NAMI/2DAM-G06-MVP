@@ -1,7 +1,6 @@
 package com.proyectonami.app.feature.chat
 
 import android.Manifest
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.DeviceConfigurationOverride
 import androidx.compose.ui.test.FontScale
 import androidx.compose.ui.test.assertIsDisplayed
@@ -209,7 +208,6 @@ class TextConversationScreenTest {
 
     @Test
     fun persistedPreferenceShowsListenAndTheSameActionStopsReading() {
-        val preference = mutableStateOf(false)
         val engine = FakeTextToSpeechEngine(Result.success(Unit))
         val viewModel =
             viewModel(
@@ -221,14 +219,11 @@ class TextConversationScreenTest {
                 TextConversationRoute(
                     viewModel = viewModel,
                     onBack = {},
-                    readMessagesAloud = preference.value,
-                    onReadMessagesAloudChange = { preference.value = it },
+                    readMessagesAloud = true,
                 )
             }
         }
 
-        composeRule.onNodeWithText("Activar lectura en voz alta").performClick()
-        composeRule.onNodeWithText("Lectura en voz alta activada").assertIsDisplayed()
         composeRule.onNodeWithText("Escuchar").performClick()
         composeRule.onNodeWithText("Leyendo mensaje").assertIsDisplayed()
         composeRule.onNodeWithText("Detener lectura").performClick()

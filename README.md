@@ -185,6 +185,7 @@ se debe usar Android Studio o el runner de CI en lugar de relajar las comprobaci
 ### Accesibilidad
 
 - Texto grande con ajustes locales
+- Pantalla de Ajustes con tamaño normal, grande o máximo (200 %)
 - Botones grandes y acciones simples
 - Lectura en voz alta de mensajes de texto con el motor del sistema y preferencia persistente
 - Contraste y diseño pensados para usuarios mayores

@@ -143,6 +143,10 @@ El MVP puede conservar un único módulo Gradle `app`. Solo se separarán módul
   ciclo de vida seguro. Cada mensaje de texto ofrece escuchar/detener cuando la
   opción está activa; una nueva lectura detiene audio o lectura anteriores y
   los fallos de motor o idioma dejan el texto visible.
+- T-37 incorpora una pantalla `feature.settings` accesible desde conversaciones.
+  Su ViewModel persiste en DataStore las opciones normal (100 %), grande (150 %)
+  y máxima (200 %), además de lectura en voz alta; el tema compartido observa
+  los cambios y los aplica inmediatamente sin recrear datos privados.
 - Un único controlador coordina grabación y reproducción para impedir que ambas estén activas a la vez.
 - T-10 solicita confirmación antes del cierre desde un único diálogo propiedad de `NamiApp`, usado tanto por la ruta provisional como por la pantalla productiva de conversaciones. Al confirmarlo elimina las rutas privadas de chat, perfil y contactos, borra el estado de autenticación en memoria, cierra grabación, reproducción y texto a voz registrados en `MediaSessionCoordinator`, y revoca Firebase Auth. Los fallos de parada no impiden el cierre y se notifican en el acceso.
 

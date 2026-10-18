@@ -3,7 +3,6 @@ package com.proyectonami.app.feature.conversations.presentation
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -43,98 +42,125 @@ fun ConversationsRoute(
     onOpenConversation: (String) -> Unit,
     onAddContact: () -> Unit,
     onProfile: () -> Unit,
+    onSettings: () -> Unit,
     onSignOut: () -> Unit,
 ) {
     val state by viewModel.state.collectAsState()
-    Column(
+    LazyColumn(
         modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).padding(NamiSpacing.Large),
         verticalArrangement = Arrangement.spacedBy(NamiSpacing.Medium),
     ) {
-        Text(
-            stringResource(R.string.conversations_title),
-            modifier =
-                Modifier.semantics {
-                    heading()
-                },
-            style = MaterialTheme.typography.headlineLarge,
-        )
+        item {
+            Text(
+                stringResource(R.string.conversations_title),
+                modifier =
+                    Modifier.semantics {
+                        heading()
+                    },
+                style = MaterialTheme.typography.headlineLarge,
+            )
+        }
         when (val remote = state) {
             ConversationsRemoteState.Loading -> {
-                CircularProgressIndicator()
-                Text(stringResource(R.string.conversations_loading), modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
+                item { CircularProgressIndicator() }
+                item {
+                    Text(
+                        stringResource(R.string.conversations_loading),
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                    )
+                }
             }
             ConversationsRemoteState.Failed ->
-                Text(
-                    stringResource(R.string.conversations_error),
-                    color = MaterialTheme.colorScheme.error,
-                    modifier =
-                        Modifier.semantics {
-                            liveRegion =
-                                LiveRegionMode.Assertive
-                        },
-                )
+                item {
+                    Text(
+                        stringResource(R.string.conversations_error),
+                        color = MaterialTheme.colorScheme.error,
+                        modifier =
+                            Modifier.semantics {
+                                liveRegion =
+                                    LiveRegionMode.Assertive
+                            },
+                    )
+                }
             is ConversationsRemoteState.Loaded -> {
                 if (remote.conversations.isEmpty()) {
-                    Text(stringResource(R.string.conversations_empty), modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
+                    item {
+                        Text(
+                            stringResource(R.string.conversations_empty),
+                            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                        )
+                    }
                 } else {
-                    LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(NamiSpacing.Small)) {
-                        items(remote.conversations, key = { it.id }) { conversation ->
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(NamiSpacing.Small),
-                                verticalAlignment = Alignment.CenterVertically,
+                    items(remote.conversations, key = { it.id }) { conversation ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(NamiSpacing.Small),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .size(48.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.secondaryContainer)
+                                        .semantics {
+                                            contentDescription =
+                                                conversationAvatarDescription(
+                                                    conversation.displayName,
+                                                    conversation.surname,
+                                                    conversation.avatarPath != null,
+                                                )
+                                        },
+                                contentAlignment = Alignment.Center,
                             ) {
-                                Box(
-                                    modifier =
-                                        Modifier
-                                            .size(
-                                                48.dp,
-                                            ).clip(CircleShape)
-                                            .background(MaterialTheme.colorScheme.secondaryContainer)
-                                            .semantics {
-                                                contentDescription =
-                                                    conversationAvatarDescription(
-                                                        conversation.displayName,
-                                                        conversation.surname,
-                                                        conversation.avatarPath != null,
-                                                    )
-                                            },
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    Text(
-                                        initials(conversation.displayName, conversation.surname),
-                                        style = MaterialTheme.typography.titleMedium,
-                                    )
-                                }
-                                NamiSecondaryButton(
-                                    text = conversationLabel(conversation.displayName, conversation.surname, conversation.unreadCount),
-                                    icon = painterResource(R.drawable.ic_nami_arrow_forward),
-                                    onClick = { onOpenConversation(conversation.id) },
-                                    modifier = Modifier.weight(1f),
+                                Text(
+                                    initials(conversation.displayName, conversation.surname),
+                                    style = MaterialTheme.typography.titleMedium,
                                 )
                             }
+                            NamiSecondaryButton(
+                                text = conversationLabel(conversation.displayName, conversation.surname, conversation.unreadCount),
+                                icon = painterResource(R.drawable.ic_nami_arrow_forward),
+                                onClick = { onOpenConversation(conversation.id) },
+                                modifier = Modifier.weight(1f),
+                            )
                         }
                     }
                 }
             }
         }
-        NamiSecondaryButton(
-            stringResource(R.string.contact_add_entry),
-            painterResource(R.drawable.ic_nami_add),
-            onClick = onAddContact,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        NamiSecondaryButton(
-            stringResource(R.string.profile_entry),
-            painterResource(R.drawable.ic_nami_check),
-            onClick = onProfile,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        NamiSecondaryButton(
-            stringResource(R.string.logout_request),
-            painterResource(R.drawable.ic_nami_logout),
-            onClick = onSignOut,
-            modifier = Modifier.fillMaxWidth(),
-        )
+        item {
+            NamiSecondaryButton(
+                stringResource(R.string.contact_add_entry),
+                painterResource(R.drawable.ic_nami_add),
+                onClick = onAddContact,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        item {
+            NamiSecondaryButton(
+                stringResource(R.string.profile_entry),
+                painterResource(R.drawable.ic_nami_check),
+                onClick = onProfile,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        item {
+            NamiSecondaryButton(
+                stringResource(R.string.settings_entry),
+                painterResource(R.drawable.ic_nami_settings),
+                onClick = onSettings,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        item {
+            NamiSecondaryButton(
+                stringResource(R.string.logout_request),
+                painterResource(R.drawable.ic_nami_logout),
+                onClick = onSignOut,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
     }
 }
 

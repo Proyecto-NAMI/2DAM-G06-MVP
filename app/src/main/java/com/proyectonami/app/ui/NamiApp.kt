@@ -25,7 +25,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
@@ -59,7 +58,8 @@ import com.proyectonami.app.feature.conversations.presentation.ConversationsRout
 import com.proyectonami.app.feature.conversations.presentation.ConversationsViewModel
 import com.proyectonami.app.feature.profile.presentation.ProfileRoute
 import com.proyectonami.app.feature.profile.presentation.ProfileViewModel
-import kotlinx.coroutines.launch
+import com.proyectonami.app.feature.settings.presentation.SettingsRoute
+import com.proyectonami.app.feature.settings.presentation.SettingsViewModel
 
 @Composable
 fun NamiApp(
@@ -71,6 +71,7 @@ fun NamiApp(
     createConversationViewModel: ((String) -> TextConversationViewModel)? = null,
     createAudioRecordingViewModel: ((String) -> AudioRecordingViewModel)? = null,
     accessibilityPreferencesRepository: AccessibilityPreferencesRepository? = null,
+    settingsViewModel: SettingsViewModel? = null,
 ) {
     val state by viewModel.uiState.collectAsState()
     val accessibilityPreferences by (
@@ -85,11 +86,11 @@ fun NamiApp(
                 .AccessibilityPreferences(),
     )
     val signedInUserId = (state.session as? AuthSession.SignedIn)?.userId
-    val accessibilityScope = rememberCoroutineScope()
     // El alta de contactos se abre desde el estado «Cuenta creada» hasta que T-15
     // construya la pantalla principal. Al cambiar de sesión se vuelve a la raíz.
     var showAddContact by remember(signedInUserId) { mutableStateOf(false) }
     var showProfile by remember(signedInUserId) { mutableStateOf(false) }
+    var showSettings by remember(signedInUserId) { mutableStateOf(false) }
     var selectedConversation by remember(signedInUserId) { mutableStateOf<TextConversationViewModel?>(null) }
     var selectedAudioRecording by remember(signedInUserId) { mutableStateOf<AudioRecordingViewModel?>(null) }
     var showSignOutConfirmation by remember(signedInUserId) { mutableStateOf(false) }
@@ -113,11 +114,6 @@ fun NamiApp(
                         },
                         audioRecordingViewModel = selectedAudioRecording,
                         readMessagesAloud = accessibilityPreferences.readMessagesAloud,
-                        onReadMessagesAloudChange = { enabled ->
-                            accessibilityPreferencesRepository?.let { repository ->
-                                accessibilityScope.launch { repository.setReadMessagesAloud(enabled) }
-                            }
-                        },
                     )
                 signedInUserId != null && state.isAccountReady && showProfile && profileViewModel != null ->
                     ProfileRoute(
@@ -138,6 +134,11 @@ fun NamiApp(
                             }
                         },
                     )
+                signedInUserId != null && state.isAccountReady && showSettings && settingsViewModel != null ->
+                    SettingsRoute(
+                        viewModel = settingsViewModel,
+                        onBack = { showSettings = false },
+                    )
                 signedInUserId != null && state.isAccountReady ->
                     if (conversationsViewModel != null && createConversationViewModel != null) {
                         ConversationsRoute(
@@ -152,6 +153,7 @@ fun NamiApp(
                                 profileViewModel?.load()
                                 showProfile = profileViewModel != null
                             },
+                            onSettings = { showSettings = settingsViewModel != null },
                         )
                     } else {
                         AccountReadyScreen(
@@ -161,6 +163,7 @@ fun NamiApp(
                                 profileViewModel?.load()
                                 showProfile = profileViewModel != null
                             },
+                            onSettings = { showSettings = settingsViewModel != null },
                         )
                     }
                 else ->
@@ -177,6 +180,7 @@ fun NamiApp(
                     showSignOutConfirmation = false
                     showAddContact = false
                     showProfile = false
+                    showSettings = false
                     selectedAudioRecording?.onScreenExit()
                     selectedConversation?.onSessionEnd()
                     selectedAudioRecording = null
@@ -417,6 +421,7 @@ private fun AccountReadyScreen(
     onSignOut: () -> Unit,
     onAddContact: () -> Unit,
     onProfile: () -> Unit,
+    onSettings: () -> Unit,
 ) {
     Column(
         modifier =
@@ -451,6 +456,12 @@ private fun AccountReadyScreen(
             text = stringResource(R.string.profile_entry),
             icon = painterResource(R.drawable.ic_nami_check),
             onClick = onProfile,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        NamiSecondaryButton(
+            text = stringResource(R.string.settings_entry),
+            icon = painterResource(R.drawable.ic_nami_settings),
+            onClick = onSettings,
             modifier = Modifier.fillMaxWidth(),
         )
         NamiPrimaryButton(
