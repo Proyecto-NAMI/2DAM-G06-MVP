@@ -12,7 +12,9 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -24,6 +26,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -74,12 +78,19 @@ fun TextConversationRoute(
             null
         }
     var showAudioRecording by rememberSaveable { mutableStateOf(false) }
+    val useLargeTextLayout = useLargeTextLayout()
     Column(
         Modifier
             .fillMaxSize()
             .windowInsetsPadding(WindowInsets.safeDrawing)
             .imePadding()
-            .padding(NamiSpacing.Large),
+            .then(
+                if (useLargeTextLayout) {
+                    Modifier.verticalScroll(rememberScrollState())
+                } else {
+                    Modifier
+                },
+            ).padding(NamiSpacing.Large),
         verticalArrangement = Arrangement.spacedBy(NamiSpacing.Medium),
     ) {
         Text(
@@ -105,6 +116,19 @@ fun TextConversationRoute(
             is TextMessagesRemoteState.Loaded ->
                 if (history.messages.isEmpty()) {
                     Text(stringResource(R.string.chat_history_empty), modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
+                } else if (useLargeTextLayout) {
+                    Column(verticalArrangement = Arrangement.spacedBy(NamiSpacing.Small)) {
+                        history.messages.forEach { message ->
+                            ConversationMessage(
+                                message = message,
+                                playbackState = playbackState,
+                                textToSpeechState = textToSpeechState,
+                                readMessagesAloud = readMessagesAloud,
+                                onToggleAudio = viewModel::toggleAudio,
+                                onToggleSpeech = viewModel::toggleSpeech,
+                            )
+                        }
+                    }
                 } else {
                     LazyColumn(
                         modifier = Modifier.weight(1f),
@@ -156,22 +180,12 @@ fun TextConversationRoute(
             onRetry = { audioRecordingViewModel?.retryUpload() },
             onDelete = { audioRecordingViewModel?.deletePendingUpload() },
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(NamiSpacing.Small)) {
-            NamiTextField(
-                value = state.draft,
-                onValueChange = viewModel::updateDraft,
-                label = stringResource(R.string.chat_composer_label),
-                modifier = Modifier.weight(1f),
-                enabled = state.sendState !is TextMessageSendState.Pending,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-            )
-            NamiPrimaryButton(
-                text = stringResource(R.string.chat_send),
-                icon = painterResource(R.drawable.ic_nami_send),
-                onClick = viewModel::send,
-                enabled = state.draft.isNotBlank() && state.sendState !is TextMessageSendState.Pending,
-            )
-        }
+        MessageComposer(
+            value = state.draft,
+            onValueChange = viewModel::updateDraft,
+            onSend = viewModel::send,
+            enabled = state.sendState !is TextMessageSendState.Pending,
+        )
         if (audioRecordingViewModel != null) {
             NamiSecondaryButton(
                 text = stringResource(R.string.audio_recording_open),
@@ -204,6 +218,91 @@ fun TextConversationRoute(
         )
     }
 }
+
+@Composable
+private fun MessageComposer(
+    value: String,
+    onValueChange: (String) -> Unit,
+    onSend: () -> Unit,
+    enabled: Boolean,
+) {
+    val useStackedLayout = useLargeTextLayout()
+    val sendEnabled = value.isNotBlank() && enabled
+
+    if (useStackedLayout) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(NamiSpacing.Small),
+        ) {
+            MessageInput(
+                value = value,
+                onValueChange = onValueChange,
+                enabled = enabled,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            SendMessageButton(
+                onClick = onSend,
+                enabled = sendEnabled,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    } else {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(NamiSpacing.Small),
+        ) {
+            MessageInput(
+                value = value,
+                onValueChange = onValueChange,
+                enabled = enabled,
+                modifier = Modifier.weight(1f),
+            )
+            SendMessageButton(onClick = onSend, enabled = sendEnabled)
+        }
+    }
+}
+
+@Composable
+private fun useLargeTextLayout(): Boolean {
+    val effectiveBodySize = MaterialTheme.typography.bodyLarge.fontSize.value * LocalDensity.current.fontScale
+    return effectiveBodySize >= STACKED_COMPOSER_TEXT_SIZE_SP
+}
+
+@Composable
+private fun MessageInput(
+    value: String,
+    onValueChange: (String) -> Unit,
+    enabled: Boolean,
+    modifier: Modifier,
+) {
+    NamiTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = stringResource(R.string.chat_composer_label),
+        modifier = modifier.testTag(CHAT_MESSAGE_INPUT_TAG),
+        enabled = enabled,
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+    )
+}
+
+@Composable
+private fun SendMessageButton(
+    onClick: () -> Unit,
+    enabled: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    NamiPrimaryButton(
+        text = stringResource(R.string.chat_send),
+        icon = painterResource(R.drawable.ic_nami_send),
+        onClick = onClick,
+        modifier = modifier.testTag(CHAT_SEND_BUTTON_TAG),
+        enabled = enabled,
+    )
+}
+
+private const val STACKED_COMPOSER_TEXT_SIZE_SP = 24f
+private const val CHAT_MESSAGE_INPUT_TAG = "chat_message_input"
+private const val CHAT_SEND_BUTTON_TAG = "chat_send_button"
 
 @Composable
 private fun ConversationMessage(

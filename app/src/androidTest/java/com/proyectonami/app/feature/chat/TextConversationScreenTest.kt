@@ -1,15 +1,20 @@
 package com.proyectonami.app.feature.chat
 
 import android.Manifest
-import androidx.compose.ui.test.DeviceConfigurationOverride
-import androidx.compose.ui.test.FontScale
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertWidthIsAtLeast
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.SavedStateHandle
 import androidx.test.platform.app.InstrumentationRegistry
 import com.proyectonami.app.core.designsystem.theme.NamiTheme
@@ -53,17 +58,37 @@ class TextConversationScreenTest {
     @get:Rule val composeRule = createComposeRule()
 
     @Test
-    fun emptyFieldIsDisabledAndLabelsRemainVisibleAt200Percent() {
+    fun composerStacksAndRemainsUsableAt320DpAnd200Percent() {
         val viewModel = viewModel(FakeTextMessagesRepository())
         composeRule.setContent {
-            DeviceConfigurationOverride(DeviceConfigurationOverride.FontScale(2f)) {
-                NamiTheme { TextConversationRoute(viewModel, onBack = {}) }
+            Box(Modifier.size(320.dp, 720.dp)) {
+                NamiTheme(textScale = 2f) {
+                    TextConversationRoute(viewModel, onBack = {})
+                }
             }
         }
 
         composeRule.onNodeWithText("Escribe un mensaje").assertIsDisplayed()
         composeRule.onNodeWithText("Enviar").assertIsNotEnabled()
-        composeRule.onNodeWithText("Volver").assertIsDisplayed()
+        composeRule.onNodeWithTag("chat_message_input").assertWidthIsAtLeast(240.dp)
+        composeRule.onNodeWithTag("chat_send_button").assertWidthIsAtLeast(240.dp)
+        composeRule.onNodeWithText("Volver").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun historyAndComposerRemainReachableAt320DpAnd200Percent() {
+        val viewModel = viewModel(FakeTextMessagesRepository(messages = listOf(textMessage())))
+        composeRule.setContent {
+            Box(Modifier.size(320.dp, 720.dp)) {
+                NamiTheme(textScale = 2f) {
+                    TextConversationRoute(viewModel, onBack = {})
+                }
+            }
+        }
+
+        composeRule.onNodeWithText("Hola").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("chat_message_input").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("chat_send_button").performScrollTo().assertIsDisplayed()
     }
 
     @Test
