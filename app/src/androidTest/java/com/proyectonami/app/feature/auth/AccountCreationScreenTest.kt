@@ -1,26 +1,34 @@
 package com.proyectonami.app.feature.auth
 
 import android.app.Activity
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.DeviceConfigurationOverride
+import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.FontScale
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.junit4.accessibility.enableAccessibilityChecks
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.tryPerformAccessibilityChecks
+import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.proyectonami.app.FakeContactsRepository
@@ -52,6 +60,7 @@ import org.junit.rules.TestName
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
+@OptIn(ExperimentalTestApi::class)
 class AccountCreationScreenTest {
     @get:Rule
     val composeRule = createComposeRule()
@@ -70,6 +79,7 @@ class AccountCreationScreenTest {
 
     @Before
     fun setUp() {
+        composeRule.enableAccessibilityChecks()
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
             activity = Activity()
         }
@@ -92,20 +102,28 @@ class AccountCreationScreenTest {
             )
         useProductConversations = false
         composeRule.setContent {
-            val fontScale = if (testName.methodName == "accountFormRemainsScrollableAt200PercentText") 2f else 1f
+            val auditWidth =
+                when (testName.methodName) {
+                    "accountFormRemainsScrollableAt320DpAnd200PercentText" -> 320
+                    "accountFormRemainsScrollableAt411DpAnd200PercentText" -> 411
+                    else -> null
+                }
+            val fontScale = if (auditWidth != null) 2f else 1f
             DeviceConfigurationOverride(DeviceConfigurationOverride.FontScale(fontScale)) {
-                NamiApp(
-                    activity = activity,
-                    viewModel = viewModel,
-                    addContactViewModel = addContactViewModel,
-                    conversationsViewModel = conversationsViewModel.takeIf { useProductConversations },
-                    createConversationViewModel =
-                        if (useProductConversations) {
-                            { error("Esta prueba no abre una conversación") }
-                        } else {
-                            null
-                        },
-                )
+                Box(Modifier.size((auditWidth ?: 411).dp, 720.dp)) {
+                    NamiApp(
+                        activity = activity,
+                        viewModel = viewModel,
+                        addContactViewModel = addContactViewModel,
+                        conversationsViewModel = conversationsViewModel.takeIf { useProductConversations },
+                        createConversationViewModel =
+                            if (useProductConversations) {
+                                { error("Esta prueba no abre una conversación") }
+                            } else {
+                                null
+                            },
+                    )
+                }
             }
         }
         composeRule.waitForIdle()
@@ -243,12 +261,22 @@ class AccountCreationScreenTest {
     }
 
     @Test
-    fun accountFormRemainsScrollableAt200PercentText() {
+    fun accountFormRemainsScrollableAt320DpAnd200PercentText() {
+        assertAccountFormAtMaximumText()
+    }
+
+    @Test
+    fun accountFormRemainsScrollableAt411DpAnd200PercentText() {
+        assertAccountFormAtMaximumText()
+    }
+
+    private fun assertAccountFormAtMaximumText() {
         composeRule.onNodeWithText("Crear cuenta").assertIsDisplayed()
         composeRule
             .onNodeWithText("Enviar código de verificación")
             .performScrollTo()
             .assertIsDisplayed()
+        composeRule.onRoot().tryPerformAccessibilityChecks()
     }
 
     @Test

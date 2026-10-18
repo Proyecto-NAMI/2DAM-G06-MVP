@@ -1,25 +1,33 @@
 package com.proyectonami.app.feature.contacts
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.DeviceConfigurationOverride
+import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.FontScale
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.junit4.accessibility.enableAccessibilityChecks
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.tryPerformAccessibilityChecks
+import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.proyectonami.app.FakeContactsRepository
 import com.proyectonami.app.core.designsystem.theme.NamiTheme
@@ -49,6 +57,7 @@ import org.junit.runner.RunWith
  * Firebase.
  */
 @RunWith(AndroidJUnit4::class)
+@OptIn(ExperimentalTestApi::class)
 class AddContactScreenTest {
     @get:Rule
     val composeRule = createComposeRule()
@@ -63,20 +72,29 @@ class AddContactScreenTest {
 
     @Before
     fun setUp() {
+        composeRule.enableAccessibilityChecks()
         repository = FakeContactsRepository()
         viewModel = AddContactViewModel(AddContactUseCase(repository), OpenConversationUseCase(repository))
         backPresses = 0
         openedConversationId = null
         composeRule.setContent {
-            val fontScale = if (testName.methodName == "formRemainsScrollableAt200PercentText") 2f else 1f
+            val auditWidth =
+                when (testName.methodName) {
+                    "formRemainsScrollableAt320DpAnd200PercentText" -> 320
+                    "formRemainsScrollableAt411DpAnd200PercentText" -> 411
+                    else -> null
+                }
+            val fontScale = if (auditWidth != null) 2f else 1f
             DeviceConfigurationOverride(DeviceConfigurationOverride.FontScale(fontScale)) {
-                NamiTheme {
-                    Surface(color = MaterialTheme.colorScheme.background) {
-                        AddContactRoute(
-                            viewModel = viewModel,
-                            onBack = { backPresses++ },
-                            onOpenConversation = { openedConversationId = it },
-                        )
+                Box(Modifier.size((auditWidth ?: 411).dp, 720.dp)) {
+                    NamiTheme {
+                        Surface(color = MaterialTheme.colorScheme.background) {
+                            AddContactRoute(
+                                viewModel = viewModel,
+                                onBack = { backPresses++ },
+                                onOpenConversation = { openedConversationId = it },
+                            )
+                        }
                     }
                 }
             }
@@ -267,7 +285,16 @@ class AddContactScreenTest {
     }
 
     @Test
-    fun formRemainsScrollableAt200PercentText() {
+    fun formRemainsScrollableAt320DpAnd200PercentText() {
+        assertFormAtMaximumText()
+    }
+
+    @Test
+    fun formRemainsScrollableAt411DpAnd200PercentText() {
+        assertFormAtMaximumText()
+    }
+
+    private fun assertFormAtMaximumText() {
         composeRule.onNodeWithText("Nuevo contacto").assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Volver").assertIsDisplayed()
         composeRule.onNodeWithText("Crear contacto").performScrollTo().assertIsDisplayed()
@@ -275,6 +302,7 @@ class AddContactScreenTest {
             .onAllNodes(hasSetTextAction())[2]
             .performScrollTo()
             .assertIsDisplayed()
+        composeRule.onRoot().tryPerformAccessibilityChecks()
     }
 
     private fun fillForm(
