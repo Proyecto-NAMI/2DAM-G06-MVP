@@ -15,6 +15,9 @@ import com.proyectonami.app.core.data.firebase.FirebasePaths
 import com.proyectonami.app.core.data.firebase.FirebasePhoneAuthRepository
 import com.proyectonami.app.core.data.firebase.FirebaseRepositoryContainer
 import com.proyectonami.app.core.data.firebase.FirebaseServicesFactory
+import com.proyectonami.app.core.domain.audio.AUDIO_NOTE_CONTENT_TYPE
+import com.proyectonami.app.core.domain.audio.AudioNoteMetadata
+import com.proyectonami.app.core.domain.audio.AudioUploadState
 import com.proyectonami.app.core.domain.auth.AccountProfile
 import com.proyectonami.app.core.domain.auth.AccountProfileSaveResult
 import com.proyectonami.app.core.domain.auth.AuthSession
@@ -24,11 +27,15 @@ import com.proyectonami.app.core.domain.contacts.ContactSaveResult
 import com.proyectonami.app.core.domain.contacts.ContactStatus
 import com.proyectonami.app.core.domain.contacts.ConversationOpenResult
 import com.proyectonami.app.core.domain.conversations.ConversationsRemoteState
+import com.proyectonami.app.core.domain.media.AudioPlaybackSourceResult
+import com.proyectonami.app.core.domain.messages.AudioMessageRecord
 import com.proyectonami.app.core.domain.messages.OutgoingTextMessage
 import com.proyectonami.app.core.domain.messages.TextMessageSendResult
+import com.proyectonami.app.core.domain.messages.TextMessagesRemoteState
 import com.proyectonami.app.core.media.MediaSessionCoordinator
 import com.proyectonami.app.feature.auth.presentation.PhoneAuthViewModel
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.last
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.json.JSONObject
@@ -40,6 +47,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.File
 import java.net.HttpURLConnection
 import java.net.InetSocketAddress
 import java.net.Socket
@@ -215,6 +223,116 @@ class FirebaseEmulatorSmokeTest {
                     (firstContact as ContactSaveResult.Added).contact.status,
                 )
                 assertTrue(duplicateContact is ContactSaveResult.Duplicate)
+            }
+        }
+
+    @Test
+    fun emptySuiteJourneyCreatesUsersConversationTextAndAudioWithoutSeeding() =
+        runBlocking {
+            assumeEmulatorsAreRunning()
+
+            val recipientPhone = fictitiousEmulatorPhoneNumber()
+            signInWithFictitiousPhone(recipientPhone)
+            val recipientId = requireNotNull(repositories.authRepository.currentUserId)
+
+            val ownerPhone = nextFictitiousPhoneNumber(recipientPhone)
+            signInWithFictitiousPhone(ownerPhone)
+            val ownerId = requireNotNull(repositories.authRepository.currentUserId)
+            assertTrue(ownerId != recipientId)
+
+            val initialConversations =
+                withTimeout(TIMEOUT_SECONDS * 1_000) {
+                    repositories.conversationsRepository
+                        .observeConversations()
+                        .first { it is ConversationsRemoteState.Loaded }
+                } as ConversationsRemoteState.Loaded
+            assertTrue("La cuenta nueva debe empezar sin conversaciones", initialConversations.conversations.isEmpty())
+
+            val linkedResult =
+                repositories.contactsRepository.addContact(
+                    ContactDraft("Persona", "Destinataria", recipientPhone),
+                )
+            assertTrue("El contacto debe vincularse sin siembra: $linkedResult", linkedResult is ContactSaveResult.Added)
+            val linkedContact = (linkedResult as ContactSaveResult.Added).contact
+            assertEquals(ContactStatus.LINKED, linkedContact.status)
+            assertEquals(recipientId, linkedContact.linkedUserId)
+
+            val openResult = repositories.contactsRepository.openConversation(linkedContact.id)
+            assertTrue("La conversación debe crearse mediante openConversation: $openResult", openResult is ConversationOpenResult.Opened)
+            val conversationId = (openResult as ConversationOpenResult.Opened).conversationId
+
+            val textMessage = OutgoingTextMessage.create(conversationId, ownerId, "Texto ficticio integrado")
+            assertEquals(TextMessageSendResult.Sent, repositories.textMessagesRepository.send(textMessage))
+
+            val localAudio =
+                File(context.cacheDir, "integrated-${UUID.randomUUID()}.m4a").apply {
+                    writeBytes("audio-ficticio-integrado".encodeToByteArray())
+                }
+            val audioMetadata =
+                AudioNoteMetadata(
+                    clientMessageId = UUID.randomUUID().toString(),
+                    conversationId = conversationId,
+                    senderId = ownerId,
+                    durationMillis = 1_000L,
+                    sizeBytes = localAudio.length(),
+                    contentType = AUDIO_NOTE_CONTENT_TYPE,
+                )
+            assertEquals(
+                AudioUploadState.Sent(audioMetadata),
+                repositories.audioNotesRepository.upload(audioMetadata, localAudio.absolutePath).last(),
+            )
+            assertTrue("El temporal debe eliminarse tras confirmar la subida", !localAudio.exists())
+
+            val ownerConversations =
+                withTimeout(TIMEOUT_SECONDS * 1_000) {
+                    repositories.conversationsRepository
+                        .observeConversations()
+                        .first {
+                            it is ConversationsRemoteState.Loaded &&
+                                it.conversations.any { conversation -> conversation.id == conversationId }
+                        }
+                } as ConversationsRemoteState.Loaded
+            val openedConversation = ownerConversations.conversations.single { it.id == conversationId }
+            assertEquals(0, openedConversation.unreadCount)
+            val storedConversation =
+                Tasks.await(
+                    repositories.firestoreRepository.conversationDocument(conversationId).get(Source.SERVER),
+                    TIMEOUT_SECONDS,
+                    TimeUnit.SECONDS,
+                )
+            assertEquals(2L, storedConversation.getLong("unreadCountByUser.$recipientId"))
+
+            val storedMessages =
+                withTimeout(TIMEOUT_SECONDS * 1_000) {
+                    repositories.textMessagesRepository
+                        .observe(conversationId)
+                        .first { it is TextMessagesRemoteState.Loaded && it.messages.size == 2 }
+                } as TextMessagesRemoteState.Loaded
+            assertTrue(storedMessages.messages.any { it.clientMessageId == textMessage.clientMessageId })
+            val storedAudio = storedMessages.messages.filterIsInstance<AudioMessageRecord>().single()
+            val prepared = repositories.audioPlaybackSourceRepository.prepare(storedAudio)
+            assertTrue("Un participante debe descargar el audio autorizado: $prepared", prepared is AudioPlaybackSourceResult.Ready)
+            val downloaded = File((prepared as AudioPlaybackSourceResult.Ready).localPath)
+            assertTrue(downloaded.isFile && downloaded.length() == audioMetadata.sizeBytes)
+            repositories.audioPlaybackSourceRepository.clear()
+
+            repositories.authRepository.signOut()
+            signInAnonymously()
+            assertPermissionDenied {
+                Tasks.await(
+                    repositories.firestoreRepository.conversationDocument(conversationId).get(Source.SERVER),
+                    TIMEOUT_SECONDS,
+                    TimeUnit.SECONDS,
+                )
+            }
+            assertPermissionDenied {
+                Tasks.await(
+                    services.storage.reference
+                        .child(audioMetadata.storagePath)
+                        .getBytes(MAX_AUDIO_TEST_BYTES),
+                    TIMEOUT_SECONDS,
+                    TimeUnit.SECONDS,
+                )
             }
         }
 

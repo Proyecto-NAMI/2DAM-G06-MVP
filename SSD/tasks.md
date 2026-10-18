@@ -76,6 +76,7 @@ Además del criterio específico, toda tarea debe cumplir `constitution.md`, inc
 | T-37 | RF-09; RNF-01 | Crear la pantalla de ajustes de accesibilidad | T-25, T-36 | G06-xx (por confirmar) | Inicio abre Ajustes; tamaño 100/150/200 % y lectura en voz alta se aplican al instante, persisten y son accesibles en 320/411 dp. |
 | T-38 | RNF-03, RNF-04, RNF-09 | Completar validación de rendimiento, red e interrupciones | T-27, T-31, T-34, T-35 | G06-xx (por confirmar) | Una muestra de 20 ejecuciones calcula p95; texto y audio se recuperan sin duplicados y recreación/salida conservan un estado seguro. |
 | T-39 | RNF-01, RNF-02; CA-06 | Completar auditoría manual de accesibilidad con TalkBack | T-28, T-31, T-33, T-35, T-36, T-37 | G06-xx (por confirmar) | Accessibility Test Framework y pruebas a 320/411 dp al 200 % no presentan fallos críticos; TalkBack real y una segunda persona dejan su revisión firmada en `SSD/ACCESIBILIDAD.md`. |
+| T-40 | Todos los RF/RNF y CA | Repetir trazabilidad y regresión final con el MVP integrado | T-29, T-31 a T-39 | Todo el equipo | Un recorrido desde Firebase vacío cubre dos cuentas, contacto, conversación, texto y audio sin siembra; todas las puertas técnicas pasan y la revisión humana final queda firmada. |
 
 ## 7. Matriz de trazabilidad
 
@@ -95,3 +96,4 @@ Además del criterio específico, toda tarea debe cumplir `constitution.md`, inc
 | RNF-03/RNF-04/RNF-09 | T-16, T-18, T-27, T-31, T-33, T-34, T-38 |
 | RNF-05/RNF-06 | T-11, T-22, T-26, T-31, T-34 |
 | RNF-07/RNF-08 | T-02, T-03, T-29 |
+| Todos los RF/RNF y CA | T-40 |

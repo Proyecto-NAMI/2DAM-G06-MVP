@@ -795,3 +795,41 @@ firmar ambas personas están en [`SSD/ACCESIBILIDAD.md`](SSD/ACCESIBILIDAD.md).
 La suite automática queda cerrada; la definición de hecho completa permanece
 pendiente hasta escuchar el recorrido con TalkBack y registrar la revisión
 independiente.
+
+# Regresión final integrada de T-40 (todos los RF/RNF y CA; issue #63)
+
+Fecha: 18 de octubre de 2026. Rama: `yang_dev`. Seguimiento: #29 y #30.
+
+- El nuevo recorrido
+  `emptySuiteJourneyCreatesUsersConversationTextAndAudioWithoutSeeding` parte
+  de una Emulator Suite vacía, crea dos cuentas ficticias, vincula el contacto,
+  abre la conversación mediante `openConversation`, envía texto y audio,
+  descarga el audio y deniega ambos recursos a una tercera cuenta.
+- El recorrido usa los repositorios y funciones productivos y no llama a
+  `seedConversationForTests`. Esa función queda limitada a fixtures
+  especializados y rechaza cualquier entorno que no sea el emulador.
+- Se revisó el cableado completo de autenticación, perfil, contactos,
+  conversaciones, texto, grabación, subida y reproducción de audio, TTS y
+  preferencias. La matriz está en `SSD/TRAZABILIDAD_FINAL.md`.
+- CI fija Node 22 tanto en calidad como en Emulator Suite. La comprobación
+  local limpia se ejecutó con Node 22.23.3; el Firebase CLI instalado en el
+  equipo anfitrión avisó de que su propio proceso local usa Node 24, sin
+  afectar al resultado del emulador.
+- La revisión de fuentes no encontró logs productivos con teléfonos, mensajes,
+  tokens ni rutas privadas. Las pruebas y documentación usan datos ficticios.
+- Se regeneró `entrega_G06/NAMI-debug.apk` con el código integrado.
+
+| Comprobación | Resultado |
+|---|---|
+| Functions con Node 22.23.3: instalación limpia, `npm test` y `npm run build` | Correcto; 4 pruebas, 0 fallos y 0 omitidas; TypeScript compila |
+| `spotlessCheck assembleDebug assembleRelease testDebugUnitTest lintDebug koverVerifyDebug assembleDebugAndroidTest` | Correcto |
+| JVM | 110 pruebas, 0 fallos, 0 errores y 0 omitidas |
+| Recorrido vacío T-40 aislado | 1 prueba, 0 fallos, 0 errores y 0 omitidas |
+| Suite instrumentada completa con Auth, Firestore, Functions y Storage | 86 pruebas, 0 fallos, 0 errores y 0 omitidas; 7 min 49 s |
+| APK debug | SHA-256 `C87AF29B620A18658213D03B549D4ED13E3DC458BC16742736338661DC794BE5` |
+| TalkBack real, dispositivo físico/API 26 y revisión por otra persona | Pendiente de firma humana |
+| Acceso docente al repositorio y artefacto | Pendiente de confirmación externa |
+
+La regresión técnica queda en verde, pero T-40 y el issue #63 no deben cerrarse
+hasta registrar en `SSD/ACCESIBILIDAD.md` y `SSD/RENDIMIENTO.md` las
+comprobaciones humanas y físicas pendientes.

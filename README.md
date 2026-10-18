@@ -19,7 +19,9 @@ El proyecto se desarrolla en Kotlin con Jetpack Compose y Material 3, usando Fir
 
 ## Estado actual
 
-Este repositorio contiene el candidato de entrega del MVP, con la configuración de Firebase, la estructura de dominio/ui y los artefactos de piloto documentados en T-30.
+Este repositorio contiene el candidato técnico del MVP revisado en T-40. El
+cierre de entrega sigue condicionado a TalkBack, dispositivo físico, acceso
+docente y revisión por otra persona.
 
 Incluye:
 
@@ -135,16 +137,21 @@ Y luego, en otra terminal:
 ./gradlew.bat connectedDebugAndroidTest
 ```
 
-Para reproducir la ejecución completa en un solo comando, con Functions compiladas:
+Para reproducir la ejecución completa, usa Node 22 para Functions:
 
 ```powershell
 Push-Location functions
+node --version # debe empezar por v22
 npm ci
 npm test
 npm run build
 Pop-Location
 firebase emulators:exec --config firebase.json --project demo-nami --only auth,firestore,functions,storage ".\gradlew.bat connectedDebugAndroidTest"
 ```
+
+La prueba
+`FirebaseEmulatorSmokeTest.emptySuiteJourneyCreatesUsersConversationTextAndAudioWithoutSeeding`
+demuestra el recorrido principal sin crear manualmente una conversación.
 
 El APK debug queda en `app/build/outputs/apk/debug/app-debug.apk`. Para registrar su huella:
 
@@ -214,7 +221,8 @@ se debe usar Android Studio o el runner de CI en lugar de relajar las comprobaci
 
 ## Notas importantes
 
-- El proyecto está preparado para el piloto y la entrega T-30; la revisión humana final y el acceso docente se deben confirmar externamente.
+- El proyecto es un candidato técnico de T-40; la revisión humana final, el
+  dispositivo físico y el acceso docente se deben confirmar externamente.
 - No se activan funciones excluidas como grupos, llamadas, vídeo, adjuntos no previstos o cifrado E2E propio.
 - La configuración sensible no se sube al repositorio (`local.properties`, `google-services.json`, `.firebaserc`, credenciales, logs, etc.).
 - En `debug` el proyecto usa valores ficticios y emuladores. `release` exige configuración real y no usa emuladores.

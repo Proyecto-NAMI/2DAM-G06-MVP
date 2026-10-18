@@ -2,7 +2,11 @@
 
 NAMI es una aplicación Android de mensajería familiar accesible, pensada para personas mayores con visión reducida, menor precisión motora o poca experiencia tecnológica.
 
-Esta rama contiene el candidato de entrega de **T-30**, construido sobre la base técnica de T-02 y la configuración Firebase de T-05. El MVP usa Kotlin, Jetpack Compose y Material 3. Authentication, Firestore, Storage y Functions se abstraen mediante repositorios o casos de uso inyectables y, en `debug`, se conectan únicamente al Emulator Suite con datos ficticios.
+Esta rama contiene el candidato técnico revisado en **T-40**, construido sobre
+la base de T-02 y la configuración Firebase de T-05. El MVP usa Kotlin, Jetpack
+Compose y Material 3. Authentication, Firestore, Storage y Functions se
+abstraen mediante repositorios o casos de uso inyectables y, en `debug`, se
+conectan únicamente al Emulator Suite con datos ficticios.
 
 ## Configuración Android
 
@@ -59,9 +63,10 @@ En macOS o Linux:
 ./gradlew assembleDebugAndroidTest
 ```
 
-La prueba instrumentada `FirebaseEmulatorSmokeTest` está preparada para ejecutarse con
-Firebase Emulator Suite y un emulador Android activos; el flujo telefónico completo
-se implementará en T-07.
+La prueba instrumentada `FirebaseEmulatorSmokeTest` está preparada para
+ejecutarse con Firebase Emulator Suite y un emulador Android activos. Su método
+`emptySuiteJourneyCreatesUsersConversationTextAndAudioWithoutSeeding` cubre el
+flujo telefónico integrado sin sembrar la conversación.
 
 Para reproducir en CI las pruebas de autorización y recuperación:
 
@@ -70,10 +75,11 @@ firebase emulators:exec --config .firebase-ci.json --project demo-nami \
   --only auth,firestore,functions,storage "./gradlew connectedDebugAndroidTest"
 ```
 
-En un clon limpio, el flujo reproducible de T-30 es:
+En un clon limpio, el flujo reproducible del candidato T-40 es:
 
 ```powershell
 Push-Location functions
+node --version # debe empezar por v22
 npm ci
 npm test
 npm run build
@@ -99,6 +105,7 @@ El APK debug se genera en `app/build/outputs/apk/debug/app-debug.apk`; su SHA-25
 | [`FIREBASE.md`](FIREBASE.md) | Configuración segura de Firebase y Emulator Suite. |
 | [`evidencias-ia/`](evidencias-ia/) | Evidencias visuales del proceso SDD. |
 | [`../VALIDACION.md`](../VALIDACION.md) | Matriz de requisitos, resultados y limitaciones. |
+| [`TRAZABILIDAD_FINAL.md`](TRAZABILIDAD_FINAL.md) | Matriz final RF/RNF/CA y cableado productivo de T-40. |
 | [`../entrega_G06/`](../entrega_G06/) | Presentación PDF, manifiesto y APK debug. |
 
 ## Prototipo

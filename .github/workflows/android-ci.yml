@@ -30,6 +30,13 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      - name: Configurar Node 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
+
       - name: Configurar Gradle
         uses: gradle/actions/setup-gradle@v6
 
@@ -38,6 +45,7 @@ jobs:
         run: |
           npm ci
           npm test
+          npm run build
 
       - name: Ejecutar validaciones locales
         run: >-
@@ -65,6 +73,13 @@ jobs:
         with:
           distribution: temurin
           java-version: "21"
+
+      - name: Configurar Node 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
 
       - name: Configurar Gradle
         uses: gradle/actions/setup-gradle@v6
