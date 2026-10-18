@@ -1,16 +1,23 @@
 package com.proyectonami.app.feature.conversations
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.DeviceConfigurationOverride
+import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.FontScale
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.junit4.accessibility.enableAccessibilityChecks
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.tryPerformAccessibilityChecks
 import androidx.compose.ui.unit.dp
 import com.proyectonami.app.core.designsystem.theme.NamiTheme
 import com.proyectonami.app.core.domain.conversations.ConversationSummary
@@ -22,11 +29,18 @@ import com.proyectonami.app.feature.conversations.presentation.ConversationsView
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import org.junit.Assert.assertEquals
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
+@OptIn(ExperimentalTestApi::class)
 class ConversationsScreenTest {
     @get:Rule val composeRule = createComposeRule()
+
+    @Before
+    fun enableAccessibilityValidation() {
+        composeRule.enableAccessibilityChecks()
+    }
 
     @Test
     fun contentShowsAvatarUnreadCountAndNavigatesToConversation() {
@@ -64,43 +78,48 @@ class ConversationsScreenTest {
     }
 
     @Test
-    fun loadingStateIsAnnouncedAndRemainsVisibleAt200Percent() {
-        assertStateAt200Percent(ConversationsRemoteState.Loading, "Cargando conversaciones…")
+    fun loadingStateIsAnnouncedAndRemainsVisibleAt320DpAnd200Percent() {
+        assertStateAt200Percent(320, ConversationsRemoteState.Loading, "Cargando conversaciones…")
     }
 
     @Test
-    fun emptyStateIsAnnouncedAndRemainsVisibleAt200Percent() {
-        assertStateAt200Percent(ConversationsRemoteState.Loaded(emptyList()), "Aún no tienes conversaciones.")
+    fun emptyStateIsAnnouncedAndRemainsVisibleAt411DpAnd200Percent() {
+        assertStateAt200Percent(411, ConversationsRemoteState.Loaded(emptyList()), "Aún no tienes conversaciones.")
     }
 
     @Test
-    fun errorStateIsAnnouncedAndRemainsVisibleAt200Percent() {
+    fun errorStateIsAnnouncedAndRemainsVisibleAt320DpAnd200Percent() {
         assertStateAt200Percent(
+            320,
             ConversationsRemoteState.Failed,
             "No se pudieron cargar las conversaciones. Comprueba la conexión.",
         )
     }
 
     private fun assertStateAt200Percent(
+        widthDp: Int,
         state: ConversationsRemoteState,
         expectedText: String,
     ) {
         val viewModel = viewModel(state)
         composeRule.setContent {
-            DeviceConfigurationOverride(DeviceConfigurationOverride.FontScale(2f)) {
-                NamiTheme {
-                    ConversationsRoute(
-                        viewModel = viewModel,
-                        onOpenConversation = {},
-                        onAddContact = {},
-                        onProfile = {},
-                        onSettings = {},
-                        onSignOut = {},
-                    )
+            Box(Modifier.size(widthDp.dp, 720.dp)) {
+                DeviceConfigurationOverride(DeviceConfigurationOverride.FontScale(2f)) {
+                    NamiTheme {
+                        ConversationsRoute(
+                            viewModel = viewModel,
+                            onOpenConversation = {},
+                            onAddContact = {},
+                            onProfile = {},
+                            onSettings = {},
+                            onSignOut = {},
+                        )
+                    }
                 }
             }
         }
         composeRule.onNodeWithText(expectedText).assertIsDisplayed()
+        composeRule.onRoot().tryPerformAccessibilityChecks()
     }
 
     private fun viewModel(state: ConversationsRemoteState) =

@@ -761,3 +761,37 @@ Fecha: 18 de octubre de 2026. Rama: `yang_dev`. Seguimiento: #27.
 Esta evidencia satisface la ejecución automatizada en un emulador y un tamaño
 representativo. No sustituye el paso pendiente en hardware físico ni permite
 marcar todavía como completa la revisión humana de la definición de hecho.
+
+# Integración de T-39 (RNF-01, RNF-02; CA-06; issue #62)
+
+Fecha: 18 de octubre de 2026. Rama: `yang_dev`. Seguimiento: #28.
+
+- Las pruebas Compose de cuenta, inicio, contacto, chat, audio, perfil y ajustes
+  habilitan Accessibility Test Framework en Android 16/API 36.
+- Los siete flujos tienen casos a 320 dp y 411 dp con texto al 200 %, incluidos
+  éxito, vacío, error y reintento. Los escenarios a escala máxima ejecutan la
+  revisión del árbol semántico completo.
+- El perfil corrige dos hallazgos: el estado de error es desplazable con áreas
+  seguras y sus errores de carga/avatar se anuncian mediante regiones vivas.
+- Los componentes esenciales mantienen al menos 48 × 48 dp, texto visible para
+  sus iconos y acciones de una pulsación. No hay acciones esenciales basadas
+  solo en color o pulsación prolongada.
+- El flujo de texto necesita como máximo cuatro acciones y el de audio cinco;
+  el desglose está registrado en `SSD/ACCESIBILIDAD.md`.
+
+| Comprobación | Resultado |
+|---|---|
+| `spotlessApply assembleDebugAndroidTest` | Correcto |
+| Suite `com.proyectonami.app.feature` en `NAMI_API_36` | 54 pruebas, 0 fallos, 0 errores y 0 omitidas |
+| Suite instrumentada completa con Emulator Suite | 85 pruebas, 0 fallos, 0 errores y 0 omitidas |
+| JVM, cobertura y lint | 110 pruebas, 0 fallos, 0 errores y 0 omitidas; `koverVerifyDebug` y `lintDebug` correctos |
+| Anchos y escala | 320 dp y 411 dp al 200 % en todos los flujos auditados |
+| Fallos críticos automáticos abiertos | 0 |
+| Recorrido auditivo con TalkBack real | Pendiente de firma humana |
+| Repetición por una segunda persona | Pendiente de firma humana |
+
+La evidencia detallada, el entorno, las correcciones y la tabla que deben
+firmar ambas personas están en [`SSD/ACCESIBILIDAD.md`](SSD/ACCESIBILIDAD.md).
+La suite automática queda cerrada; la definición de hecho completa permanece
+pendiente hasta escuchar el recorrido con TalkBack y registrar la revisión
+independiente.

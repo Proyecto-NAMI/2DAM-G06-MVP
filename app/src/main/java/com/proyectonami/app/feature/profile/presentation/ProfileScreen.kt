@@ -42,7 +42,10 @@ fun ProfileRoute(
     onBack: () -> Unit,
 ) {
     if (state.isLoading) {
-        Column(Modifier.fillMaxSize().padding(NamiSpacing.Large), verticalArrangement = Arrangement.Center) {
+        Column(
+            Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).padding(NamiSpacing.Large),
+            verticalArrangement = Arrangement.Center,
+        ) {
             CircularProgressIndicator()
             Text(stringResource(R.string.profile_loading), modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
         }
@@ -50,10 +53,18 @@ fun ProfileRoute(
     }
     if (state.loadFailed) {
         Column(
-            Modifier.fillMaxSize().padding(NamiSpacing.Large),
+            Modifier
+                .fillMaxSize()
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+                .verticalScroll(rememberScrollState())
+                .padding(NamiSpacing.Large),
             verticalArrangement = Arrangement.spacedBy(NamiSpacing.Medium),
         ) {
-            Text(stringResource(R.string.profile_load_failed), color = MaterialTheme.colorScheme.error)
+            Text(
+                stringResource(R.string.profile_load_failed),
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive },
+            )
             NamiPrimaryButton(
                 stringResource(R.string.profile_retry),
                 painterResource(R.drawable.ic_nami_refresh),
@@ -165,7 +176,13 @@ fun ProfileRoute(
                     },
             )
         }
-        if (state.avatarError) Text(stringResource(R.string.profile_avatar_invalid), color = MaterialTheme.colorScheme.error)
+        if (state.avatarError) {
+            Text(
+                stringResource(R.string.profile_avatar_invalid),
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive },
+            )
+        }
         if (state.saved) Text(stringResource(R.string.profile_saved), modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
         NamiPrimaryButton(
             text =

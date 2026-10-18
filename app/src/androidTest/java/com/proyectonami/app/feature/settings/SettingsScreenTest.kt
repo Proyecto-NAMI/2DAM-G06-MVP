@@ -7,14 +7,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.junit4.accessibility.enableAccessibilityChecks
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.tryPerformAccessibilityChecks
 import androidx.compose.ui.unit.dp
 import com.proyectonami.app.core.designsystem.theme.NamiTheme
 import com.proyectonami.app.feature.settings.presentation.SettingsScreen
@@ -22,11 +26,18 @@ import com.proyectonami.app.feature.settings.presentation.SettingsUiState
 import com.proyectonami.app.feature.settings.presentation.TextScaleOption
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
+@OptIn(ExperimentalTestApi::class)
 class SettingsScreenTest {
     @get:Rule val composeRule = createComposeRule()
+
+    @Before
+    fun enableAccessibilityValidation() {
+        composeRule.enableAccessibilityChecks()
+    }
 
     @Test
     fun controlsApplyImmediatelyAndExposeStateAndAction() {
@@ -104,6 +115,7 @@ class SettingsScreenTest {
             .assertIsDisplayed()
             .performClick()
         composeRule.onNodeWithText("Volver a conversaciones").performScrollTo().assertIsDisplayed()
+        composeRule.onRoot().tryPerformAccessibilityChecks()
 
         assertEquals(TextScaleOption.MAXIMUM, scaleSelection)
         assertTrue(readAloudChange == true)

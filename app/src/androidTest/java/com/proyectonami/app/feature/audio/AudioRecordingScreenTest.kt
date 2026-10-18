@@ -1,12 +1,19 @@
 package com.proyectonami.app.feature.audio
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.DeviceConfigurationOverride
+import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.FontScale
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.junit4.accessibility.enableAccessibilityChecks
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.tryPerformAccessibilityChecks
 import androidx.compose.ui.unit.dp
 import com.proyectonami.app.core.designsystem.theme.NamiTheme
 import com.proyectonami.app.core.domain.audio.AudioClock
@@ -20,11 +27,18 @@ import com.proyectonami.app.feature.audio.presentation.AudioRecordingContent
 import com.proyectonami.app.feature.audio.presentation.AudioRecordingViewModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
+@OptIn(ExperimentalTestApi::class)
 class AudioRecordingScreenTest {
     @get:Rule val composeRule = createComposeRule()
+
+    @Before
+    fun enableAccessibilityValidation() {
+        composeRule.enableAccessibilityChecks()
+    }
 
     @Test
     fun previewShowsDurationAndListenDeleteSendActions() {
@@ -83,27 +97,39 @@ class AudioRecordingScreenTest {
     }
 
     @Test
-    fun recordingControlsRemainVisibleAt200Percent() {
+    fun recordingControlsRemainVisibleAt320DpAnd200Percent() {
+        assertRecordingControlsAtMaximumText(320)
+    }
+
+    @Test
+    fun recordingControlsRemainVisibleAt411DpAnd200Percent() {
+        assertRecordingControlsAtMaximumText(411)
+    }
+
+    private fun assertRecordingControlsAtMaximumText(widthDp: Int) {
         composeRule.setContent {
-            DeviceConfigurationOverride(DeviceConfigurationOverride.FontScale(2f)) {
-                NamiTheme {
-                    AudioRecordingContent(
-                        state = AudioRecordingState.Recording(12_000L),
-                        playbackState = AudioPlaybackState.Idle,
-                        onRecord = {},
-                        onStop = {},
-                        onListen = {},
-                        onDelete = {},
-                        onSend = {},
-                        onOpenSettings = {},
-                        onContinueWithText = {},
-                    )
+            Box(Modifier.size(widthDp.dp, 720.dp)) {
+                DeviceConfigurationOverride(DeviceConfigurationOverride.FontScale(2f)) {
+                    NamiTheme {
+                        AudioRecordingContent(
+                            state = AudioRecordingState.Recording(12_000L),
+                            playbackState = AudioPlaybackState.Idle,
+                            onRecord = {},
+                            onStop = {},
+                            onListen = {},
+                            onDelete = {},
+                            onSend = {},
+                            onOpenSettings = {},
+                            onContinueWithText = {},
+                        )
+                    }
                 }
             }
         }
 
         composeRule.onNodeWithText("Grabando: 12 s").assertIsDisplayed()
         composeRule.onNodeWithText("Detener grabación").assertIsDisplayed().assertHeightIsAtLeast(48.dp)
+        composeRule.onRoot().tryPerformAccessibilityChecks()
     }
 
     @Test

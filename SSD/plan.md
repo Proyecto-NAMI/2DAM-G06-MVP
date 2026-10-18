@@ -20,6 +20,13 @@
 | Preferencias | DataStore | Persistencia local simple de accesibilidad. |
 | Pruebas | JUnit, fakes, Compose UI Test y Firebase Emulator Suite | Cubre dominio, UI, integración y autorización con datos ficticios. |
 
+T-39 añade `ui-test-junit4-accessibility`, artefacto oficial de Jetpack Compose
+y gobernado por el mismo BOM que el resto de Compose. Ejecuta Accessibility
+Test Framework en Android 14 o superior para detectar automáticamente etiquetas,
+roles y objetivos táctiles antes de cada interacción. No añade código al APK ni
+sustituye la escucha manual con TalkBack; la dependencia existe solo en
+`androidTest`.
+
 Las versiones se fijan en el catálogo de versiones de Gradle. T-02 establece `minSdk 26`, `targetSdk 36` y `compileSdk 37`; la compatibilidad mínima deberá validarse en los dispositivos del piloto antes de cerrar RNF-07.
 
 T-02 usa el soporte Kotlin integrado en AGP 9.4.1, sin aplicar `org.jetbrains.kotlin.android`, que entra en conflicto con este soporte. Se mantiene el plugin del compilador de Compose y el objetivo JVM 17.
@@ -302,6 +309,12 @@ Las capturas de [`Prototype_Reference/`](../Prototype_Reference) y el archivo de
 - Contraste verificado automática y manualmente.
 - Pruebas al 200 %, con TalkBack y una mano en dispositivo físico.
 - Confirmación visual y sonora; vibración como mejora posterior.
+
+T-39 ejecuta las pantallas productivas dentro de contenedores de 320 dp y
+411 dp con escala al 200 %, además de activar Accessibility Test Framework en
+las pruebas instrumentadas de cuenta, contactos, conversaciones, texto, audio,
+perfil y ajustes. La matriz, los hallazgos corregidos y el protocolo de firma
+manual de dos personas se conservan en `SSD/ACCESIBILIDAD.md`.
 
 ## 8. Estrategia de pruebas
 

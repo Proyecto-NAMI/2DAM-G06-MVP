@@ -4,16 +4,20 @@ import android.Manifest
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertWidthIsAtLeast
+import androidx.compose.ui.test.junit4.accessibility.enableAccessibilityChecks
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.tryPerformAccessibilityChecks
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.SavedStateHandle
 import androidx.test.platform.app.InstrumentationRegistry
@@ -52,11 +56,18 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import org.junit.Assert.assertEquals
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
+@OptIn(ExperimentalTestApi::class)
 class TextConversationScreenTest {
     @get:Rule val composeRule = createComposeRule()
+
+    @Before
+    fun enableAccessibilityValidation() {
+        composeRule.enableAccessibilityChecks()
+    }
 
     @Test
     fun composerStacksAndRemainsUsableAt320DpAnd200Percent() {
@@ -78,9 +89,18 @@ class TextConversationScreenTest {
 
     @Test
     fun historyAndComposerRemainReachableAt320DpAnd200Percent() {
+        assertHistoryAndComposerAtMaximumText(320)
+    }
+
+    @Test
+    fun historyAndComposerRemainReachableAt411DpAnd200Percent() {
+        assertHistoryAndComposerAtMaximumText(411)
+    }
+
+    private fun assertHistoryAndComposerAtMaximumText(widthDp: Int) {
         val viewModel = viewModel(FakeTextMessagesRepository(messages = listOf(textMessage())))
         composeRule.setContent {
-            Box(Modifier.size(320.dp, 720.dp)) {
+            Box(Modifier.size(widthDp.dp, 720.dp)) {
                 NamiTheme(textScale = 2f) {
                     TextConversationRoute(viewModel, onBack = {})
                 }
@@ -90,6 +110,7 @@ class TextConversationScreenTest {
         composeRule.onNodeWithText("Hola").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithTag("chat_message_input").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithTag("chat_send_button").performScrollTo().assertIsDisplayed()
+        composeRule.onRoot().tryPerformAccessibilityChecks()
     }
 
     @Test
